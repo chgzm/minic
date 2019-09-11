@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "tokenizer.h"
+#include "parser.h"
 
 static void* mmap_readonly(const char* file_path) {
     const int fd = open(file_path, O_RDONLY);
@@ -47,8 +48,14 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    Token* tokens = tokenize(addr);
-    if (tokens == NULL) {
+    TokenVec* vec = tokenize(addr);
+    if (vec == NULL) {
+        fprintf(stderr, "Failed to tokenize.\n");
+        return -1;
+    }
+
+    TransUnitNode* node = parse(vec);
+    if (node == NULL) {
         fprintf(stderr, "Failed to parse.\n");
         return -1;
     }

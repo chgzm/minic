@@ -65,15 +65,18 @@ enum TokenType {
     TK_EOF,       // EOF
 };
 
+#if 0
 static const char* keywords[] = {
     "int", "char", "void", "struct", "if", "else", "for", "while", 
     "switch", "case", "break", "continue", "return"
 };
+#endif
 
 struct Token {
     int type;
     int num;
     char* str;
+    int strlen;
 };
 typedef struct Token Token;
 
@@ -86,15 +89,11 @@ typedef struct TokenVec TokenVec;
 
 TokenVec* tokenize(void* addr);
 
-static TokenVec* tokenvec_create();
-static void tokenvec_push_back(TokenVec* tokenVec, Token* token);
+//
+// debug
+//
 
-static Token* read_character(const char* p, int* pos);
-static Token* read_string(const char* p, int* pos);
-static Token* read_symbol(const char* p, int* pos);
-static Token* read_identifier(const char* p, int* pos);
-static Token* read_number(const char* p, int* pos);
-
-static bool is_symbol(char p);
+const char* decode_token_type(int type);
+void dump_tokens(TokenVec* vec);
 
 #endif

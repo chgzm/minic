@@ -7,6 +7,7 @@
 
 #include "tokenizer.h"
 #include "parser.h"
+#include "generator.h"
 
 static void* mmap_readonly(const char* file_path) {
     const int fd = open(file_path, O_RDONLY);
@@ -59,6 +60,8 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Failed to parse.\n");
         return -1;
     }
+
+    gen(node);
 
     return 0;
 }

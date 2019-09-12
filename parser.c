@@ -99,8 +99,6 @@ static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
 
     Token* token = vec->tokens[*index];
 
-    printf("index=%d\n", *index);
-
     switch (token->type) {
     case TK_RETURN: {
         stmt_node->jump_stmt = create_jump_stmt_node(vec, index);
@@ -258,3 +256,17 @@ TransUnitNode* parse(TokenVec* vec) {
            
     return trans_unit_node;
 }
+
+const char* decode_node_type(int node_type) {
+    switch (node_type) {
+    case ND_TRANS_UNIT:    { return "ND_TRANS_UNIT";    }
+    case ND_FUNC_DEF:      { return "ND_FUNC_DEF";      }
+    case ND_COMPOUND_STMT: { return "ND_COMPOUND_STMT"; }
+    case ND_EXPR:          { return "ND_EXPR";          }
+    case ND_RETURN:        { return "ND_RETURN";        }
+    case ND_JUMP_STMT:     { return "ND_JUMP_STMT";     }
+    case ND_STMT:          { return "ND_STMT";          }
+    default:               { return "INVALID";          }
+    }
+}
+

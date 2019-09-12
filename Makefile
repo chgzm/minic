@@ -8,9 +8,9 @@ minic: $(OBJS)
 minic: minic.c tokenizer.c
 
 test: minic
-	./test.sh
+	./test/test.sh
 
 clean:
-	rm -f minic *.o *~ tmp*
+	rm -f minic *.o *~ ./test/tmp*
 
 .PHONY: test clean

@@ -72,4 +72,10 @@ struct StmtNode {
 
 TransUnitNode* parse(TokenVec* vec);
 
+//
+// debug
+//
+
+const char* decode_node_type(int node_type);
+
 #endif

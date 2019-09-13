@@ -1,8 +1,8 @@
 #include "parser.h"
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdlib.h> 
+#include <string.h> 
 
 static NodeVec* create_nodevec() {
     NodeVec* vec  = malloc(sizeof(NodeVec));
@@ -23,24 +23,336 @@ static void nodevec_push_back(NodeVec* vec, void* node) {
     ++(vec->size);
 }
 
-static ExprNode* create_expr_node(TokenVec* vec, int* index) {
-    ExprNode* expr_node = malloc(sizeof(ExprNode));
-    expr_node->node_type = ND_EXPR;
-   
+static bool is_unary_operator(TokenVec* vec, int index) {
+    Token* token = vec->tokens[index]; 
+    if (token->type == TK_AMP 
+     || token->type == TK_ASTER 
+     || token->type == TK_PLUS
+     || token->type == TK_MINUS
+     || token->type == TK_TILDE
+     || token->type == TK_EXCLA
+    ) {
+        return true;
+    } 
+    else {
+        return false;
+    }
+}
+
+static bool is_assign_expr(TokenVec* vec, int index) {
+    return true;
+}
+
+static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
+    ConstantNode* constant_node = malloc(sizeof(ConstantNode));
+    constant_node->node_type = ND_CONSTANT;
+
     Token* token = vec->tokens[*index];
     ++(*index);
-
+    
     switch (token->type) {
     case TK_NUM: {
-        expr_node->integer_constant = token->num;
-        break;
+        constant_node->const_type       = CONST_INT;
+        constant_node->integer_constant = token->num;
+        break; 
+    }
+    case TK_STR: {
+        constant_node->const_type       = CONST_STR;
+        strncpy(constant_node->character_constant, token->str, token->strlen);
+        break; 
     }
     default: {
-        fprintf(stderr, "Invalid token type=%d\n", token->type);
+        fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
         return NULL;
     }
     }
+    
+    return constant_node;
+}      
 
+static PrimaryExprNode* create_primary_expr_node(TokenVec* vec, int* index) {
+    PrimaryExprNode* primary_expr_node = malloc(sizeof(PrimaryExprNode));
+    primary_expr_node->node_type     = ND_PRIMARY_EXPR;
+    primary_expr_node->constant_node = NULL;
+    primary_expr_node->expr_node     = NULL;
+    primary_expr_node->string        = NULL;
+    primary_expr_node->identifier    = NULL;
+
+
+    primary_expr_node->constant_node = create_constant_node(vec, index);
+    if (primary_expr_node->constant_node == NULL) {
+        fprintf(stderr, "Failed to create constant node.\n");
+        return NULL;
+    }
+
+    return primary_expr_node;
+}
+
+static PostfixExprNode* create_postfix_expr_node(TokenVec* vec, int* index) {
+    PostfixExprNode* postfix_expr_node = malloc(sizeof(PostfixExprNode));
+    postfix_expr_node->node_type            = ND_POSTFIX_EXPR;
+    postfix_expr_node->primary_expr_node    = NULL;
+    postfix_expr_node->postfix_expr_node    = NULL;
+    postfix_expr_node->expr_node            = NULL;
+    postfix_expr_node->assignment_expr_node = NULL;
+    postfix_expr_node->identifier           = NULL;
+
+    postfix_expr_node->primary_expr_node = create_primary_expr_node(vec, index);
+    if (postfix_expr_node->primary_expr_node == NULL) {
+        fprintf(stderr, "Failed to create primary-expression node.\n");
+        return NULL;
+    }
+
+    return postfix_expr_node;
+}
+
+static UnaryExprNode* create_unary_expr_node(TokenVec* vec, int* index) {
+    UnaryExprNode* unary_expr_node = malloc(sizeof(UnaryExprNode));
+    unary_expr_node->node_type = ND_UNARY_EXPR;
+    unary_expr_node->postfix_expr_node = NULL;
+    unary_expr_node->unary_expr_node   = NULL;
+    unary_expr_node->cast_expr_node    = NULL;
+
+    unary_expr_node->postfix_expr_node = create_postfix_expr_node(vec, index);
+    if (unary_expr_node->postfix_expr_node == NULL) {
+        fprintf(stderr, "Failed to create postfix-expression node.\n");
+        return NULL;
+    }
+    
+    return unary_expr_node;
+}
+
+static CastExprNode* create_cast_expr_node(TokenVec* vec, int* index) {
+    CastExprNode* cast_expr_node = malloc(sizeof(CastExprNode));
+    cast_expr_node->node_type       = ND_CAST_EXPR;
+    cast_expr_node->unary_expr_node = NULL;
+    cast_expr_node->cast_expr_node  = NULL;
+
+    cast_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
+    if (cast_expr_node->unary_expr_node == NULL) {
+        fprintf(stderr, "Failed to create unary-expression node.\n");
+        return NULL;
+    }
+
+    return cast_expr_node;
+}
+
+static MultiPlicativeExprNode* create_multiplicative_expr_node(TokenVec* vec, int* index) {
+    MultiPlicativeExprNode* multiplicative_expr_node = malloc(sizeof(MultiPlicativeExprNode));
+    multiplicative_expr_node->node_type                = ND_MULTIPLICATIVE_EXPR;
+    multiplicative_expr_node->cast_expr_node           = NULL;
+    multiplicative_expr_node->multiplicative_expr_node = NULL;
+
+    multiplicative_expr_node->cast_expr_node = create_cast_expr_node(vec, index);
+    if (multiplicative_expr_node->cast_expr_node == NULL) {
+        fprintf(stderr, "Failed to create cast-expression node.\n");
+        return NULL;
+    }
+
+    return multiplicative_expr_node;
+}
+
+static AdditiveExprNode* create_additive_expr_node(TokenVec* vec, int* index) {
+    AdditiveExprNode* additive_expr_node =  malloc(sizeof(AdditiveExprNode));
+    additive_expr_node->node_type                = ND_ADDITIVE_EXPR;
+    additive_expr_node->multiplicative_expr_node = NULL;
+    additive_expr_node->additive_expr_node       = NULL;
+
+    additive_expr_node->multiplicative_expr_node = create_multiplicative_expr_node(vec, index);
+    if (additive_expr_node->multiplicative_expr_node == NULL) {
+        fprintf(stderr, "Failed to create multiplicative-expression node.\n");
+        return NULL;
+    }
+
+    return additive_expr_node;
+}
+
+static ShiftExprNode* create_shift_expr(TokenVec* vec, int* index) {
+    ShiftExprNode* shift_expr_node = malloc(sizeof(ShiftExprNode));
+    shift_expr_node->node_type          = ND_SHIFT_EXPR;
+    shift_expr_node->additive_expr_node = NULL;
+    shift_expr_node->shift_expr_node    = NULL;
+ 
+    shift_expr_node->additive_expr_node = create_additive_expr_node(vec, index);
+    if (shift_expr_node->additive_expr_node == NULL) {
+        fprintf(stderr, "Failed to additive-expression node.\n");
+        return NULL;
+    }
+
+    return shift_expr_node;
+} 
+
+static RelationalExprNode* create_relational_expr_node(TokenVec* vec, int* index) {
+    RelationalExprNode* relational_expr_node = malloc(sizeof(RelationalExprNode));
+    relational_expr_node->node_type            = ND_RELATIONAL_EXPR;
+    relational_expr_node->shift_expr_node      = NULL;
+    relational_expr_node->relational_expr_node = NULL;
+
+    relational_expr_node->shift_expr_node = create_shift_expr(vec, index);
+    if (relational_expr_node->shift_expr_node == NULL) {
+        fprintf(stderr, "Failed to create shift-expression node.\n");
+        return NULL;
+    }
+
+    return relational_expr_node;
+}
+
+static EqualityExprNode* create_equality_expr_node(TokenVec* vec, int* index) {
+    EqualityExprNode* equality_expr_node = malloc(sizeof(EqualityExprNode));
+    equality_expr_node->node_type          = ND_EQUALITY_EXPR;
+    equality_expr_node->equality_expr_node = NULL;
+
+    equality_expr_node->relational_expr_node = create_relational_expr_node(vec, index);
+    if (equality_expr_node->relational_expr_node == NULL) {
+        fprintf(stderr, "Failed to create relational-expression node.\n");
+        return NULL;
+    }
+
+    return equality_expr_node;
+}
+
+static AndExprNode* create_and_expr_node(TokenVec* vec, int* index) {
+    AndExprNode* and_expr_node = malloc(sizeof(AndExprNode));
+    and_expr_node->node_type          = ND_AND_EXPR;
+    and_expr_node->equality_expr_node = NULL;
+    and_expr_node->and_expr_node      = NULL;
+
+    and_expr_node->equality_expr_node = create_equality_expr_node(vec, index);
+    if (and_expr_node->equality_expr_node == NULL) {
+        fprintf(stderr, "Failed to create equality-expression node.\n");
+        return NULL;
+    }
+
+    return and_expr_node;
+}
+
+static ExclusiveOrExprNode* create_exclusive_or_expr_node(TokenVec* vec, int* index) {
+    ExclusiveOrExprNode* exclusive_or_expr_node = malloc(sizeof(ExclusiveOrExprNode));
+    exclusive_or_expr_node->node_type              = ND_EXCLUSIVE_OR_EXPR;
+    exclusive_or_expr_node->and_expr_node          = NULL;
+    exclusive_or_expr_node->exclusive_or_expr_node = NULL;
+
+    exclusive_or_expr_node->and_expr_node = create_and_expr_node(vec, index);
+    if (exclusive_or_expr_node->and_expr_node == NULL) {
+        fprintf(stderr, "Failed to create and-expression node.\n");
+        return NULL;
+    }
+
+    return exclusive_or_expr_node;
+} 
+
+static InclusiveOrExprNode* create_inclusive_or_expr_node(TokenVec* vec, int* index) {    
+    InclusiveOrExprNode* inclusive_or_expr_node = malloc(sizeof(InclusiveOrExprNode));
+    inclusive_or_expr_node->node_type              = ND_INCLUSIVE_OR_EXPR;
+    inclusive_or_expr_node->exclusive_or_expr_node = NULL;
+    inclusive_or_expr_node->inclusive_or_expr_node = NULL;
+  
+    inclusive_or_expr_node->exclusive_or_expr_node = create_exclusive_or_expr_node(vec, index);
+    if (inclusive_or_expr_node->exclusive_or_expr_node  == NULL) {
+        fprintf(stderr, "Failed to create exclusive-or-expression node.\n");
+        return NULL;
+    }
+
+    return inclusive_or_expr_node;  
+}
+
+static LogicalAndExprNode* create_logical_and_expr_node(TokenVec* vec, int* index) {
+    LogicalAndExprNode* logical_and_expr_node = malloc(sizeof(LogicalAndExprNode));
+    logical_and_expr_node->node_type              = ND_LOGICAL_AND_EXPR;
+    logical_and_expr_node->inclusive_or_expr_node = NULL;
+    logical_and_expr_node->logical_and_expr_node  = NULL;
+
+    logical_and_expr_node->inclusive_or_expr_node = create_inclusive_or_expr_node(vec, index);
+    if (logical_and_expr_node->inclusive_or_expr_node == NULL) {
+        fprintf(stderr, "Failed to create inclusive-or-expression node.\n");
+        return NULL;
+    }
+
+    return logical_and_expr_node;
+} 
+
+static LogicalOrExprNode* create_logical_or_expr_node(TokenVec* vec, int* index) {
+    LogicalOrExprNode* logical_or_expr_node = malloc(sizeof(LogicalOrExprNode));
+    logical_or_expr_node->node_type             = ND_LOGICAL_OR_EXPR;
+    logical_or_expr_node->logical_or_expr_node  = NULL;
+    logical_or_expr_node->logical_and_expr_node = NULL;
+  
+    logical_or_expr_node->logical_and_expr_node = create_logical_and_expr_node(vec, index);
+    if (logical_or_expr_node->logical_and_expr_node == NULL) {
+        fprintf(stderr, "Failed to create logical-and-expression node.\n");
+        return NULL;
+    }
+    
+    return logical_or_expr_node;
+}  
+
+static ConditionalExprNode* create_conditional_expr_node(TokenVec* vec, int* index) {
+    ConditionalExprNode* conditional_expr_node = malloc(sizeof(ConditionalExprNode));
+    conditional_expr_node->node_type             = ND_CONDITIONAL_EXPR;
+    conditional_expr_node->logical_or_expr_node  = NULL;
+    conditional_expr_node->logical_and_expr_node = NULL;
+    conditional_expr_node->conditional_expr_node = NULL;
+   
+    conditional_expr_node->logical_or_expr_node = create_logical_or_expr_node(vec, index);
+    if (conditional_expr_node->logical_or_expr_node == NULL) {
+        fprintf(stderr, "Failed to create logical-or-expression node.\n");
+        return NULL;
+    }
+
+    return conditional_expr_node; 
+}
+
+static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index) {
+    AssignExprNode* assign_expr_node = malloc(sizeof(AssignExprNode));
+    assign_expr_node->node_type             = ND_ASSIGN_EXPR;
+    assign_expr_node->conditional_expr_node = NULL;
+    assign_expr_node->unary_expr_node       = NULL;
+    assign_expr_node->assign_expr_node      = NULL;
+   
+    assign_expr_node->conditional_expr_node = create_conditional_expr_node(vec, index);
+    if (assign_expr_node->conditional_expr_node == NULL) {
+        fprintf(stderr, "Failed to create conditional-expression node.\n");
+        return NULL;
+    }
+
+    return assign_expr_node; 
+}
+
+static ExprNode* create_expr_node(TokenVec* vec, int* index) {
+    ExprNode* expr_node = malloc(sizeof(ExprNode));
+    expr_node->node_type        = ND_EXPR;
+    expr_node->assign_expr_node = NULL;
+    expr_node->expr_node        = NULL;
+
+    if (is_assign_expr(vec, *index)) {
+        expr_node->assign_expr_node = create_assign_expr_node(vec, index);
+        if (expr_node->assign_expr_node == NULL) {
+            fprintf(stderr, "Failed to create assignment-expression node.\n");
+            return NULL;
+        }
+    } 
+    else {
+        expr_node->expr_node = create_expr_node(vec, index);
+        if (expr_node->expr_node == NULL) {
+            fprintf(stderr, "Failed to create expression node.\n");
+            return NULL;
+        }
+
+        Token* token = vec->tokens[*index];
+        ++(*index);
+
+        if (token->type != TK_COMMA) {
+            fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            return NULL;
+        }
+
+        expr_node->assign_expr_node = create_assign_expr_node(vec, index);
+        if (expr_node->assign_expr_node == NULL) {
+            fprintf(stderr, "Failed to create assignment-expression node.\n");
+            return NULL;
+        }
+    }
+   
     return expr_node;
 }
 
@@ -256,6 +568,10 @@ TransUnitNode* parse(TokenVec* vec) {
            
     return trans_unit_node;
 }
+
+//
+// debug
+// 
 
 const char* decode_node_type(int node_type) {
     switch (node_type) {

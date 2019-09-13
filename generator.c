@@ -1,6 +1,6 @@
 #include "generator.h"
 
-#include <stdio.h>
+#include <stdio.h> 
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -21,8 +21,215 @@ static void print_global(TransUnitNode* node) {
     printf(".global main\n\n");
 }
 
+static void process_constant_node(ConstantNode* node) {
+    switch (node->const_type) {
+    case CONST_INT: {
+        print_code("push %d", node->integer_constant);
+        break;
+    }
+    case CONST_STR: {
+        break;  
+    }
+    case CONST_FLOAT: {
+        break;
+    }
+    default: {
+        fprintf(stderr, "Invalid ConstType.\n");
+        break;
+    }
+    }
+}
+
+static void process_primary_expr(PrimaryExprNode* node) {
+    // <constant>
+    if (node->constant_node != NULL) {
+        process_constant_node(node->constant_node);
+    }
+    else {
+        // @todo
+    }
+}
+
+static void process_postfix_expr(PostfixExprNode* node) {
+    // <primary-expression>
+    if (node->primary_expr_node != NULL) {
+        process_primary_expr(node->primary_expr_node);
+    }
+    else {
+        // @todo
+    }
+}
+
+static void process_unary_expr(UnaryExprNode* node) {
+    // <postfix-expression>
+    if (node->postfix_expr_node != NULL) {
+        process_postfix_expr(node->postfix_expr_node);
+    }
+    else {
+        // @todo
+    } 
+}
+
+static void process_cast_expr(CastExprNode* node) {
+    // <unary-expression>
+    if (node->unary_expr_node != NULL) {
+        process_unary_expr(node->unary_expr_node);    
+    }
+    // ( <type-name> ) <cast-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_multiplicative_expr(MultiPlicativeExprNode* node) {
+    // <cast-expression>
+    if (node->multiplicative_expr_node == NULL) {
+        process_cast_expr(node->cast_expr_node);
+    }
+    //   <multiplicative-expression> * <cast-expression>
+    // | <multiplicative-expression> / <cast-expression>
+    // | <multiplicative-expression> % <cast-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_additive_expr(AdditiveExprNode* node) {
+    // <multiplicative-expression>
+    if (node->additive_expr_node == NULL) {
+        process_multiplicative_expr(node->multiplicative_expr_node); 
+    }
+    //   <additive-expression> + <multiplicative-expression>
+    // | <additive-expression> - <multiplicative-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_shift_expr(ShiftExprNode* node) {
+    // <additive-expression>
+    if (node->shift_expr_node == NULL) {
+        process_additive_expr(node->additive_expr_node); 
+    }
+    //   <shift-expression> << <additive-expression>
+    // | <shift-expression> >> <additive-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_relational_expr(RelationalExprNode* node) {
+    // <shift-expression>
+    if (node->relational_expr_node == NULL) {
+        process_shift_expr(node->shift_expr_node);
+    }
+    //   <relational-expression> <  <shift-expression>
+    // | <relational-expression> >  <shift-expression> 
+    // | <relational-expression> <= <shift-expression> 
+    // | <relational-expression> >= <shift-expression> 
+    else {
+        // @todo
+    }
+}
+
+static void process_equality_expr(EqualityExprNode* node) {
+    // <relational-expression>
+    if (node->equality_expr_node == NULL) {
+        process_relational_expr(node->relational_expr_node);
+    }
+    //   <equality-expression> == <relational-expression> 
+    // | <equality-expression> != <relational-expression>  
+    else {
+        // @todo
+    }
+}
+
+static void process_and_expr(AndExprNode* node) {
+    // <equality-expression>
+    if (node->and_expr_node == NULL) {
+        process_equality_expr(node->equality_expr_node);
+    }
+    // 
+    else {
+        // @todo
+    }
+}    
+
+static void process_exclusive_or_expr(ExclusiveOrExprNode* node) {
+    // <and-expression>
+    if (node->exclusive_or_expr_node == NULL) {
+        process_and_expr(node->and_expr_node); 
+    }
+    // <exclusive-or-expression> ^ <and-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_inclusive_or_expr(InclusiveOrExprNode* node) {
+    // <exclusive-or-expression>
+    if (node->inclusive_or_expr_node == NULL) {
+        process_exclusive_or_expr(node->exclusive_or_expr_node);
+    } 
+    // <inclusive-or-expression> | <exclusive-or-expression>
+    else {
+        // @todo
+    }
+}   
+
+static void process_logical_and_expr(LogicalAndExprNode* node) {
+    // <inclusive-or-expression>
+    if (node->logical_and_expr_node == NULL) {
+        process_inclusive_or_expr(node->inclusive_or_expr_node);
+    }
+    // <logical-and-expression> && <inclusive-or-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_logical_or_expr(LogicalOrExprNode* node) {
+    // <logical-and-expression>
+    if (node->logical_or_expr_node == NULL) {
+        process_logical_and_expr(node->logical_and_expr_node);
+    }
+    // <logical-or-expression> || <logical-and-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_conditional_expr(ConditionalExprNode* node) {
+    // <logical-or-expression>
+    if (node->conditional_expr_node == NULL) {
+        process_logical_or_expr(node->logical_or_expr_node);
+    }
+    // <logical-or-expression> ? <expression> : <conditional-expression>
+    else {
+        // @todo
+    }
+}
+
+static void process_assign_expr(AssignExprNode* node) {
+    // <conditional-expression>
+    if (node->conditional_expr_node != NULL) {
+        process_conditional_expr(node->conditional_expr_node);    
+    }
+    // <unary-expression> <assignment-operator> <assignment-expression>
+    else {
+        // @todo
+    }
+}
+
 static void process_expr(ExprNode* node) {
-    print_code("push %d", node->integer_constant);
+    // <assignment-expression>
+    if (node->expr_node == NULL) {
+        process_assign_expr(node->assign_expr_node);
+    }
+    // <expression> , <assignment-expression>
+    else {
+        // @todo
+    }
 }
 
 static void process_return(ReturnNode* node) {

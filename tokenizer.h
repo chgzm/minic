@@ -40,6 +40,7 @@ enum TokenType {
     TK_EXCLA,     // !
     TK_AMP,       // &
     TK_HAT,       // ^
+    TK_TILDE,     // ~
     TK_PIPE,      // |
     TK_HASH,      // #
     TK_COMMA,     // ,

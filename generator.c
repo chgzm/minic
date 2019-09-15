@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "util.h"
+
 static void print_code(char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
@@ -34,7 +36,7 @@ static void process_constant_node(ConstantNode* node) {
         break;
     }
     default: {
-        fprintf(stderr, "Invalid ConstType.\n");
+        error("Invalid ConstType.\n");
         break;
     }
     }
@@ -96,13 +98,29 @@ static void process_multiplicative_expr(MultiPlicativeExprNode* node) {
 
 static void process_additive_expr(AdditiveExprNode* node) {
     // <multiplicative-expression>
+
     if (node->additive_expr_node == NULL) {
         process_multiplicative_expr(node->multiplicative_expr_node); 
     }
     //   <additive-expression> + <multiplicative-expression>
-    // | <additive-expression> - <multiplicative-expression>
-    else {
-        // @todo
+    else if (node->operator_type == OP_PLUS) {
+        process_additive_expr(node->additive_expr_node); 
+        process_multiplicative_expr(node->multiplicative_expr_node); 
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("add rax, rdi");
+        print_code("push rax");
+    }
+    // <additive-expression> - <multiplicative-expression>
+    else if (node->operator_type == OP_MINUS) {
+        process_additive_expr(node->additive_expr_node); 
+        process_multiplicative_expr(node->multiplicative_expr_node); 
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("sub rax, rdi");
+        print_code("push rax");
     }
 }
 

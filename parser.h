@@ -41,6 +41,7 @@ enum TypeSpecifier {
 };
 
 enum OperatorType {
+    OP_NONE,   // None
     OP_ASSIGN, // =
     OP_MUL_EQ, // *= 
     OP_DIV_EQ, // /=
@@ -162,8 +163,10 @@ struct MultiPlicativeExprNode {
 
 struct AdditiveExprNode {
     int                     node_type;
+    int                     operator_type;
     MultiPlicativeExprNode* multiplicative_expr_node;
     AdditiveExprNode*       additive_expr_node;
+
 };
 
 struct ShiftExprNode {

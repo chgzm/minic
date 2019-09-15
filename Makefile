@@ -1,9 +1,9 @@
-CFLAGS=-std=c11 -g -static -Wall
+CFLAGS=-g -static -Wall
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 minic: $(OBJS)
-	cc -o $@ $(OBJS) $(LDFLAGS)
+	gcc -o $@ $(OBJS) $(LDFLAGS)
 
 minic: minic.c tokenizer.c
 

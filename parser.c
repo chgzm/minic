@@ -4,6 +4,8 @@
 #include <stdlib.h> 
 #include <string.h> 
 
+#include "util.h"
+
 static NodeVec* create_nodevec() {
     NodeVec* vec  = malloc(sizeof(NodeVec));
     vec->nodes    = malloc(sizeof(void*) * 16);
@@ -62,7 +64,7 @@ static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
         break; 
     }
     default: {
-        fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
+        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
         return NULL;
     }
     }
@@ -81,7 +83,7 @@ static PrimaryExprNode* create_primary_expr_node(TokenVec* vec, int* index) {
 
     primary_expr_node->constant_node = create_constant_node(vec, index);
     if (primary_expr_node->constant_node == NULL) {
-        fprintf(stderr, "Failed to create constant node.\n");
+        error("Failed to create constant node.\n");
         return NULL;
     }
 
@@ -99,7 +101,7 @@ static PostfixExprNode* create_postfix_expr_node(TokenVec* vec, int* index) {
 
     postfix_expr_node->primary_expr_node = create_primary_expr_node(vec, index);
     if (postfix_expr_node->primary_expr_node == NULL) {
-        fprintf(stderr, "Failed to create primary-expression node.\n");
+        error("Failed to create primary-expression node.\n");
         return NULL;
     }
 
@@ -115,7 +117,7 @@ static UnaryExprNode* create_unary_expr_node(TokenVec* vec, int* index) {
 
     unary_expr_node->postfix_expr_node = create_postfix_expr_node(vec, index);
     if (unary_expr_node->postfix_expr_node == NULL) {
-        fprintf(stderr, "Failed to create postfix-expression node.\n");
+        error("Failed to create postfix-expression node.\n");
         return NULL;
     }
     
@@ -130,7 +132,7 @@ static CastExprNode* create_cast_expr_node(TokenVec* vec, int* index) {
 
     cast_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
     if (cast_expr_node->unary_expr_node == NULL) {
-        fprintf(stderr, "Failed to create unary-expression node.\n");
+        error("Failed to create unary-expression node.\n");
         return NULL;
     }
 
@@ -145,7 +147,7 @@ static MultiPlicativeExprNode* create_multiplicative_expr_node(TokenVec* vec, in
 
     multiplicative_expr_node->cast_expr_node = create_cast_expr_node(vec, index);
     if (multiplicative_expr_node->cast_expr_node == NULL) {
-        fprintf(stderr, "Failed to create cast-expression node.\n");
+        error("Failed to create cast-expression node.\n");
         return NULL;
     }
 
@@ -153,18 +155,37 @@ static MultiPlicativeExprNode* create_multiplicative_expr_node(TokenVec* vec, in
 }
 
 static AdditiveExprNode* create_additive_expr_node(TokenVec* vec, int* index) {
-    AdditiveExprNode* additive_expr_node =  malloc(sizeof(AdditiveExprNode));
+    AdditiveExprNode* additive_expr_node = malloc(sizeof(AdditiveExprNode));
     additive_expr_node->node_type                = ND_ADDITIVE_EXPR;
     additive_expr_node->multiplicative_expr_node = NULL;
     additive_expr_node->additive_expr_node       = NULL;
-
+    additive_expr_node->operator_type            = OP_NONE;
     additive_expr_node->multiplicative_expr_node = create_multiplicative_expr_node(vec, index);
     if (additive_expr_node->multiplicative_expr_node == NULL) {
-        fprintf(stderr, "Failed to create multiplicative-expression node.\n");
+        error("Failed to create multiplicative-expression node.\n");
         return NULL;
     }
 
-    return additive_expr_node;
+    AdditiveExprNode* current = additive_expr_node;
+    Token* token = vec->tokens[*index];
+    while (token->type == TK_PLUS || token->type == TK_MINUS) {
+        ++(*index);
+
+        AdditiveExprNode* p_additive_expr_node = malloc(sizeof(AdditiveExprNode));
+        p_additive_expr_node->node_type                = ND_ADDITIVE_EXPR;
+        p_additive_expr_node->operator_type            = (token->type == TK_PLUS) ? OP_PLUS : OP_MINUS;
+        p_additive_expr_node->additive_expr_node       = current;
+        p_additive_expr_node->multiplicative_expr_node = create_multiplicative_expr_node(vec, index);
+        if (p_additive_expr_node->multiplicative_expr_node == NULL) {
+            error("Failed to create multiplicative-expression node.\n");
+            return NULL;
+        }
+
+        token= vec->tokens[*index];
+        current = p_additive_expr_node;
+    }
+
+    return current;
 }
 
 static ShiftExprNode* create_shift_expr(TokenVec* vec, int* index) {
@@ -175,7 +196,7 @@ static ShiftExprNode* create_shift_expr(TokenVec* vec, int* index) {
  
     shift_expr_node->additive_expr_node = create_additive_expr_node(vec, index);
     if (shift_expr_node->additive_expr_node == NULL) {
-        fprintf(stderr, "Failed to additive-expression node.\n");
+        error("Failed to additive-expression node.\n");
         return NULL;
     }
 
@@ -190,7 +211,7 @@ static RelationalExprNode* create_relational_expr_node(TokenVec* vec, int* index
 
     relational_expr_node->shift_expr_node = create_shift_expr(vec, index);
     if (relational_expr_node->shift_expr_node == NULL) {
-        fprintf(stderr, "Failed to create shift-expression node.\n");
+        error("Failed to create shift-expression node.\n");
         return NULL;
     }
 
@@ -204,7 +225,7 @@ static EqualityExprNode* create_equality_expr_node(TokenVec* vec, int* index) {
 
     equality_expr_node->relational_expr_node = create_relational_expr_node(vec, index);
     if (equality_expr_node->relational_expr_node == NULL) {
-        fprintf(stderr, "Failed to create relational-expression node.\n");
+        error("Failed to create relational-expression node.\n");
         return NULL;
     }
 
@@ -219,7 +240,7 @@ static AndExprNode* create_and_expr_node(TokenVec* vec, int* index) {
 
     and_expr_node->equality_expr_node = create_equality_expr_node(vec, index);
     if (and_expr_node->equality_expr_node == NULL) {
-        fprintf(stderr, "Failed to create equality-expression node.\n");
+        error("Failed to create equality-expression node.\n");
         return NULL;
     }
 
@@ -234,7 +255,7 @@ static ExclusiveOrExprNode* create_exclusive_or_expr_node(TokenVec* vec, int* in
 
     exclusive_or_expr_node->and_expr_node = create_and_expr_node(vec, index);
     if (exclusive_or_expr_node->and_expr_node == NULL) {
-        fprintf(stderr, "Failed to create and-expression node.\n");
+        error("Failed to create and-expression node.\n");
         return NULL;
     }
 
@@ -249,7 +270,7 @@ static InclusiveOrExprNode* create_inclusive_or_expr_node(TokenVec* vec, int* in
   
     inclusive_or_expr_node->exclusive_or_expr_node = create_exclusive_or_expr_node(vec, index);
     if (inclusive_or_expr_node->exclusive_or_expr_node  == NULL) {
-        fprintf(stderr, "Failed to create exclusive-or-expression node.\n");
+        error("Failed to create exclusive-or-expression node.\n");
         return NULL;
     }
 
@@ -264,7 +285,7 @@ static LogicalAndExprNode* create_logical_and_expr_node(TokenVec* vec, int* inde
 
     logical_and_expr_node->inclusive_or_expr_node = create_inclusive_or_expr_node(vec, index);
     if (logical_and_expr_node->inclusive_or_expr_node == NULL) {
-        fprintf(stderr, "Failed to create inclusive-or-expression node.\n");
+        error("Failed to create inclusive-or-expression node.\n");
         return NULL;
     }
 
@@ -279,7 +300,7 @@ static LogicalOrExprNode* create_logical_or_expr_node(TokenVec* vec, int* index)
   
     logical_or_expr_node->logical_and_expr_node = create_logical_and_expr_node(vec, index);
     if (logical_or_expr_node->logical_and_expr_node == NULL) {
-        fprintf(stderr, "Failed to create logical-and-expression node.\n");
+        error("Failed to create logical-and-expression node.\n");
         return NULL;
     }
     
@@ -295,7 +316,7 @@ static ConditionalExprNode* create_conditional_expr_node(TokenVec* vec, int* ind
    
     conditional_expr_node->logical_or_expr_node = create_logical_or_expr_node(vec, index);
     if (conditional_expr_node->logical_or_expr_node == NULL) {
-        fprintf(stderr, "Failed to create logical-or-expression node.\n");
+        error("Failed to create logical-or-expression node.\n");
         return NULL;
     }
 
@@ -311,7 +332,7 @@ static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index) {
    
     assign_expr_node->conditional_expr_node = create_conditional_expr_node(vec, index);
     if (assign_expr_node->conditional_expr_node == NULL) {
-        fprintf(stderr, "Failed to create conditional-expression node.\n");
+        error("Failed to create conditional-expression node.\n");
         return NULL;
     }
 
@@ -327,14 +348,14 @@ static ExprNode* create_expr_node(TokenVec* vec, int* index) {
     if (is_assign_expr(vec, *index)) {
         expr_node->assign_expr_node = create_assign_expr_node(vec, index);
         if (expr_node->assign_expr_node == NULL) {
-            fprintf(stderr, "Failed to create assignment-expression node.\n");
+            error("Failed to create assignment-expression node.\n");
             return NULL;
         }
     } 
     else {
         expr_node->expr_node = create_expr_node(vec, index);
         if (expr_node->expr_node == NULL) {
-            fprintf(stderr, "Failed to create expression node.\n");
+            error("Failed to create expression node.\n");
             return NULL;
         }
 
@@ -342,13 +363,13 @@ static ExprNode* create_expr_node(TokenVec* vec, int* index) {
         ++(*index);
 
         if (token->type != TK_COMMA) {
-            fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
             return NULL;
         }
 
         expr_node->assign_expr_node = create_assign_expr_node(vec, index);
         if (expr_node->assign_expr_node == NULL) {
-            fprintf(stderr, "Failed to create assignment-expression node.\n");
+            error("Failed to create assignment-expression node.\n");
             return NULL;
         }
     }
@@ -363,7 +384,7 @@ static ReturnNode* create_return_node(TokenVec* vec, int* index) {
     if (vec->tokens[*index]->type != TK_SEMICOL) {
         return_node->expr = create_expr_node(vec, index);  
         if (return_node->expr == NULL) {
-            fprintf(stderr, "Failed to create expression node.\n");
+            error("Failed to create expression node.\n");
             return NULL;
         }
     }
@@ -372,7 +393,7 @@ static ReturnNode* create_return_node(TokenVec* vec, int* index) {
     ++(*index);
 
     if (token->type != TK_SEMICOL) {
-        fprintf(stderr, "Invalid token type=%d.\n", token->type);
+        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
         return NULL;
     }
 
@@ -390,14 +411,14 @@ static JumpStmtNode* create_jump_stmt_node(TokenVec* vec, int* index) {
     case TK_RETURN: {
         jump_stmt_node->ret = create_return_node(vec, index);
         if (jump_stmt_node->ret == NULL) {
-            fprintf(stderr, "Failed to create return node.\n");
+            error("Failed to create return node.\n");
             return NULL;
         }
 
         break;
     }
     default: {
-        fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
+        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
         return NULL;
     }
     }  
@@ -415,14 +436,14 @@ static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
     case TK_RETURN: {
         stmt_node->jump_stmt = create_jump_stmt_node(vec, index);
         if (stmt_node->jump_stmt == NULL) {
-            fprintf(stderr, "Failed to create jump-statement node.\n");
+            error("Failed to create jump-statement node.\n");
             return NULL;
         }
 
         break;
     }
     default: {
-        fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
+        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
         return NULL;
     }
     }  
@@ -438,7 +459,7 @@ static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
     {
         Token* token = vec->tokens[*index];
         if (token->type != TK_LBRCKT) {
-            fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -450,7 +471,7 @@ static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
             compound_stmt_node->stmt = create_nodevec();
             StmtNode* stmt_node = create_stmt_node(vec, index);   
             if (stmt_node == NULL) {
-                fprintf(stderr, "Failed to create statement node.\n");
+                error("Failed to create statement node.\n");
                 return NULL;
             }
 
@@ -462,7 +483,7 @@ static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
     {
         Token* token = vec->tokens[*index];
         if (token->type != TK_RBRCKT) {
-            fprintf(stderr, "Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -492,7 +513,7 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
             break;
         }
         default: {
-            fprintf(stderr, "Invalid token type=%d\n", token->type);
+            error("Invalid token type=%d\n", token->type);
             return NULL;
         }
         }
@@ -504,7 +525,7 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
     {
         Token* token = vec->tokens[*index];
         if (token->type != TK_IDENT) {
-            fprintf(stderr, "Invalid token type=%d\n", token->type);
+            error("Invalid token type=%d\n", token->type);
             return NULL;
         }
         func_def_node->identifier = malloc(sizeof(char) * token->strlen);
@@ -517,7 +538,7 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
     {
         Token* token = vec->tokens[*index];
         if (token->type != TK_LPAREN) {
-            fprintf(stderr, "Invalid token type=%d\n", token->type);
+            error("Invalid token type=%d\n", token->type);
             return NULL;
         }
         ++(*index);
@@ -529,7 +550,7 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
     {
         Token* token = vec->tokens[*index];
         if (token->type != TK_RPAREN) {
-            fprintf(stderr, "Invalid token type=%d\n", token->type);
+            error("Invalid token type=%d\n", token->type);
             return NULL;
         }
         ++(*index);
@@ -537,7 +558,7 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
 
     func_def_node->compound_stmt = create_compound_stmt_node(vec, index);   
     if (func_def_node->compound_stmt == NULL) {
-        fprintf(stderr, "Failed to create compound-statement node\n");
+        error("Failed to create compound-statement node\n");
         return NULL;
     }
   
@@ -559,7 +580,7 @@ TransUnitNode* parse(TokenVec* vec) {
     while (index < vec->size) {
         FuncDefNode* func_def_node = create_func_def_node(vec, &index);
         if (func_def_node == NULL) {
-            fprintf(stderr, "Failed to create function-definition node.\n");
+            error("Failed to create function-definition node.\n");
             return NULL;
         }
        

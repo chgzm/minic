@@ -18,5 +18,10 @@ function try() {
 }
 
 try test_return.c 42
+try test_return_add.c 7
+try test_return_add_2.c 12
+try test_return_sub.c 6
+try test_return_sub_2.c 3
+try test_return_add_sub.c 165
 
 echo OK        

@@ -5,6 +5,8 @@
 #include <ctype.h>
 #include <stdbool.h>
 
+#include "util.h"
+
 static TokenVec* tokenvec_create() {
     TokenVec* vec = malloc(sizeof(TokenVec));
     vec->tokens   = malloc(sizeof(Token*) * 1024);
@@ -64,7 +66,7 @@ static Token* read_character(const char* p, int* pos) {
     }
 
     if (p[*pos] != '\'') {
-        fprintf(stderr, "char is not closed.\n");
+        error("char is not closed.\n");
         return NULL;
     }
     ++(*pos);
@@ -479,7 +481,7 @@ TokenVec* tokenize(void* addr) {
         else if (p[pos] == '\'') {
             Token* token = read_character(p, &pos);
             if (token == NULL) {
-                fprintf(stderr, "Failed to read character.\n");
+                error("Failed to read character.\n");
                 return NULL;
             }
             tokenvec_push_back(vec, token);
@@ -487,7 +489,7 @@ TokenVec* tokenize(void* addr) {
         else if (p[pos] == '"') {
             Token* token = read_string(p, &pos);
             if (token == NULL) {
-                fprintf(stderr, "Failed to read string.\n");
+                error("Failed to read string.\n");
                 return NULL;
             }
             tokenvec_push_back(vec, token);
@@ -495,7 +497,7 @@ TokenVec* tokenize(void* addr) {
         else if (is_symbol(p[pos])) {
             Token* token = read_symbol(p, &pos);
             if (token == NULL) {
-                fprintf(stderr, "Failed to read symbol.\n");
+                error("Failed to read symbol.\n");
                 return NULL;
             }
             tokenvec_push_back(vec, token);
@@ -503,7 +505,7 @@ TokenVec* tokenize(void* addr) {
         else if (isalpha(p[pos]) || p[pos] == '_') {
             Token* token = read_identifier(p, &pos);
             if (token == NULL) {
-                fprintf(stderr, "Failed to read identifier.\n");
+                error("Failed to read identifier.\n");
                 return NULL;
             }
             tokenvec_push_back(vec, token);
@@ -511,13 +513,13 @@ TokenVec* tokenize(void* addr) {
         else if (isdigit(p[pos])) {
             Token* token = read_number(p, &pos);
             if (token == NULL) {
-                fprintf(stderr, "Failed to read number.\n");
+                error("Failed to read number.\n");
                 return NULL;
             }
             tokenvec_push_back(vec, token);
         }
         else {
-            fprintf(stderr, "Invalid character='%c'\n", p[pos]);
+            error("Invalid character='%c'\n", p[pos]);
             return NULL;
         }
     }

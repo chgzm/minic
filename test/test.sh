@@ -30,5 +30,7 @@ try test_return_div_2.c 4
 try test_return_mod.c 2
 try test_return_mod_2.c 0
 try test_return_mix.c 33
+try test_return_paren.c 50
+try test_return_paren_2.c 35
 
 echo OK        

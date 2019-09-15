@@ -7,6 +7,8 @@
 
 #include "util.h"
 
+static void process_expr(ExprNode* node);
+
 static void print_code(char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
@@ -46,6 +48,10 @@ static void process_primary_expr(PrimaryExprNode* node) {
     // <constant>
     if (node->constant_node != NULL) {
         process_constant_node(node->constant_node);
+    }
+    // ( <expression> )
+    else if (node->expr_node != NULL) {
+        process_expr(node->expr_node);
     }
     else {
         // @todo

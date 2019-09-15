@@ -6,6 +6,8 @@
 
 #include "util.h"
 
+static ExprNode* create_expr_node(TokenVec* vec, int* index);
+
 static NodeVec* create_nodevec() {
     NodeVec* vec  = malloc(sizeof(NodeVec));
     vec->nodes    = malloc(sizeof(void*) * 16);
@@ -80,11 +82,39 @@ static PrimaryExprNode* create_primary_expr_node(TokenVec* vec, int* index) {
     primary_expr_node->string        = NULL;
     primary_expr_node->identifier    = NULL;
 
+    Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_NUM:
+    case TK_STR: {
+        primary_expr_node->constant_node = create_constant_node(vec, index);
+        if (primary_expr_node->constant_node == NULL) {
+            error("Failed to create constant node.\n");
+            return NULL;
+        }
 
-    primary_expr_node->constant_node = create_constant_node(vec, index);
-    if (primary_expr_node->constant_node == NULL) {
-        error("Failed to create constant node.\n");
+        break;
+    }
+    case TK_LPAREN: {
+        ++(*index);
+        primary_expr_node->expr_node = create_expr_node(vec, index);
+        if (primary_expr_node->expr_node == NULL) {
+            error("Failed to create expression-node.\n");
+            return NULL;
+        }
+        
+        Token* rparen_token = vec->tokens[*index];
+        if (rparen_token->type != TK_RPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(rparen_token->type));
+            return NULL; 
+        }
+        ++(*index);
+         
+        break;
+    }
+    default: {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
         return NULL;
+    }
     }
 
     return primary_expr_node;

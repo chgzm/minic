@@ -2,6 +2,11 @@
 #define UTIL_H
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define error(fmt, ...) \
     _print_tmsp(); \
@@ -10,5 +15,7 @@
 
 void _print_tmsp();
 void _error(char* fmt, ...);
+
+void* mmap_readonly(const char* file_path);
 
 #endif

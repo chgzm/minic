@@ -149,7 +149,7 @@ static Token* read_symbol(const char* p, int* pos) {
             return token;
         }
         default: {
-            token->type = TK_ASTER;
+            token->type = TK_SLASH;
             return token;
         }
         }

@@ -91,8 +91,34 @@ static void process_multiplicative_expr(MultiPlicativeExprNode* node) {
     //   <multiplicative-expression> * <cast-expression>
     // | <multiplicative-expression> / <cast-expression>
     // | <multiplicative-expression> % <cast-expression>
-    else {
-        // @todo
+    else if (node->operator_type == OP_MUL) {
+        process_multiplicative_expr(node->multiplicative_expr_node);
+        process_cast_expr(node->cast_expr_node); 
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("imul rax, rdi");
+        print_code("push rax");
+    }
+    else if (node->operator_type == OP_DIV) {
+        process_multiplicative_expr(node->multiplicative_expr_node);
+        process_cast_expr(node->cast_expr_node); 
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cqo");
+        print_code("idiv rdi");
+        print_code("push rax");
+    }
+    else if (node->operator_type == OP_MOD) {
+        process_multiplicative_expr(node->multiplicative_expr_node);
+        process_cast_expr(node->cast_expr_node); 
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cqo");
+        print_code("idiv rdi");
+        print_code("push rdx");
     }
 }
 
@@ -103,7 +129,7 @@ static void process_additive_expr(AdditiveExprNode* node) {
         process_multiplicative_expr(node->multiplicative_expr_node); 
     }
     //   <additive-expression> + <multiplicative-expression>
-    else if (node->operator_type == OP_PLUS) {
+    else if (node->operator_type == OP_ADD) {
         process_additive_expr(node->additive_expr_node); 
         process_multiplicative_expr(node->multiplicative_expr_node); 
 
@@ -113,7 +139,7 @@ static void process_additive_expr(AdditiveExprNode* node) {
         print_code("push rax");
     }
     // <additive-expression> - <multiplicative-expression>
-    else if (node->operator_type == OP_MINUS) {
+    else if (node->operator_type == OP_SUB) {
         process_additive_expr(node->additive_expr_node); 
         process_multiplicative_expr(node->multiplicative_expr_node); 
 

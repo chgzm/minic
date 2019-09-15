@@ -17,7 +17,7 @@ void _print_tmsp() {
     snprintf(
         buf
       , 30
-      , "%d/%02d/%02d %02d:%02d:%02d.%09ld"
+      , "%4d/%02d/%02d %02d:%02d:%02d.%09ld"
       , tm.tm_year + 1900
       , tm.tm_mon + 1
       , tm.tm_mday

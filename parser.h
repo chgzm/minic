@@ -51,10 +51,12 @@ enum OperatorType {
     OP_AND_EQ, // &=
     OP_XOR_EQ, // ^=
     OP_OR_EQ,  // |=
-    OP_AMP,    // &
-    OP_ASTER,  // *
-    OP_PLUS,   // +
-    OP_MINUS,  // -
+    OP_AND,    // &
+    OP_ADD,    // +
+    OP_SUB,    // -
+    OP_MUL,    // *
+    OP_DIV,    // /
+    OP_MOD,    // %
     OP_TILDE,  // ~
     OP_EXCLA,  // !
 };
@@ -157,6 +159,7 @@ struct CastExprNode {
 
 struct MultiPlicativeExprNode {
     int                     node_type;
+    int                     operator_type;
     CastExprNode*           cast_expr_node;
     MultiPlicativeExprNode* multiplicative_expr_node;
 };

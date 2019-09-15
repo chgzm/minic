@@ -142,24 +142,46 @@ static CastExprNode* create_cast_expr_node(TokenVec* vec, int* index) {
 static MultiPlicativeExprNode* create_multiplicative_expr_node(TokenVec* vec, int* index) {
     MultiPlicativeExprNode* multiplicative_expr_node = malloc(sizeof(MultiPlicativeExprNode));
     multiplicative_expr_node->node_type                = ND_MULTIPLICATIVE_EXPR;
+    multiplicative_expr_node->operator_type            = OP_NONE;
     multiplicative_expr_node->cast_expr_node           = NULL;
     multiplicative_expr_node->multiplicative_expr_node = NULL;
-
-    multiplicative_expr_node->cast_expr_node = create_cast_expr_node(vec, index);
+    multiplicative_expr_node->cast_expr_node           = create_cast_expr_node(vec, index);
     if (multiplicative_expr_node->cast_expr_node == NULL) {
         error("Failed to create cast-expression node.\n");
         return NULL;
     }
 
-    return multiplicative_expr_node;
+    MultiPlicativeExprNode* current = multiplicative_expr_node;
+    Token* token = vec->tokens[*index];
+    while (token->type == TK_ASTER || token->type == TK_SLASH || token->type == TK_PER) {
+        ++(*index);
+
+        MultiPlicativeExprNode* p_multiplicative_expr_node = malloc(sizeof(MultiPlicativeExprNode));
+        p_multiplicative_expr_node->node_type                = ND_MULTIPLICATIVE_EXPR;
+        p_multiplicative_expr_node->multiplicative_expr_node = current;
+        p_multiplicative_expr_node->cast_expr_node           = create_cast_expr_node(vec, index);
+        if (p_multiplicative_expr_node->cast_expr_node == NULL) {
+            error("Failed to create cast-expression node.\n");
+            return NULL; 
+        }
+
+        if      (token->type == TK_ASTER) { p_multiplicative_expr_node->operator_type = OP_MUL; }
+        else if (token->type == TK_SLASH) { p_multiplicative_expr_node->operator_type = OP_DIV; }
+        else if (token->type == TK_PER)   { p_multiplicative_expr_node->operator_type = OP_MOD; }
+
+        token = vec->tokens[*index];
+        current = p_multiplicative_expr_node;
+    }
+
+    return current;
 }
 
 static AdditiveExprNode* create_additive_expr_node(TokenVec* vec, int* index) {
     AdditiveExprNode* additive_expr_node = malloc(sizeof(AdditiveExprNode));
     additive_expr_node->node_type                = ND_ADDITIVE_EXPR;
+    additive_expr_node->operator_type            = OP_NONE;
     additive_expr_node->multiplicative_expr_node = NULL;
     additive_expr_node->additive_expr_node       = NULL;
-    additive_expr_node->operator_type            = OP_NONE;
     additive_expr_node->multiplicative_expr_node = create_multiplicative_expr_node(vec, index);
     if (additive_expr_node->multiplicative_expr_node == NULL) {
         error("Failed to create multiplicative-expression node.\n");
@@ -173,7 +195,7 @@ static AdditiveExprNode* create_additive_expr_node(TokenVec* vec, int* index) {
 
         AdditiveExprNode* p_additive_expr_node = malloc(sizeof(AdditiveExprNode));
         p_additive_expr_node->node_type                = ND_ADDITIVE_EXPR;
-        p_additive_expr_node->operator_type            = (token->type == TK_PLUS) ? OP_PLUS : OP_MINUS;
+        p_additive_expr_node->operator_type            = (token->type == TK_PLUS) ? OP_ADD: OP_SUB;
         p_additive_expr_node->additive_expr_node       = current;
         p_additive_expr_node->multiplicative_expr_node = create_multiplicative_expr_node(vec, index);
         if (p_additive_expr_node->multiplicative_expr_node == NULL) {

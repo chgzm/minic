@@ -14,7 +14,7 @@
     _error(fmt, ## __VA_ARGS__); 
 
 void _print_tmsp();
-void _error(char* fmt, ...);
+void _error(const char* fmt, ...);
 
 void* mmap_readonly(const char* file_path);
 

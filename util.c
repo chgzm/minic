@@ -30,7 +30,7 @@ void _print_tmsp() {
     fprintf(stderr, "[%s ", buf);
 }
 
-void _error(char *fmt, ...) {
+void _error(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);

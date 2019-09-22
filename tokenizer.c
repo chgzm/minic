@@ -26,17 +26,11 @@ static void tokenvec_push_back(TokenVec* vec, Token* token) {
     ++(vec->size);
 }
 
-#if 0
-static bool starts_with(char* s1, char* s2) {
-    return (strncmp(s1, s2, strlen(s2)) == 0);
-}
-#endif
-
 static bool is_symbol(char p) {
     switch (p) {
     case '+': case '-':
-    case '*': case '/':
-    case '%': case '=':
+    case '*': case '/': 
+    case '%': case '=': 
     case ';': case ':':
     case '(': case ')':
     case '{': case '}':
@@ -324,82 +318,145 @@ static Token* read_identifier(const char* p, int* pos) {
     // Check if string equals to keywords.
     // For speed, avoid comparing with all keywords by using head character.
     //
+
     switch (p[*pos]) {
-    case 'i': {
-        if (len != 2 && len != 3) {
+    case 'a': {
+        if (len != 4) {
             break;
         }
 
-        if (strncmp("int", &p[*pos], 3) == 0) {
-            token->type = TK_INT;
+        if (strncmp("auto", &p[*pos], 4) == 0) {
+            token->type = TK_AUTO;
+        } 
+        
+        break;
+    }
+    case 'b': {
+        if (len != 5) {
+            break;
         }
-        else if (strncmp("if", &p[*pos], 2) == 0) {
-            token->type = TK_IF;
+
+        if (strncmp("break", &p[*pos], 5) == 0) {
+            token->type = TK_BREAK;
         }
 
         break;
     }
     case 'c': {
-        if (len != 4 && len != 8) {
+        if (len != 4 && len != 5 && len != 8) {
             break;
         }
 
-        if (strncmp("char", &p[*pos], 4) == 0) {
-            token->type = TK_CHAR;
-        }
-        else if (strncmp("case", &p[*pos], 4) == 0) {
-            token->type = TK_CASE;
-        }
-        else if (strncmp("continue", &p[*pos], 8) == 0) {
-            token->type = TK_CONTINUE;
-        }
+        if      (strncmp("char",     &p[*pos], 4) == 0) { token->type = TK_CHAR;     }
+        else if (strncmp("case",     &p[*pos], 4) == 0) { token->type = TK_CASE;     }
+        else if (strncmp("const",    &p[*pos], 5) == 0) { token->type = TK_CONST;    }
+        else if (strncmp("continue", &p[*pos], 8) == 0) { token->type = TK_CONTINUE; }
 
         break;
     }
-    case 'v': {
-        if (len != 4) {
-            break;
-        }
-
-        if (strncmp("void", &p[*pos], 4) == 0) {
-            token->type = TK_VOID;
-        }
-
-        break;
-    }
-    case 's': {
+    case 'd': {
         if (len != 6) {
             break;
         }
 
-        if (strncmp("struct", &p[*pos], 6) == 0) {
-            token->type = TK_STRUCT;
-        }
-        else if (strncmp("switch", &p[*pos], 6) == 0) {
-            token->type = TK_SWITCH;
+        if (strncmp("double", &p[*pos], 6) == 0) {
+            token->type = TK_DOUBLE;
         }
 
         break;
     }
     case 'e': {
-        if (len != 4) {
+        if (len != 4 && len != 6) {
             break;
         }
 
-        if (strncmp("else", &p[*pos], 4) == 0) {
-            token->type = TK_ELSE;
-        }
+        if      (strncmp("else",   &p[*pos], 4) == 0) { token->type = TK_ELSE;   } 
+        else if (strncmp("extern", &p[*pos], 6) == 0) { token->type = TK_EXTERN; }
 
         break;
     }
     case 'f': {
-        if (len != 3) {
+        if (len != 3 && len != 5) {
             break;
         }
 
-        if (strncmp("for", &p[*pos], 3) == 0) {
-            token->type = TK_FOR;
+        if      (strncmp("for",   &p[*pos], 3) == 0) { token->type = TK_FOR;   }
+        else if (strncmp("float", &p[*pos], 5) == 0) { token->type = TK_FLOAT; }
+
+        break;
+    }
+    case 'i': {
+        if (len != 2 && len != 3) {
+            break;
         }
+
+        if      (strncmp("if",  &p[*pos], 2) == 0) { token->type = TK_IF;  }
+        else if (strncmp("int", &p[*pos], 3) == 0) { token->type = TK_INT; }
+
+        break;
+    }
+    case 'l': {
+        if (len != 4) {
+            break;
+        }
+
+        if (strncmp("long", &p[*pos], 4) == 0) {
+            token->type = TK_LONG;
+        }
+
+        break;
+    }
+    case 'r': {
+        if (len != 6 && len != 8) {
+            break;
+        }
+
+        if      (strncmp("return",   &p[*pos], 6) == 0) { token->type = TK_RETURN;   }
+        else if (strncmp("register", &p[*pos], 8) == 0) { token->type = TK_REGISTER; }
+
+        break;
+    }
+    case 's': {
+        if (len != 5 && len != 6) {
+            break;
+        }
+
+        if      (strncmp("short",  &p[*pos], 5) == 0) { token->type = TK_SHORT;  }
+        else if (strncmp("struct", &p[*pos], 6) == 0) { token->type = TK_STRUCT; }
+        else if (strncmp("switch", &p[*pos], 6) == 0) { token->type = TK_SWITCH; }
+        else if (strncmp("static", &p[*pos], 6) == 0) { token->type = TK_STATIC; }
+        else if (strncmp("signed", &p[*pos], 6) == 0) { token->type = TK_SIGNED; }
+
+        break;
+    }
+    case 't': {
+        if (len != 7) {
+            break;
+        }
+
+        if (strncmp("typedef", &p[*pos], 7) == 0) { 
+            token->type = TK_TYPEDEF;
+        }
+
+        break;
+    }
+    case 'u': {
+        if (len != 5 && len != 8) {
+            break;
+        }
+
+        if      (strncmp("union",    &p[*pos], 5) == 0) { token->type = TK_UNION;    }
+        else if (strncmp("unsigned", &p[*pos], 8) == 0) { token->type = TK_UNSIGNED; }
+
+        break;
+    }
+    case 'v': {
+        if (len != 4 && len != 8) {
+            break;
+        }
+
+        if      (strncmp("void",     &p[*pos], 4) == 0) { token->type = TK_VOID;     }
+        else if (strncmp("volatile", &p[*pos], 8) == 0) { token->type = TK_VOLATILE; }
 
         break;
     }
@@ -412,26 +469,6 @@ static Token* read_identifier(const char* p, int* pos) {
             token->type = TK_WHILE;
         }
 
-        break;
-    }
-    case 'b': {
-        if (len != 5) {
-            break;
-        }
-
-        if (strncmp("break", &p[*pos], 5) == 0) {
-            token->type = TK_BREAK;
-        }
-        break;
-    }
-    case 'r': {
-        if (len != 6) {
-            break;
-        }
-
-        if (strncmp("return", &p[*pos], 6) == 0) {
-            token->type = TK_RETURN;
-        }
         break;
     }
     default: {

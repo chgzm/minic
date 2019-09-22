@@ -8,10 +8,24 @@ enum TokenType {
     TK_NUM,       // number literal
     TK_STR,       // string literal
     TK_IDENT,     // identifier
-    TK_INT,       // "int"
-    TK_CHAR,      // "char"
+    TK_AUTO,      // "auto"
+    TK_REGISTER,  // "register"
+    TK_STATIC,    // "static"
+    TK_EXTERN,    // "extern"
+    TK_TYPEDEF,   // "typedef"
     TK_VOID,      // "void"
+    TK_CHAR,      // "char"
+    TK_SHORT,     // "short"
+    TK_INT,       // "int"
+    TK_LONG,      // "long"
+    TK_FLOAT,     // "float"
+    TK_DOUBLE,    // "double"
+    TK_SIGNED,    // "signed"
+    TK_UNSIGNED,  // "unsigned"
     TK_STRUCT,    // "struct"
+    TK_UNION,     // "union"
+    TK_CONST,     // "const"
+    TK_VOLATILE,  // "volatile"
     TK_IF,        // "if"
     TK_ELSE,      // "else"
     TK_FOR,       // "for"
@@ -65,13 +79,6 @@ enum TokenType {
     TK_OR_EQ,     // |=
     TK_EOF,       // EOF
 };
-
-#if 0
-static const char* keywords[] = {
-    "int", "char", "void", "struct", "if", "else", "for", "while", 
-    "switch", "case", "break", "continue", "return"
-};
-#endif
 
 struct Token {
     int type;

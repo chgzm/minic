@@ -5,6 +5,7 @@
 
 enum NodeType {
     ND_TRANS_UNIT,
+    ND_EXTERNAL_DECL,
     ND_FUNC_DEF,
     ND_EXPR,
     ND_RETURN, 
@@ -69,7 +70,9 @@ enum ConstType {
 
 typedef struct NodeVec NodeVec;
 typedef struct TransUnitNode TransUnitNode;
+typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
+typedef struct DeclNode DeclNode;
 typedef struct ConstantNode ConstantNode;
 typedef struct PrimaryExprNode PrimaryExprNode;
 typedef struct PostfixExprNode PostfixExprNode;
@@ -106,14 +109,24 @@ struct NodeVec {
 
 struct TransUnitNode {
     int      node_type;
-    NodeVec* func_def;
+    NodeVec* external_decl_nodes;
+};
+
+struct ExternalDeclNode {
+    int          node_type;
+    FuncDefNode* func_def_node;
+    DeclNode*    decl_node;
 };
 
 struct FuncDefNode {
     int               node_type;
     int               type_specifier;
     char*             identifier;
-    CompoundStmtNode* compound_stmt;
+    CompoundStmtNode* compound_stmt_node;
+};
+
+struct DeclNode {
+    int node_type;
 };
 
 struct ConstantNode {
@@ -253,7 +266,8 @@ struct CompoundStmtNode {
 
 struct StmtNode {
     int           node_type;
-    JumpStmtNode* jump_stmt;
+    ExprStmtNode* expr_stmt_node; 
+    JumpStmtNode* jump_stmt_node;
 };
 
 struct LabeledStmtNode {

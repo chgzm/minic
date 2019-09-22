@@ -43,10 +43,6 @@ static bool is_unary_operator(TokenVec* vec, int index) {
     }
 }
 
-static bool is_assign_expr(TokenVec* vec, int index) {
-    return true;
-}
-
 static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
     ConstantNode* constant_node = malloc(sizeof(ConstantNode));
     constant_node->node_type = ND_CONSTANT;
@@ -381,11 +377,38 @@ static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index) {
     assign_expr_node->conditional_expr_node = NULL;
     assign_expr_node->unary_expr_node       = NULL;
     assign_expr_node->assign_expr_node      = NULL;
-   
-    assign_expr_node->conditional_expr_node = create_conditional_expr_node(vec, index);
-    if (assign_expr_node->conditional_expr_node == NULL) {
-        error("Failed to create conditional-expression node.\n");
-        return NULL;
+    assign_expr_node->assign_operator       = OP_NONE;
+  
+    const int buf = *index;
+    assign_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
+    Token* token = vec->tokens[*index];
+    if (token->type == TK_ASSIGN || token->type == TK_MUL_EQ || token->type == TK_DIV_EQ 
+     || token->type == TK_MOD_EQ || token->type == TK_ADD_EQ || token->type == TK_SUB_EQ 
+     || token->type == TK_AND_EQ || token->type == TK_XOR_EQ || token->type == TK_OR_EQ) {
+        if      (token->type == TK_ASSIGN) { assign_expr_node->assign_operator = OP_ASSIGN; }
+        else if (token->type == TK_MUL_EQ) { assign_expr_node->assign_operator = OP_MUL_EQ; }
+        else if (token->type == TK_DIV_EQ) { assign_expr_node->assign_operator = OP_DIV_EQ; }
+        else if (token->type == TK_MOD_EQ) { assign_expr_node->assign_operator = OP_MOD_EQ; }
+        else if (token->type == TK_ADD_EQ) { assign_expr_node->assign_operator = OP_ADD_EQ; }
+        else if (token->type == TK_SUB_EQ) { assign_expr_node->assign_operator = OP_SUB_EQ; }
+        else if (token->type == TK_AND_EQ) { assign_expr_node->assign_operator = OP_AND_EQ; }
+        else if (token->type == TK_XOR_EQ) { assign_expr_node->assign_operator = OP_XOR_EQ; }
+        else if (token->type == TK_OR_EQ)  { assign_expr_node->assign_operator = OP_OR_EQ;  } 
+ 
+        assign_expr_node->assign_expr_node = create_assign_expr_node(vec, index);
+        if (assign_expr_node->assign_expr_node == NULL) {
+            error("Failed to create assign-expression node.\n");
+            return NULL;
+        }
+    } else {
+        assign_expr_node->unary_expr_node = NULL;
+        *index = buf;
+
+        assign_expr_node->conditional_expr_node = create_conditional_expr_node(vec, index);
+        if (assign_expr_node->conditional_expr_node == NULL) {
+            error("Failed to create conditional-expression node.\n");
+            return NULL;
+        }
     }
 
     return assign_expr_node; 
@@ -397,36 +420,30 @@ static ExprNode* create_expr_node(TokenVec* vec, int* index) {
     expr_node->assign_expr_node = NULL;
     expr_node->expr_node        = NULL;
 
-    if (is_assign_expr(vec, *index)) {
-        expr_node->assign_expr_node = create_assign_expr_node(vec, index);
-        if (expr_node->assign_expr_node == NULL) {
-            error("Failed to create assignment-expression node.\n");
-            return NULL;
-        }
-    } 
-    else {
-        expr_node->expr_node = create_expr_node(vec, index);
-        if (expr_node->expr_node == NULL) {
-            error("Failed to create expression node.\n");
-            return NULL;
-        }
-
-        Token* token = vec->tokens[*index];
+    expr_node->assign_expr_node = create_assign_expr_node(vec, index);
+    if (expr_node->assign_expr_node == NULL) {
+        error("Failed to create assignment-expression node.\n");
+        return NULL;
+    }
+    
+    ExprNode* current = expr_node; 
+    Token* token = vec->tokens[*index];
+    while (token->type == TK_COMMA) {
         ++(*index);
-
-        if (token->type != TK_COMMA) {
-            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+        ExprNode* p_expr_node = malloc(sizeof(ExprNode));
+        p_expr_node->node_type        = ND_EXPR;
+        p_expr_node->expr_node        = current;
+        p_expr_node->assign_expr_node = create_assign_expr_node(vec, index);
+        if (p_expr_node->assign_expr_node == NULL) {
+            error("Failed to create assing-expression node.\n");
             return NULL;
         }
 
-        expr_node->assign_expr_node = create_assign_expr_node(vec, index);
-        if (expr_node->assign_expr_node == NULL) {
-            error("Failed to create assignment-expression node.\n");
-            return NULL;
-        }
+        token = vec->tokens[*index];
+        current = p_expr_node;
     }
    
-    return expr_node;
+    return current;
 }
 
 static ReturnNode* create_return_node(TokenVec* vec, int* index) {
@@ -478,6 +495,31 @@ static JumpStmtNode* create_jump_stmt_node(TokenVec* vec, int* index) {
     return jump_stmt_node;
 }
 
+static ExprStmtNode* create_expr_stmt_node(TokenVec* vec, int* index) {
+    ExprStmtNode* expr_stmt_node = malloc(sizeof(ExprStmtNode)); 
+   
+    Token* token = vec->tokens[*index];
+    if (token->type == TK_SEMICOL) {
+        expr_stmt_node->expr_node = NULL;
+        ++(*index);
+    }
+    else {
+        expr_stmt_node->expr_node = create_expr_node(vec, index);
+        if (expr_stmt_node->expr_node == NULL) {
+            error("Failed to create expression-node.\n");
+            return NULL;
+        }
+        token = vec->tokens[*index];
+        if (token->type != TK_SEMICOL) {
+            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+    }
+
+    return expr_stmt_node;
+}
+
 static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
     StmtNode* stmt_node = malloc(sizeof(StmtNode));
     stmt_node->node_type = ND_STMT;
@@ -486,8 +528,8 @@ static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
 
     switch (token->type) {
     case TK_RETURN: {
-        stmt_node->jump_stmt = create_jump_stmt_node(vec, index);
-        if (stmt_node->jump_stmt == NULL) {
+        stmt_node->jump_stmt_node = create_jump_stmt_node(vec, index);
+        if (stmt_node->jump_stmt_node == NULL) {
             error("Failed to create jump-statement node.\n");
             return NULL;
         }
@@ -495,8 +537,13 @@ static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
         break;
     }
     default: {
-        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
-        return NULL;
+        stmt_node->expr_stmt_node = create_expr_stmt_node(vec, index);
+        if (stmt_node->expr_stmt_node == NULL) {
+            error("Failed to create expression-statement node.\n");
+            return NULL;
+        }
+
+        break;
     }
     }  
 
@@ -608,8 +655,8 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
         ++(*index);
     }
 
-    func_def_node->compound_stmt = create_compound_stmt_node(vec, index);   
-    if (func_def_node->compound_stmt == NULL) {
+    func_def_node->compound_stmt_node = create_compound_stmt_node(vec, index);   
+    if (func_def_node->compound_stmt_node == NULL) {
         error("Failed to create compound-statement node\n");
         return NULL;
     }
@@ -617,10 +664,24 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
     return func_def_node;
 }
 
+static ExternalDeclNode* create_external_decl_node(TokenVec* vec, int* index) {
+    ExternalDeclNode* external_decl_node = malloc(sizeof(ExternalDeclNode));
+    external_decl_node->node_type = ND_EXTERNAL_DECL;
+    external_decl_node->decl_node = NULL;
+
+    external_decl_node->func_def_node = create_func_def_node(vec, index);
+    if (external_decl_node->func_def_node == NULL) {
+        error ("Failed to create function-definition node.\n");
+        return NULL;
+    }
+
+    return external_decl_node;
+}
+
 static TransUnitNode* create_trans_unit_node() {
     TransUnitNode* trans_unit_node = malloc(sizeof(TransUnitNode));
-    trans_unit_node->node_type = ND_TRANS_UNIT;
-    trans_unit_node->func_def  = create_nodevec();
+    trans_unit_node->node_type           = ND_TRANS_UNIT;
+    trans_unit_node->external_decl_nodes = create_nodevec();
 
     return trans_unit_node;
 }
@@ -630,13 +691,13 @@ TransUnitNode* parse(TokenVec* vec) {
     
     int index = 0;
     while (index < vec->size) {
-        FuncDefNode* func_def_node = create_func_def_node(vec, &index);
-        if (func_def_node == NULL) {
-            error("Failed to create function-definition node.\n");
+        ExternalDeclNode* external_decl_node = create_external_decl_node(vec, &index);
+        if (external_decl_node == NULL) {
+            error("Failed to create external-declaration node.\n");
             return NULL;
         }
        
-        nodevec_push_back(trans_unit_node->func_def, func_def_node);
+        nodevec_push_back(trans_unit_node->external_decl_nodes, external_decl_node);
     }
            
     return trans_unit_node;

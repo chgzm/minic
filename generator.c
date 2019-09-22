@@ -298,8 +298,8 @@ static void process_jump_stmt(JumpStmtNode* node) {
 }
 
 static void process_stmt(StmtNode* node) {
-    if (node->jump_stmt != NULL) {
-        process_jump_stmt(node->jump_stmt);
+    if (node->jump_stmt_node != NULL) {
+        process_jump_stmt(node->jump_stmt_node);
     }
 }
 
@@ -312,17 +312,23 @@ static void process_compound_stmt(CompoundStmtNode* node) {
 static void process_func_def(FuncDefNode* node) {
     printf("%s:\n", node->identifier);
    
-    if (node->compound_stmt != NULL) {
-        process_compound_stmt(node->compound_stmt);
+    if (node->compound_stmt_node != NULL) {
+        process_compound_stmt(node->compound_stmt_node);
     } 
+}
+
+static void process_external_decl(ExternalDeclNode* node) {
+    if (node->func_def_node != NULL) {
+        process_func_def(node->func_def_node);
+    }
 }
 
 void gen(TransUnitNode* node) {
     print_header();
     print_global(node);
     
-    for (int i = 0; i < node->func_def->size; ++i) {
-        FuncDefNode* func_def_node = (FuncDefNode*)(node->func_def->nodes[i]);
-        process_func_def(func_def_node);
+    for (int i = 0; i < node->external_decl_nodes->size; ++i) {
+        ExternalDeclNode* external_decl_node = (ExternalDeclNode*)(node->external_decl_nodes->nodes[i]);
+        process_external_decl(external_decl_node);
     } 
 }

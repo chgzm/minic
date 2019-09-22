@@ -305,7 +305,7 @@ static void process_stmt(const StmtNode* node) {
 
 static void process_compound_stmt(const CompoundStmtNode* node) {
     for (int i = 0; i < node->stmt_nodes->size; ++i) {
-        process_stmt((const StmtNode*)(node->stmt_nodes->nodes[i]));
+        process_stmt((const StmtNode*)(node->stmt_nodes->elements[i]));
     }
 }
 
@@ -317,7 +317,7 @@ static int count_localvars_in_func_def(const FuncDefNode* node) {
 
     int cnt = 0;
     for (int i = 0; i < compound_stmt_node->declaration_nodes->size; ++i) {
-        const DeclarationNode* declaration_node = (DeclarationNode*)(compound_stmt_node->declaration_nodes->nodes[i]);
+        const DeclarationNode* declaration_node = (DeclarationNode*)(compound_stmt_node->declaration_nodes->elements[i]);
         cnt += declaration_node->init_declarator_nodes->size;
     }
     
@@ -345,7 +345,7 @@ void gen(TransUnitNode* node) {
     print_global(node);
     
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
-        const ExternalDeclNode* external_decl_node = (ExternalDeclNode*)(node->external_decl_nodes->nodes[i]);
+        const ExternalDeclNode* external_decl_node = (ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
         process_external_decl(external_decl_node);
     } 
 }

@@ -4,29 +4,9 @@
 #include <stdlib.h> 
 #include <string.h> 
 
-#include "util.h"
-
 static ExprNode* create_expr_node(TokenVec* vec, int* index);
 
-static NodeVec* create_nodevec() {
-    NodeVec* vec  = malloc(sizeof(NodeVec));
-    vec->nodes    = malloc(sizeof(void*) * 16);
-    vec->capacity = 16;
-    vec->size     = 0;
-
-    return vec;
-}
-
-static void nodevec_push_back(NodeVec* vec, void* node) {
-    if (vec->size == (vec->capacity - 1)) {
-        vec->capacity *= 2;
-        vec->nodes = realloc(vec->nodes, sizeof(void*) * vec->capacity);
-    }
-
-    vec->nodes[vec->size] = node;
-    ++(vec->size);
-}
-
+#if 0
 static bool is_unary_operator(TokenVec* vec, int index) {
     Token* token = vec->tokens[index]; 
     if (token->type == TK_AMP 
@@ -42,6 +22,7 @@ static bool is_unary_operator(TokenVec* vec, int index) {
         return false;
     }
 }
+#endif
 
 static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
     ConstantNode* constant_node = malloc(sizeof(ConstantNode));
@@ -542,14 +523,14 @@ static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
     // <statement>*
     {
         while (vec->tokens[*index]->type != TK_RBRCKT) {
-            compound_stmt_node->stmt_nodes = create_nodevec();
+            compound_stmt_node->stmt_nodes = create_ptr_vector();
             StmtNode* stmt_node = create_stmt_node(vec, index);   
             if (stmt_node == NULL) {
                 error("Failed to create statement node.\n");
                 return NULL;
             }
 
-            nodevec_push_back(compound_stmt_node->stmt_nodes, (void*)(stmt_node));
+            ptr_vector_push_back(compound_stmt_node->stmt_nodes, (void*)(stmt_node));
         }
     }    
 
@@ -653,7 +634,7 @@ static ExternalDeclNode* create_external_decl_node(TokenVec* vec, int* index) {
 
 static TransUnitNode* create_trans_unit_node() {
     TransUnitNode* trans_unit_node = malloc(sizeof(TransUnitNode));
-    trans_unit_node->external_decl_nodes = create_nodevec();
+    trans_unit_node->external_decl_nodes = create_ptr_vector();
 
     return trans_unit_node;
 }
@@ -669,7 +650,7 @@ TransUnitNode* parse(TokenVec* vec) {
             return NULL;
         }
        
-        nodevec_push_back(trans_unit_node->external_decl_nodes, external_decl_node);
+        ptr_vector_push_back(trans_unit_node->external_decl_nodes, external_decl_node);
     }
            
     return trans_unit_node;

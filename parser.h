@@ -2,6 +2,7 @@
 #define PARSER_H
 
 #include "tokenizer.h"
+#include "util.h"
 
 enum TypeSpecifier {
     TYPE_INT,
@@ -35,8 +36,6 @@ enum ConstType {
     CONST_STR,
     CONST_FLOAT,
 };
-
-typedef struct NodeVec NodeVec;
 
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
@@ -95,14 +94,8 @@ typedef struct JumpStmtNode JumpStmtNode;
 
 typedef struct ReturnNode ReturnNode;
 
-struct NodeVec {
-    void** nodes;     
-    int    size; 
-    int    capacity;
-};
-
 struct TransUnitNode {
-    NodeVec* external_decl_nodes;
+    PtrVector* external_decl_nodes;
 };
 
 struct ExternalDeclNode {
@@ -284,8 +277,8 @@ struct TypedefNameNode {
 };
 
 struct DeclarationNode {
-    NodeVec* decl_specifier_nodes;
-    NodeVec* init_declarator_nodes;
+    PtrVector* decl_specifier_nodes;
+    PtrVector* init_declarator_nodes;
 };
 
 struct InitDeclaratorNode {
@@ -298,8 +291,8 @@ struct InitializerListNode {
 };
 
 struct CompoundStmtNode {
-    NodeVec* declaration_nodes;
-    NodeVec* stmt_nodes;
+    PtrVector* declaration_nodes;
+    PtrVector* stmt_nodes;
 };
 
 struct StmtNode {

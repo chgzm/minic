@@ -6,6 +6,10 @@
 #include <stdarg.h>
 #include <time.h>
 
+//
+// error
+//
+
 void _print_tmsp() {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -18,8 +22,7 @@ void _print_tmsp() {
         buf
       , 30
       , "%4d/%02d/%02d %02d:%02d:%02d.%09ld"
-      , tm.tm_year + 1900
-      , tm.tm_mon + 1
+      , tm.tm_year + 1900 , tm.tm_mon + 1
       , tm.tm_mday
       , tm.tm_hour
       , tm.tm_min
@@ -35,6 +38,10 @@ void _error(const char *fmt, ...) {
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
 }
+
+//
+// mmap
+// 
 
 void* mmap_readonly(const char* file_path) {
     const int fd = open(file_path, O_RDONLY);
@@ -62,4 +69,27 @@ void* mmap_readonly(const char* file_path) {
     }
 
     return addr;
+}
+
+//
+// Vector for Pointers
+//
+
+PtrVector* create_ptr_vector() {
+    PtrVector* vec = malloc(sizeof(PtrVector));
+    vec->elements  = malloc(sizeof(void*) * 16);
+    vec->capacity  = 16;
+    vec->size      = 0;
+
+    return vec;
+}
+
+void ptr_vector_push_back(PtrVector* vec, void* e) {
+    if (vec->size == vec->capacity) {
+        vec->capacity *= 2;
+        vec->elements = realloc(vec->elements, sizeof(void*) * vec->capacity);
+    }
+
+    vec->elements[vec->size] = e;
+    ++(vec->size);
 }

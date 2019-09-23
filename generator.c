@@ -28,7 +28,16 @@ static void print_global(const TransUnitNode* node) {
     printf(".global main\n\n");
 }
 
-static void process_identifier(const char* identifier, int len) {
+static void process_identifier_left(const char* identifier, int len) {
+    const LocalVar* localvar = get_localvar(identifier, len);
+    if (localvar != NULL) {
+        print_code("mov rax, rbp");
+        print_code("sub rax, %d", localvar->offset);
+        print_code("push rax");
+    }
+}
+
+static void process_identifier_right(const char* identifier, int len) {
     const LocalVar* localvar = get_localvar(identifier, len);
     if (localvar != NULL) {
         print_code("mov rax, rbp");
@@ -57,7 +66,7 @@ static void process_constant_node(const ConstantNode* node) {
     }
 }
 
-static void process_primary_expr(const PrimaryExprNode* node) {
+static void process_primary_expr_left(const PrimaryExprNode* node) {
     // <constant>
     if (node->constant_node != NULL) {
         process_constant_node(node->constant_node);
@@ -68,27 +77,65 @@ static void process_primary_expr(const PrimaryExprNode* node) {
     }
     // <identifier>
     else if (node->identifier != NULL) {
-        process_identifier(node->identifier, node->identifier_len);  
+        process_identifier_left(node->identifier, node->identifier_len);  
     }
     else {
         // @todo
     }
 }
 
-static void process_postfix_expr(const PostfixExprNode* node) {
+static void process_primary_expr_right(const PrimaryExprNode* node) {
+    // <constant>
+    if (node->constant_node != NULL) {
+        process_constant_node(node->constant_node);
+    }
+    // ( <expression> )
+    else if (node->expr_node != NULL) {
+        process_expr(node->expr_node);
+    }
+    // <identifier>
+    else if (node->identifier != NULL) {
+        process_identifier_right(node->identifier, node->identifier_len);  
+    }
+    else {
+        // @todo
+    }
+}
+
+static void process_postfix_expr_left(const PostfixExprNode* node) {
     // <primary-expression>
     if (node->primary_expr_node != NULL) {
-        process_primary_expr(node->primary_expr_node);
+        process_primary_expr_left(node->primary_expr_node);
     }
     else {
         // @todo
     }
 }
 
-static void process_unary_expr(const UnaryExprNode* node) {
+static void process_postfix_expr_right(const PostfixExprNode* node) {
+    // <primary-expression>
+    if (node->primary_expr_node != NULL) {
+        process_primary_expr_right(node->primary_expr_node);
+    }
+    else {
+        // @todo
+    }
+}
+
+static void process_unary_expr_left(const UnaryExprNode* node) {
     // <postfix-expression>
     if (node->postfix_expr_node != NULL) {
-        process_postfix_expr(node->postfix_expr_node);
+        process_postfix_expr_left(node->postfix_expr_node);
+    }
+    else {
+        // @todo
+    } 
+}
+
+static void process_unary_expr_right(const UnaryExprNode* node) {
+    // <postfix-expression>
+    if (node->postfix_expr_node != NULL) {
+        process_postfix_expr_right(node->postfix_expr_node);
     }
     else {
         // @todo
@@ -98,7 +145,7 @@ static void process_unary_expr(const UnaryExprNode* node) {
 static void process_cast_expr(const CastExprNode* node) {
     // <unary-expression>
     if (node->unary_expr_node != NULL) {
-        process_unary_expr(node->unary_expr_node);    
+        process_unary_expr_right(node->unary_expr_node);    
     }
     // ( <type-name> ) <cast-expression>
     else {
@@ -284,7 +331,33 @@ static void process_assign_expr(const AssignExprNode* node) {
     }
     // <unary-expression> <assignment-operator> <assignment-expression>
     else {
-        // @todo
+        process_unary_expr_left(node->unary_expr_node);
+        process_assign_expr(node->assign_expr_node);
+
+        switch (node->assign_operator) {
+        case OP_ASSIGN: {
+            print_code("pop rdi");
+            print_code("pop rax");
+            print_code("mov [rax], rdi");
+            print_code("push rax");
+
+            break;
+        } 
+        case OP_MUL_EQ: 
+        case OP_DIV_EQ: 
+        case OP_MOD_EQ: 
+        case OP_ADD_EQ: 
+        case OP_SUB_EQ: 
+        case OP_AND_EQ: 
+        case OP_XOR_EQ: 
+        case OP_OR_EQ: {
+            // @todo
+            break;
+        }
+        default: {
+            break;
+        }
+        }
     }
 }
 
@@ -296,6 +369,12 @@ static void process_expr(const ExprNode* node) {
     // <expression> , <assignment-expression>
     else {
         // @todo
+    }
+}
+
+static void process_expr_stmt(const ExprStmtNode* node) {
+    if (node->expr_node != NULL) {
+        process_expr(node->expr_node);
     }
 }
 
@@ -323,7 +402,10 @@ static void process_jump_stmt(const JumpStmtNode* node) {
 }
 
 static void process_stmt(const StmtNode* node) {
-    if (node->jump_stmt_node != NULL) {
+    if (node->expr_stmt_node != NULL) {
+        process_expr_stmt(node->expr_stmt_node);
+    }
+    else if (node->jump_stmt_node != NULL) {
         process_jump_stmt(node->jump_stmt_node);
     }
 }

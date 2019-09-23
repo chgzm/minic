@@ -279,6 +279,7 @@ struct PrimaryExprNode {
     char*         string;
     char*         identifier;
     int           identifier_len;
+    int           value_type;
 };
 
 struct ConstantNode {
@@ -383,5 +384,11 @@ struct JumpStmtNode {
 //
 
 TransUnitNode* parse(TokenVec* vec);
+
+//
+// debug
+//
+
+void dump_nodes(const TransUnitNode* node);
 
 #endif

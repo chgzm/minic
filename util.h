@@ -20,6 +20,11 @@
 void _print_tmsp();
 void _error(const char* fmt, ...);
 
+//
+// fmt
+//
+
+const char* fmt(const char* fmt, ...);
 
 //
 // mmap

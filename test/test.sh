@@ -34,5 +34,9 @@ try test_return_mix.c 33
 try test_return_paren.c 50
 try test_return_paren_2.c 35
 try test_localvar.c 42
+try test_localvar_2.c 7
+try test_localvar_3.c 17
+try test_localvar_4.c 7
+try test_localvar_5.c 34
 
 echo -e "\e[36mPassed all tests.\e[0m"

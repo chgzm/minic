@@ -9,10 +9,11 @@ function try() {
     ./test/tmp
     actual="$?"
 
+    printf "\e[1m${file}:\n  \e[0m"
     if [[ "${actual}" = "${expected}" ]]; then
-        echo "Got $actual => OK."
+        echo -e "\e[32mExpected: ${expected}, Actual: ${actual} => OK.\e[0m"
     else
-        echo "${expected} expected, but got ${actual}"
+        echo -e "\e[31mExpected: ${expected}, Actual: ${actual} => NG.\e[0m"
         exit 1
     fi
 }
@@ -34,4 +35,4 @@ try test_return_paren.c 50
 try test_return_paren_2.c 35
 try test_localvar.c 42
 
-echo OK        
+echo -e "\e[36mPassed all tests.\e[0m"

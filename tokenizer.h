@@ -61,6 +61,7 @@ enum TokenType {
     TK_HASH,      // #
     TK_COMMA,     // ,
     TK_DOT,       // .
+    TK_ARROW,     // ->
     TK_EQ,        // ==
     TK_NE,        // !=
     TK_LE,        // <=

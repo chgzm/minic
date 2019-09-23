@@ -69,6 +69,16 @@ enum JumpType {
     JMP_RETURN,
 };
 
+enum PostfixType {
+    PS_PRIMARY,
+    PS_LSQUARE,
+    PS_LPAREN,
+    PS_DOT,
+    PS_ARROW,
+    PS_INC,
+    PS_DEC,
+};
+
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
@@ -268,9 +278,10 @@ struct PostfixExprNode {
     PrimaryExprNode* primary_expr_node;
     PostfixExprNode* postfix_expr_node;
     ExprNode*        expr_node;
-    AssignExprNode*  assignment_expr_node;
+    PtrVector*       assign_expr_nodes;
     char*            identifier;
     int              identifier_len;
+    int              postfix_expr_type; 
 };
 
 struct PrimaryExprNode {

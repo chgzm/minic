@@ -38,5 +38,9 @@ try test_localvar_2.c 7
 try test_localvar_3.c 17
 try test_localvar_4.c 7
 try test_localvar_5.c 34
+try test_func.c 42
+try test_func_2.c 5
+try test_func_3.c 10
+try test_func_4.c 25
 
 echo -e "\e[36mPassed all tests.\e[0m"

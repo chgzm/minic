@@ -25,7 +25,17 @@ static void print_header() {
 }
 
 static void print_global(const TransUnitNode* node) {
-    printf(".global main\n\n");
+    printf(".global");
+    for (int i = 0; i < node->external_decl_nodes->size; ++i) {
+        const ExternalDeclNode* external_decl_node = (ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
+        const FuncDefNode* func_def_node = external_decl_node->func_def_node;
+
+        if (i != 0) {
+            printf(",");
+        }
+        printf(" %s", func_def_node->identifier);
+    } 
+    printf("\n\n");
 }
 
 static void process_identifier_left(const char* identifier, int len) {
@@ -103,22 +113,38 @@ static void process_primary_expr_right(const PrimaryExprNode* node) {
 }
 
 static void process_postfix_expr_left(const PostfixExprNode* node) {
+    switch (node->postfix_expr_type) {
     // <primary-expression>
-    if (node->primary_expr_node != NULL) {
+    case PS_PRIMARY: {
         process_primary_expr_left(node->primary_expr_node);
+        break;
     }
-    else {
+    default: {
         // @todo
+        break;
+    }
     }
 }
 
 static void process_postfix_expr_right(const PostfixExprNode* node) {
+    switch (node->postfix_expr_type) {
     // <primary-expression>
-    if (node->primary_expr_node != NULL) {
+    case PS_PRIMARY: {
         process_primary_expr_right(node->primary_expr_node);
+        break;
     }
-    else {
+    // <postfix-expression> ( {assignment-expression}* )
+    case PS_LPAREN: {
+        const char* identifier = node->postfix_expr_node->primary_expr_node->identifier; 
+        print_code("call %s", identifier);
+        print_code("push rax");
+
+        break;
+    }
+    default: {
         // @todo
+        break;
+    }
     }
 }
 
@@ -506,20 +532,20 @@ static void process_func_def(const FuncDefNode* node) {
     printf("%s:\n", node->identifier);
 
     const int localvar_count = count_localvars_in_func_def(node);
-    if (localvar_count != 0) {
+    // if (localvar_count != 0) {
         print_code("push rbp"); 
         print_code("mov rbp, rsp"); 
         print_code("sub rsp, %d", localvar_count * 8); 
-    }
+    // }
 
     if (node->compound_stmt_node != NULL) {
         process_compound_stmt(node->compound_stmt_node);
     } 
 
-    if (localvar_count != 0) {
+    // if (localvar_count != 0) {
         print_code("mov rsp, rbp"); 
         print_code("pop rbp"); 
-    }
+    // }
 
     print_code("ret");
 

@@ -5,6 +5,7 @@
 #include <string.h>
 
 static ExprNode* create_expr_node(TokenVec* vec, int* index);
+static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index);
 static bool is_declaration(TokenVec* vec, int index);
 static bool is_storage_class_specifier(TokenVec* vec, int index);
 static bool is_type_qualifier(TokenVec* vec, int index);
@@ -108,20 +109,85 @@ static PrimaryExprNode* create_primary_expr_node(TokenVec* vec, int* index) {
 
 static PostfixExprNode* create_postfix_expr_node(TokenVec* vec, int* index) {
     PostfixExprNode* postfix_expr_node = malloc(sizeof(PostfixExprNode));
-    postfix_expr_node->primary_expr_node    = NULL;
-    postfix_expr_node->postfix_expr_node    = NULL;
-    postfix_expr_node->expr_node            = NULL;
-    postfix_expr_node->assignment_expr_node = NULL;
-    postfix_expr_node->identifier           = NULL;
-    postfix_expr_node->identifier_len       = 0;
-
+    postfix_expr_node->primary_expr_node = NULL;
+    postfix_expr_node->postfix_expr_node = NULL;
+    postfix_expr_node->expr_node         = NULL;
+    postfix_expr_node->assign_expr_nodes = create_ptr_vector();
+    postfix_expr_node->identifier        = NULL;
+    postfix_expr_node->identifier_len    = 0;
+    postfix_expr_node->postfix_expr_type = PS_PRIMARY;
+    
     postfix_expr_node->primary_expr_node = create_primary_expr_node(vec, index);
     if (postfix_expr_node->primary_expr_node == NULL) {
         error("Failed to create primary-expression node.\n");
         return NULL;
     }
 
-    return postfix_expr_node;
+    PostfixExprNode* current = postfix_expr_node;
+    const Token* token = vec->tokens[*index];
+    while (token->type == TK_LSQUARE || token->type == TK_LPAREN || token->type == TK_DOT
+        || token->type == TK_ARROW   || token->type == TK_INC    || token->type == TK_DEC) {
+        
+        PostfixExprNode* p_postfix_expr_node = NULL;
+        switch (token->type) {
+        case TK_LSQUARE: {
+            current->postfix_expr_type = PS_LSQUARE;
+            break;
+        }
+        case TK_LPAREN: {
+            ++(*index);
+
+            p_postfix_expr_node                     = malloc(sizeof(PostfixExprNode));
+            p_postfix_expr_node->postfix_expr_node  = current;
+            p_postfix_expr_node->expr_node          = NULL;
+            p_postfix_expr_node->identifier         = NULL;
+            p_postfix_expr_node->identifier_len     = 0;
+            p_postfix_expr_node->primary_expr_node  = NULL;
+            p_postfix_expr_node->assign_expr_nodes  = create_ptr_vector();
+            p_postfix_expr_node->postfix_expr_type  = PS_LPAREN;
+
+            token = vec->tokens[*index];
+            while (token->type != TK_RPAREN) {
+                AssignExprNode* assign_expr_node = create_assign_expr_node(vec, index);
+                if (assign_expr_node == NULL) {
+                    error("Failed to create assignment-expression node.\n");
+                    return NULL;
+                }
+
+                ptr_vector_push_back(p_postfix_expr_node->assign_expr_nodes, assign_expr_node); 
+            }
+
+            ++(*index);
+
+            break;
+        }
+        case TK_DOT: {
+            current->postfix_expr_type = PS_DOT;
+            break;
+        }
+        case TK_ARROW: {
+            current->postfix_expr_type = PS_ARROW;
+            break;
+        }
+        case TK_INC: {
+            current->postfix_expr_type = PS_INC;
+            break;
+        }
+        case TK_DEC: {
+            current->postfix_expr_type = PS_DEC;
+            break;
+        }
+        default: {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        }
+
+        current = p_postfix_expr_node;
+        token = vec->tokens[*index];
+    }
+
+    return current;
 }
 
 static UnaryExprNode* create_unary_expr_node(TokenVec* vec, int* index) {
@@ -213,7 +279,7 @@ static AdditiveExprNode* create_additive_expr_node(TokenVec* vec, int* index) {
             return NULL;
         }
 
-        token= vec->tokens[*index];
+        token = vec->tokens[*index];
         current = p_additive_expr_node;
     }
 

@@ -12,7 +12,8 @@ static PtrVector* localvar_list;
 static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
 
-static void print_code(const char* fmt, ...) { va_list ap;
+static void print_code(const char* fmt, ...) { 
+    va_list ap;
     va_start(ap, fmt);
     printf("  ");
     vprintf(fmt, ap);

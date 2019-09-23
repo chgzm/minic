@@ -532,20 +532,16 @@ static void process_func_def(const FuncDefNode* node) {
     printf("%s:\n", node->identifier);
 
     const int localvar_count = count_localvars_in_func_def(node);
-    // if (localvar_count != 0) {
-        print_code("push rbp"); 
-        print_code("mov rbp, rsp"); 
-        print_code("sub rsp, %d", localvar_count * 8); 
-    // }
+    print_code("push rbp"); 
+    print_code("mov rbp, rsp"); 
+    print_code("sub rsp, %d", localvar_count * 8); 
 
     if (node->compound_stmt_node != NULL) {
         process_compound_stmt(node->compound_stmt_node);
     } 
 
-    // if (localvar_count != 0) {
-        print_code("mov rsp, rbp"); 
-        print_code("pop rbp"); 
-    // }
+    print_code("mov rsp, rbp"); 
+    print_code("pop rbp"); 
 
     print_code("ret");
 

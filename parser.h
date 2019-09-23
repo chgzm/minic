@@ -5,9 +5,34 @@
 #include "util.h"
 
 enum TypeSpecifier {
-    TYPE_INT,
+    TYPE_NONE,
+    TYPE_VOID,
     TYPE_CHAR,
-    TYPE_VOID
+    TYPE_SHORT,
+    TYPE_INT,
+    TYPE_LONG,
+    TYPE_FLOAT,
+    TYPE_DOUBLE,
+    TYPE_SIGNED,
+    TYPE_UNSIGNED,
+};
+
+enum TypeQualifier {
+    TQ_CONST,
+    TQ_VOLATILE,
+};
+
+enum StorageClassSpecifier {
+    SC_AUTO,
+    SC_REGISTER,
+    SC_STATIC,
+    SC_EXTERN,
+    SC_TYPEDEF,
+};
+
+enum StructOrUnion {
+    SU_STRUCT,
+    SU_UNION,
 };
 
 enum OperatorType {
@@ -37,6 +62,13 @@ enum ConstType {
     CONST_FLOAT,
 };
 
+enum JumpType {
+    JMP_GOTO,
+    JMP_CONTINUE,
+    JMP_BREAK,
+    JMP_RETURN,
+};
+
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
@@ -46,6 +78,7 @@ typedef struct TypeSpecifierNode TypeSpecifierNode;
 typedef struct StructOrUnionSpecifierNode StructOrUnionSpecifierNode;
 typedef struct StructOrUnionNode StructOrUnionNode;
 typedef struct StructDeclNode StructDeclNode;
+typedef struct DeclaratorNode DeclaratorNode;
 typedef struct PointerNode PointerNode;
 typedef struct TypeQualifierNode TypeQualifierNode;
 typedef struct DirectDeclaratorNode DirectDeclaratorNode;
@@ -92,8 +125,6 @@ typedef struct SelectStmtNode SelectStmtNode;
 typedef struct IterStmtNode IterStmtNode;
 typedef struct JumpStmtNode JumpStmtNode;
 
-typedef struct ReturnNode ReturnNode;
-
 struct TransUnitNode {
     PtrVector* external_decl_nodes;
 };
@@ -110,15 +141,24 @@ struct FuncDefNode {
 };
 
 struct DeclSpecifierNode {
+    StorageClassSpecifierNode* storage_class_specifier_node; 
+    TypeSpecifierNode*         type_specifier_node; 
+    TypeQualifierNode*         type_qualifier_node; 
 };
 
 struct StorageClassSpecifierNode {
+    int storage_class_specifier;
 };
 
 struct TypeSpecifierNode {
+    int                type_specifier;
+    StructOrUnionNode* struct_or_union_specifier_node;
+    EnumSpecifierNode* enum_specifier_node;
+    TypedefNameNode*   typedef_name_node;
 };
 
 struct StructOrUnionSpecifierNode {
+    int struct_or_union;
 };
 
 struct StructOrUnionNode {
@@ -127,13 +167,26 @@ struct StructOrUnionNode {
 struct StructDeclNode {
 };
 
+struct DeclaratorNode {
+    PointerNode*          pointer_node;
+    DirectDeclaratorNode* direct_declarator_node;     
+};
+
 struct PointerNode {
 };
 
 struct TypeQualifierNode {
+    int type_qualifier;
 };
 
 struct DirectDeclaratorNode {
+    char*                 identifier;
+    int                   identifier_len;
+    DeclaratorNode*       declarator_node;
+    DirectDeclaratorNode* direct_declarator_node;  
+    ConstantExprNode*     constant_expr_node;
+    ParamTypeListNode*    param_type_list_node;
+    PtrVector*            identifier_list;
 };
 
 struct ConstantExprNode {
@@ -217,6 +270,7 @@ struct PostfixExprNode {
     ExprNode*        expr_node;
     AssignExprNode*  assignment_expr_node;
     char*            identifier;
+    int              identifier_len;
 };
 
 struct PrimaryExprNode {
@@ -224,6 +278,7 @@ struct PrimaryExprNode {
     ExprNode*     expr_node;
     char*         string;
     char*         identifier;
+    int           identifier_len;
 };
 
 struct ConstantNode {
@@ -282,9 +337,13 @@ struct DeclarationNode {
 };
 
 struct InitDeclaratorNode {
+    DeclaratorNode*  declarator_node;
+    InitializerNode* initializer_node;
 };
 
 struct InitializerNode {
+    AssignExprNode*      assign_expr_node;
+    InitializerListNode* initializer_list_node;
 };
 
 struct InitializerListNode {
@@ -314,11 +373,9 @@ struct IterStmtNode {
 };
 
 struct JumpStmtNode {
-    ReturnNode* ret;    
-};
-
-struct ReturnNode {
-    ExprNode* expr;
+    int       jump_type;
+    char*     identifier;
+    ExprNode* expr_node;
 };
 
 //

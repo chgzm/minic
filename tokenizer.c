@@ -371,6 +371,7 @@ static Token* read_identifier(const char* p, int* pos) {
         }
 
         if      (strncmp("else",   &p[*pos], 4) == 0) { token->type = TK_ELSE;   } 
+        else if (strncmp("enum",   &p[*pos], 4) == 0) { token->type = TK_ENUM;   }
         else if (strncmp("extern", &p[*pos], 6) == 0) { token->type = TK_EXTERN; }
 
         break;
@@ -382,6 +383,17 @@ static Token* read_identifier(const char* p, int* pos) {
 
         if      (strncmp("for",   &p[*pos], 3) == 0) { token->type = TK_FOR;   }
         else if (strncmp("float", &p[*pos], 5) == 0) { token->type = TK_FLOAT; }
+
+        break;
+    }
+    case 'g': {
+        if (len != 4) {
+            break;
+        }
+
+        if (strncmp("goto", &p[*pos], 4) == 0) {
+            token->type = TK_GOTO;
+        }
 
         break;
     }

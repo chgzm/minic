@@ -5,11 +5,14 @@
 #include <string.h> 
 
 static ExprNode* create_expr_node(TokenVec* vec, int* index);
+static bool is_declaration(TokenVec* vec, int index);
+static bool is_storage_class_specifier(TokenVec* vec, int index);
+static bool is_type_qualifier(TokenVec* vec, int index);
+static bool is_type_specifier(TokenVec* vec, int index);
 
 #if 0
 static bool is_unary_operator(TokenVec* vec, int index) {
-    Token* token = vec->tokens[index]; 
-    if (token->type == TK_AMP 
+    Token* token = vec->tokens[index]; if (token->type == TK_AMP 
      || token->type == TK_ASTER || token->type == TK_PLUS
      || token->type == TK_MINUS
      || token->type == TK_TILDE
@@ -51,13 +54,22 @@ static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
 
 static PrimaryExprNode* create_primary_expr_node(TokenVec* vec, int* index) {
     PrimaryExprNode* primary_expr_node = malloc(sizeof(PrimaryExprNode));
-    primary_expr_node->constant_node = NULL;
-    primary_expr_node->expr_node     = NULL;
-    primary_expr_node->string        = NULL;
-    primary_expr_node->identifier    = NULL;
+    primary_expr_node->constant_node  = NULL;
+    primary_expr_node->expr_node      = NULL;
+    primary_expr_node->string         = NULL;
+    primary_expr_node->identifier     = NULL;
+    primary_expr_node->identifier_len = 0;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
+    case TK_IDENT: {
+        primary_expr_node->identifier     = malloc(sizeof(char) * token->strlen);
+        primary_expr_node->identifier_len = token->strlen;
+        strncpy(primary_expr_node->identifier, token->str, token->strlen);
+        ++(*index);
+
+        break;
+    }
     case TK_NUM:
     case TK_STR: {
         primary_expr_node->constant_node = create_constant_node(vec, index);
@@ -101,6 +113,7 @@ static PostfixExprNode* create_postfix_expr_node(TokenVec* vec, int* index) {
     postfix_expr_node->expr_node            = NULL;
     postfix_expr_node->assignment_expr_node = NULL;
     postfix_expr_node->identifier           = NULL;
+    postfix_expr_node->identifier_len       = 0;
 
     postfix_expr_node->primary_expr_node = create_primary_expr_node(vec, index);
     if (postfix_expr_node->primary_expr_node == NULL) {
@@ -405,44 +418,43 @@ static ExprNode* create_expr_node(TokenVec* vec, int* index) {
     return current;
 }
 
-static ReturnNode* create_return_node(TokenVec* vec, int* index) {
-    ReturnNode* return_node = malloc(sizeof(ReturnNode));
-
-    if (vec->tokens[*index]->type != TK_SEMICOL) {
-        return_node->expr = create_expr_node(vec, index);  
-        if (return_node->expr == NULL) {
-            error("Failed to create expression node.\n");
-            return NULL;
-        }
-    }
-
-    const Token* token = vec->tokens[*index];
-    ++(*index);
-
-    if (token->type != TK_SEMICOL) {
-        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
-        return NULL;
-    }
-
-    return return_node;
-}
-
 static JumpStmtNode* create_jump_stmt_node(TokenVec* vec, int* index) {
     JumpStmtNode* jump_stmt_node = malloc(sizeof(JumpStmtNode));
+    jump_stmt_node->identifier = NULL;
+    jump_stmt_node->expr_node  = NULL;
 
     const Token* token = vec->tokens[*index];
     ++(*index);
 
     switch (token->type) {
-    case TK_RETURN: {
-        jump_stmt_node->ret = create_return_node(vec, index);
-        if (jump_stmt_node->ret == NULL) {
-            error("Failed to create return node.\n");
-            return NULL;
-        }
-
+    case TK_GOTO: {
         break;
     }
+    case TK_CONTINUE: {
+        break;
+    }
+    case TK_BREAK: {
+        break;
+    }
+    case TK_RETURN: {
+        jump_stmt_node->jump_type = JMP_RETURN;
+        if (vec->tokens[*index]->type != TK_SEMICOL) {
+            jump_stmt_node->expr_node = create_expr_node(vec, index);
+            if (jump_stmt_node->expr_node == NULL) {
+                error("Failed to create expression node.\n");
+                return NULL;
+            }
+
+            if (vec->tokens[*index]->type != TK_SEMICOL) {
+                error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+                return NULL;
+            }
+        } 
+
+        ++(*index);
+        break;
+    }
+ 
     default: {
         error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
         return NULL;
@@ -506,7 +518,206 @@ static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
     return stmt_node;
 }
 
-static bool is_declaration(TokenVec* vec, int index) {
+static InitializerNode* create_initializer_node(TokenVec* vec, int* index) {
+    InitializerNode* initializer_node = malloc(sizeof(InitializerNode));
+    initializer_node->initializer_list_node = NULL; // @todo
+
+    initializer_node->assign_expr_node = create_assign_expr_node(vec, index);
+    if (initializer_node->assign_expr_node == NULL) {
+        error("Failed to create assignment-expression node.\n");
+        return NULL;
+    }
+
+    return initializer_node;
+}
+
+static DirectDeclaratorNode* create_direct_declarator_node(TokenVec* vec, int* index) {
+    DirectDeclaratorNode* direct_declarator_node = malloc(sizeof(DirectDeclaratorNode));
+    direct_declarator_node->identifier             = NULL;
+    direct_declarator_node->identifier_len         = 0;
+    direct_declarator_node->declarator_node        = NULL; // @todo
+    direct_declarator_node->direct_declarator_node = NULL; // @todo
+    direct_declarator_node->constant_expr_node     = NULL; // @todo
+    direct_declarator_node->param_type_list_node   = NULL; // @todo
+    direct_declarator_node->identifier_list        = NULL; // @todo
+
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_IDENT) {
+        direct_declarator_node->identifier     = malloc(sizeof(char) * token->strlen);
+        direct_declarator_node->identifier_len = token->strlen;
+        strncpy(direct_declarator_node->identifier, token->str, token->strlen);
+        ++(*index);
+    }
+
+    return direct_declarator_node;
+}
+
+static DeclaratorNode* create_declarator_node(TokenVec* vec, int* index) {
+    DeclaratorNode* declarator_node = malloc(sizeof(DeclaratorNode));
+    declarator_node->pointer_node = NULL; // @todo
+
+    declarator_node->direct_declarator_node = create_direct_declarator_node(vec, index);
+    if (declarator_node->direct_declarator_node == NULL) {
+        error("Failed to create direct-declarator node.\n");
+        return NULL;
+    }
+
+    return declarator_node;
+}
+
+static InitDeclaratorNode* create_init_declarator_node(TokenVec* vec, int* index) {
+    InitDeclaratorNode* init_declarator_node = malloc(sizeof(InitDeclaratorNode));
+    init_declarator_node->initializer_node = NULL;
+
+    init_declarator_node->declarator_node = create_declarator_node(vec, index);
+    if (init_declarator_node->declarator_node == NULL) {
+        error("Failed to create declarator-node.\n");
+        return NULL;
+    }
+
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_ASSIGN) {
+        ++(*index);
+
+        init_declarator_node->initializer_node = create_initializer_node(vec, index);
+        if (init_declarator_node->initializer_node == NULL) {
+            error("Failed to create initializer node.\n");
+            return NULL;
+        }
+    }
+
+    return init_declarator_node;
+}
+
+static TypeQualifierNode* create_type_qualifier_node(TokenVec* vec, int* index) {
+    TypeQualifierNode* type_qualifier_node = malloc(sizeof(TypeQualifierNode));
+
+    const Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_STRUCT:   { type_qualifier_node->type_qualifier = TQ_CONST;    break; }
+    case TK_VOLATILE: { type_qualifier_node->type_qualifier = TQ_VOLATILE; break; }
+    default: {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+    }
+    ++(*index);
+   
+    return type_qualifier_node;     
+}
+
+static TypeSpecifierNode* create_type_specifier_node(TokenVec* vec, int* index) {
+    TypeSpecifierNode* type_specifier_node = malloc(sizeof(TypeSpecifierNode));
+    type_specifier_node->type_specifier                 = TYPE_NONE;
+    type_specifier_node->struct_or_union_specifier_node = NULL;
+    type_specifier_node->enum_specifier_node            = NULL;
+    type_specifier_node->typedef_name_node              = NULL;
+
+    const Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;     break; }
+    case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;     break; }
+    case TK_SHORT:    { type_specifier_node->type_specifier = TYPE_SHORT;    break; }
+    case TK_INT:      { type_specifier_node->type_specifier = TYPE_INT;      break; }
+    case TK_LONG:     { type_specifier_node->type_specifier = TYPE_LONG;     break; }
+    case TK_FLOAT:    { type_specifier_node->type_specifier = TYPE_FLOAT;    break; }
+    case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE;   break; }
+    case TK_SIGNED:   { type_specifier_node->type_specifier = TYPE_SIGNED;   break; }
+    case TK_UNSIGNED: { type_specifier_node->type_specifier = TYPE_UNSIGNED; break; }
+    case TK_STRUCT:   { break; } // @todo
+    case TK_UNION:    { break; } // @todo
+    case TK_ENUM:     { break; } // @todo 
+    case TK_TYPEDEF:  { break; } // @todo 
+    default: {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+    }
+    ++(*index);
+
+    return type_specifier_node;
+}
+
+static StorageClassSpecifierNode* create_storage_class_specifier_node(TokenVec* vec, int* index) {
+    StorageClassSpecifierNode* storage_class_specifier_node = malloc(sizeof(StorageClassSpecifierNode));
+    const Token* token = vec->tokens[*index];
+    if      (token->type == TK_AUTO)     { storage_class_specifier_node->storage_class_specifier = SC_AUTO;     }
+    else if (token->type == TK_REGISTER) { storage_class_specifier_node->storage_class_specifier = SC_REGISTER; }
+    else if (token->type == TK_STATIC)   { storage_class_specifier_node->storage_class_specifier = SC_STATIC;   }
+    else if (token->type == TK_EXTERN)   { storage_class_specifier_node->storage_class_specifier = SC_EXTERN;   }
+    else if (token->type == TK_TYPEDEF)  { storage_class_specifier_node->storage_class_specifier = SC_TYPEDEF;  }
+    else {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    } 
+    ++(*index);
+   
+    return storage_class_specifier_node; 
+}
+
+static DeclSpecifierNode* create_decl_specifier_node(TokenVec* vec, int* index) {
+    DeclSpecifierNode* decl_specifier_node = malloc(sizeof(DeclSpecifierNode));
+    decl_specifier_node->storage_class_specifier_node = NULL;
+    decl_specifier_node->type_specifier_node          = NULL;
+    decl_specifier_node->type_qualifier_node          = NULL;
+
+    if (is_storage_class_specifier(vec, *index)) {
+        decl_specifier_node->storage_class_specifier_node = create_storage_class_specifier_node(vec, index);
+        if (decl_specifier_node->storage_class_specifier_node == NULL) {
+            error("Failed to create storage-class-specifier node.\n");
+            return NULL;
+        }
+    } 
+    else if (is_type_specifier(vec, *index)) {
+        decl_specifier_node->type_specifier_node = create_type_specifier_node(vec, index);
+        if (decl_specifier_node->type_specifier_node == NULL) {
+            error("Failed to create type-specifier node.\n");
+            return NULL;
+        }
+    } 
+    else if (is_type_qualifier(vec, *index)) {
+        decl_specifier_node->type_qualifier_node = create_type_qualifier_node(vec, index);
+        if (decl_specifier_node->type_qualifier_node == NULL) {
+            error("Failed to create type-qualifier node.\n");
+            return NULL;
+        }
+    }
+
+    return decl_specifier_node;
+}
+
+static DeclarationNode* create_declaration_node(TokenVec* vec, int* index) {
+    DeclarationNode* declaration_node = malloc(sizeof(DeclarationNode));
+    declaration_node->decl_specifier_nodes  = create_ptr_vector();
+    declaration_node->init_declarator_nodes = create_ptr_vector();
+
+    while (is_declaration(vec, *index)) {
+        DeclSpecifierNode* decl_specifier_node = create_decl_specifier_node(vec, index);
+        if (decl_specifier_node == NULL) {
+            error("Failed to create declaration-specifier node.\n");
+            return NULL;
+        } 
+
+        ptr_vector_push_back(declaration_node->decl_specifier_nodes, decl_specifier_node);
+    }
+
+    const Token* token = vec->tokens[*index];
+    while (token->type != TK_SEMICOL) {
+        InitDeclaratorNode* init_declarator_node = create_init_declarator_node(vec, index);
+        if (init_declarator_node == NULL) {
+            error("Failed to create init-declarator node.\n");
+            return NULL;
+        }
+
+        ptr_vector_push_back(declaration_node->init_declarator_nodes, init_declarator_node);
+        token = vec->tokens[*index];
+    }
+    ++(*index);
+
+    return declaration_node;
+}
+
+static bool is_storage_class_specifier(TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
 
     return (token->type == TK_AUTO
@@ -514,7 +725,18 @@ static bool is_declaration(TokenVec* vec, int index) {
          || token->type == TK_STATIC
          || token->type == TK_EXTERN
          || token->type == TK_TYPEDEF
-         || token->type == TK_VOID
+    );
+}
+
+static bool is_type_qualifier(TokenVec* vec, int index) {
+    const Token* token = vec->tokens[index];
+    return (token->type == TK_CONST || token->type == TK_VOLATILE);
+}
+
+static bool is_type_specifier(TokenVec* vec, int index) {
+    const Token* token = vec->tokens[index];
+
+    return (token->type == TK_VOID
          || token->type == TK_CHAR
          || token->type == TK_SHORT
          || token->type == TK_INT
@@ -525,13 +747,20 @@ static bool is_declaration(TokenVec* vec, int index) {
          || token->type == TK_UNSIGNED
          || token->type == TK_STRUCT
          || token->type == TK_UNION
-         || token->type == TK_CONST
-         || token->type == TK_VOLATILE
-    );
+   );
+}
+
+static bool is_declaration(TokenVec* vec, int index) {
+    return (is_storage_class_specifier(vec, index) 
+         || is_type_specifier(vec, index)
+         || is_type_qualifier(vec, index)
+    ); 
 }
 
 static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
     CompoundStmtNode* compound_stmt_node = malloc(sizeof(CompoundStmtNode));
+    compound_stmt_node->declaration_nodes = create_ptr_vector();
+    compound_stmt_node->stmt_nodes = create_ptr_vector();
 
     // {
     {
@@ -546,14 +775,19 @@ static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
     // <declaration>*
     {
         while (is_declaration(vec, *index)) {
+            DeclarationNode* declaration_node = create_declaration_node(vec, index);
+            if (declaration_node == NULL) {
+                error("Failed to create declaration-node.\n");
+                return NULL;
+            }
 
+            ptr_vector_push_back(compound_stmt_node->declaration_nodes, (void*)(declaration_node));
         }
     }
 
     // <statement>*
     {
         while (vec->tokens[*index]->type != TK_RBRCKT) {
-            compound_stmt_node->stmt_nodes = create_ptr_vector();
             StmtNode* stmt_node = create_stmt_node(vec, index);   
             if (stmt_node == NULL) {
                 error("Failed to create statement node.\n");

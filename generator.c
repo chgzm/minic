@@ -7,10 +7,12 @@
 
 #include "util.h"
 
+static int current_offset;
+static PtrVector* localvar_list;
+static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
 
-static void print_code(const char* fmt, ...) {
-    va_list ap;
+static void print_code(const char* fmt, ...) { va_list ap;
     va_start(ap, fmt);
     printf("  ");
     vprintf(fmt, ap);
@@ -23,6 +25,16 @@ static void print_header() {
 
 static void print_global(const TransUnitNode* node) {
     printf(".global main\n\n");
+}
+
+static void process_identifier(const char* identifier, int len) {
+    const LocalVar* localvar = get_localvar(identifier, len);
+    if (localvar != NULL) {
+        print_code("mov rax, rbp");
+        print_code("sub rax, %d", localvar->offset);
+        print_code("mov rax, [rax]");
+        print_code("push rax");
+    }
 }
 
 static void process_constant_node(const ConstantNode* node) {
@@ -52,6 +64,10 @@ static void process_primary_expr(const PrimaryExprNode* node) {
     // ( <expression> )
     else if (node->expr_node != NULL) {
         process_expr(node->expr_node);
+    }
+    // <identifier>
+    else if (node->identifier != NULL) {
+        process_identifier(node->identifier, node->identifier_len);  
     }
     else {
         // @todo
@@ -282,18 +298,26 @@ static void process_expr(const ExprNode* node) {
     }
 }
 
-static void process_return(const ReturnNode* node) {
-    if (node->expr != NULL) {
-        process_expr(node->expr);
-    }
-
-    print_code("pop rax");
-    print_code("ret");
-}
-
 static void process_jump_stmt(const JumpStmtNode* node) {
-    if (node->ret != NULL) {
-        process_return(node->ret);
+    switch (node->jump_type) {
+    case JMP_GOTO:
+    case JMP_CONTINUE:
+    case JMP_BREAK: {
+        // @todo
+        break;
+    }
+    case JMP_RETURN: {
+        if (node->expr_node != NULL) {
+            process_expr(node->expr_node);
+        }
+        print_code("pop rax");
+        // print_code("ret");
+
+        break;
+    }
+    default: {
+        break;
+    }
     }
 }
 
@@ -303,7 +327,75 @@ static void process_stmt(const StmtNode* node) {
     }
 }
 
+static void process_initializer(const InitializerNode* node) {
+    if (node->assign_expr_node != NULL) {
+        process_assign_expr(node->assign_expr_node);
+    }
+
+    print_code("pop rdi");
+    print_code("pop rax");
+    print_code("mov [rax], rdi");
+}
+
+static LocalVar* get_localvar(const char* str, int len) {
+    for (int i = 0; i < localvar_list->size; ++i) {
+        LocalVar* localvar = (LocalVar*)(localvar_list->elements[i]);
+        if (strncmp(localvar->name, str, len) == 0) {
+            return localvar;
+        }
+    }
+
+    return NULL;
+}
+
+static void process_direct_declarator(const DirectDeclaratorNode* node) {
+    LocalVar* localvar = get_localvar(node->identifier, node->identifier_len);
+    if (localvar == NULL) {
+        localvar           = malloc(sizeof(LocalVar));
+        localvar->offset   = current_offset;
+        localvar->name_len = node->identifier_len;
+        localvar->name     = malloc(sizeof(char) * localvar->name_len);
+        strncpy(localvar->name, node->identifier, localvar->name_len); 
+        ptr_vector_push_back(localvar_list, localvar);
+
+        current_offset += 8;
+    }
+
+    print_code("mov rax, rbp"); 
+    print_code("sub rax, %d", localvar->offset); 
+    print_code("push rax");
+}
+
+static void process_declarator(const DeclaratorNode* node) {
+    if (node->direct_declarator_node != NULL) { 
+        process_direct_declarator(node->direct_declarator_node);
+    }
+}
+
+static void process_init_declarator_nodes(const InitDeclaratorNode* node) {
+    if (node->declarator_node != NULL) {
+        process_declarator(node->declarator_node);
+    }
+
+    if (node->initializer_node != NULL) {
+        process_initializer(node->initializer_node);
+    }
+}
+
+static void process_declaration(const DeclarationNode* node) {
+    // for (int i = 0; i < node->declaration-specifier_node->size; ++i) {
+    // }
+
+    for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
+        process_init_declarator_nodes(node->init_declarator_nodes->elements[i]);
+    }
+}
+
 static void process_compound_stmt(const CompoundStmtNode* node) {
+    for (int i = 0; i < node->declaration_nodes->size; ++i) {
+        process_declaration((const DeclarationNode*)(node->declaration_nodes->elements[i]));
+    }
+
     for (int i = 0; i < node->stmt_nodes->size; ++i) {
         process_stmt((const StmtNode*)(node->stmt_nodes->elements[i]));
     }
@@ -325,13 +417,31 @@ static int count_localvars_in_func_def(const FuncDefNode* node) {
 }
 
 static void process_func_def(const FuncDefNode* node) {
+    localvar_list = create_ptr_vector();
+    current_offset = 8;
+
     printf("%s:\n", node->identifier);
 
-    // const int localvar_count = count_localvars_in_func_def(node);
+    const int localvar_count = count_localvars_in_func_def(node);
+    if (localvar_count != 0) {
+        print_code("push rbp"); 
+        print_code("mov rbp, rsp"); 
+        print_code("sub rsp, %d", localvar_count * 8); 
+    }
 
     if (node->compound_stmt_node != NULL) {
         process_compound_stmt(node->compound_stmt_node);
     } 
+
+    if (localvar_count != 0) {
+        print_code("mov rsp, rbp"); 
+        print_code("pop rbp"); 
+    }
+
+    print_code("ret");
+
+    free(localvar_list);
+    current_offset = 8;
 }
 
 static void process_external_decl(const ExternalDeclNode* node) {

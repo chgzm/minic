@@ -32,5 +32,6 @@ try test_return_mod_2.c 0
 try test_return_mix.c 33
 try test_return_paren.c 50
 try test_return_paren_2.c 35
+try test_localvar.c 42
 
 echo OK        

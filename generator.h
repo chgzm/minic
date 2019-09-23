@@ -3,6 +3,13 @@
 
 #include "parser.h"
 
+typedef struct LocalVar LocalVar;
+struct LocalVar {
+    char* name;
+    int   name_len;
+    int   offset;
+};
+
 void gen(TransUnitNode* node);
 
 #endif

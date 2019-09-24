@@ -145,7 +145,9 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         for (int i = 0; i < node->assign_expr_nodes->size; ++i) {
             const AssignExprNode* assign_expr_node = (const AssignExprNode*)(node->assign_expr_nodes->elements[i]);
             process_conditional_expr(assign_expr_node->conditional_expr_node);
+        }
 
+        for (int i = 0; i < node->assign_expr_nodes->size; ++i) {
             print_code("pop rax");
             print_code("mov %s, rax", arg_registers[i]);
         }
@@ -613,17 +615,17 @@ static void process_func_def(const FuncDefNode* node) {
     const int localvar_count = count_localvars_in_func_def(node);
     const int arg_count      = count_args_in_func_def(node);
 
+    // prologue
     print_code("push rbp"); 
     print_code("mov rbp, rsp"); 
     print_code("sub rsp, %d", (localvar_count + arg_count) * 8); 
 
     process_func_declarator(declarator_node);
-
     process_compound_stmt(node->compound_stmt_node);
 
+    // epilogue
     print_code("mov rsp, rbp"); 
     print_code("pop rbp"); 
-
     print_code("ret");
 
     free(localvar_list);
@@ -641,7 +643,7 @@ void gen(const TransUnitNode* node) {
     print_global(node);
     
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
-        const ExternalDeclNode* external_decl_node = (ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
+        const ExternalDeclNode* external_decl_node = (const ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
         process_external_decl(external_decl_node);
     } 
 }

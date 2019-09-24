@@ -45,6 +45,6 @@ try test_func_4.c 25
 try test_func_5.c 10
 try test_func_6.c 215
 try test_func_7.c 15
-#try test_func_8.c 20
+try test_func_8.c 20
 
 echo -e "\e[36mPassed all tests.\e[0m"

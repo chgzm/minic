@@ -79,6 +79,11 @@ enum PostfixType {
     PS_DEC,
 };
 
+enum ParamListType {
+    PL_NONE, // 
+    PL_DOT,  // , ...
+};
+
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
@@ -145,8 +150,9 @@ struct ExternalDeclNode {
 };
 
 struct FuncDefNode {
-    int               type_specifier;
-    char*             identifier;
+    PtrVector*        decl_specifier_nodes;
+    DeclaratorNode*   declarator_node;
+    PtrVector*        declaration_nodes;
     CompoundStmtNode* compound_stmt_node;
 };
 
@@ -317,12 +323,19 @@ struct TypeNameNode {
 };
 
 struct ParamTypeListNode {
+    ParamListNode* param_list_node; 
+    int            type;
 };
 
 struct ParamListNode {
+    ParamDeclarationNode* param_declaration_node;
+    ParamListNode*        param_list_node;  
 };
 
 struct ParamDeclarationNode {
+    PtrVector*              decl_spec_nodes;
+    DeclaratorNode*         declarator_node;
+    AbstractDeclaratorNode* abstract_declarator_node;
 };
 
 struct AbstractDeclaratorNode {

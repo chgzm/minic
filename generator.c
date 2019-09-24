@@ -7,10 +7,15 @@
 
 #include "util.h"
 
+static char* arg_registers[] = {
+    "rdi", "rsi", "rdx", "rcx", "r8", "r9"
+};
+
 static int current_offset;
 static PtrVector* localvar_list;
 static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
+static void process_conditional_expr(const ConditionalExprNode* node);
 
 static void print_code(const char* fmt, ...) { 
     va_list ap;
@@ -27,13 +32,15 @@ static void print_header() {
 static void print_global(const TransUnitNode* node) {
     printf(".global");
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
-        const ExternalDeclNode* external_decl_node = (ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
-        const FuncDefNode* func_def_node = external_decl_node->func_def_node;
+        const ExternalDeclNode*     external_decl_node     = (ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
+        const FuncDefNode*          func_def_node          = external_decl_node->func_def_node;
+        const DeclaratorNode*       declarator_node        = func_def_node->declarator_node;
+        const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
 
         if (i != 0) {
             printf(",");
         }
-        printf(" %s", func_def_node->identifier);
+        printf(" %s", direct_declarator_node->direct_declarator_node->identifier); // @todo
     } 
     printf("\n\n");
 }
@@ -135,6 +142,14 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     }
     // <postfix-expression> ( {assignment-expression}* )
     case PS_LPAREN: {
+        for (int i = 0; i < node->assign_expr_nodes->size; ++i) {
+            const AssignExprNode* assign_expr_node = (const AssignExprNode*)(node->assign_expr_nodes->elements[i]);
+            process_conditional_expr(assign_expr_node->conditional_expr_node);
+
+            print_code("pop rax");
+            print_code("mov %s, rax", arg_registers[i]);
+        }
+
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier; 
         print_code("call %s", identifier);
         print_code("push rax");
@@ -220,7 +235,6 @@ static void process_multiplicative_expr(const MultiPlicativeExprNode* node) {
 
 static void process_additive_expr(const AdditiveExprNode* node) {
     // <multiplicative-expression>
-
     if (node->additive_expr_node == NULL) {
         process_multiplicative_expr(node->multiplicative_expr_node); 
     }
@@ -510,6 +524,28 @@ static void process_compound_stmt(const CompoundStmtNode* node) {
     }
 }
 
+static int count_args_in_func_def(const FuncDefNode* node) {
+    const DeclaratorNode* declarator_node = node->declarator_node;
+    if (declarator_node == NULL) {
+        return 0;
+    }
+    
+    const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
+    const ParamTypeListNode*    param_type_list_node   = direct_declarator_node->param_type_list_node;
+    if (param_type_list_node == NULL) {
+        return 0;
+    }
+
+    int cnt = 0;
+    const ParamListNode* current = param_type_list_node->param_list_node;
+    while (current != NULL) {
+        ++cnt;
+        current = current->param_list_node;
+    }
+
+    return cnt;
+}
+
 static int count_localvars_in_func_def(const FuncDefNode* node) {
     const CompoundStmtNode* compound_stmt_node = node->compound_stmt_node;
     if (compound_stmt_node == NULL) {
@@ -525,20 +561,61 @@ static int count_localvars_in_func_def(const FuncDefNode* node) {
     return cnt; 
 }
 
+static void process_args(const ParamListNode* node, int arg_index) {
+    if (node->param_list_node != NULL) {
+        process_args(node->param_list_node, arg_index + 1);
+    }
+
+    const ParamDeclarationNode* param_declaration_node = node->param_declaration_node;
+    const DeclaratorNode* declarator_node = param_declaration_node->declarator_node;
+    if (declarator_node == NULL) {
+        return;
+    }
+   
+    const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node; 
+    LocalVar* localvar = malloc(sizeof(LocalVar)); 
+    localvar->offset   = current_offset;
+    localvar->name_len = direct_declarator_node->identifier_len;
+    localvar->name     = malloc(sizeof(char) * localvar->name_len);
+    strncpy(localvar->name, direct_declarator_node->identifier, localvar->name_len); 
+    ptr_vector_push_back(localvar_list, localvar);
+
+    current_offset += 8;
+
+    print_code("mov rax, rbp");
+    print_code("sub rax, %d", localvar->offset);
+    print_code("mov [rax], %s", arg_registers[arg_index]);
+}
+
+static void process_func_declarator(const DeclaratorNode* node) {
+    const DirectDeclaratorNode* direct_declarator_node = node->direct_declarator_node;
+    const ParamTypeListNode* param_type_list_node = direct_declarator_node->param_type_list_node;
+    if (param_type_list_node == NULL) {
+        return;
+    }
+
+    const ParamListNode* param_list_node = param_type_list_node->param_list_node;
+    process_args(param_list_node, 0);
+}
+
 static void process_func_def(const FuncDefNode* node) {
     localvar_list = create_ptr_vector();
     current_offset = 8;
 
-    printf("%s:\n", node->identifier);
+    const DeclaratorNode* declarator_node = node->declarator_node;
+    const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
+    printf("%s:\n", direct_declarator_node->direct_declarator_node->identifier); // @todo
 
     const int localvar_count = count_localvars_in_func_def(node);
+    const int arg_count      = count_args_in_func_def(node);
+
     print_code("push rbp"); 
     print_code("mov rbp, rsp"); 
-    print_code("sub rsp, %d", localvar_count * 8); 
+    print_code("sub rsp, %d", (localvar_count + arg_count) * 8); 
 
-    if (node->compound_stmt_node != NULL) {
-        process_compound_stmt(node->compound_stmt_node);
-    } 
+    process_func_declarator(declarator_node);
+
+    process_compound_stmt(node->compound_stmt_node);
 
     print_code("mov rsp, rbp"); 
     print_code("pop rbp"); 

@@ -6,26 +6,12 @@
 
 static ExprNode* create_expr_node(TokenVec* vec, int* index);
 static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index);
+static DeclSpecifierNode* create_decl_specifier_node(TokenVec* vec, int* index);
+static DeclaratorNode* create_declarator_node(TokenVec* vec, int* index);
 static bool is_declaration(TokenVec* vec, int index);
 static bool is_storage_class_specifier(TokenVec* vec, int index);
 static bool is_type_qualifier(TokenVec* vec, int index);
 static bool is_type_specifier(TokenVec* vec, int index);
-
-#if 0
-static bool is_unary_operator(TokenVec* vec, int index) {
-    Token* token = vec->tokens[index]; if (token->type == TK_AMP
-     || token->type == TK_ASTER || token->type == TK_PLUS
-     || token->type == TK_MINUS
-     || token->type == TK_TILDE
-     || token->type == TK_EXCLA
-    ) {
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-#endif
 
 static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
     ConstantNode* constant_node = malloc(sizeof(ConstantNode));
@@ -155,10 +141,10 @@ static PostfixExprNode* create_postfix_expr_node(TokenVec* vec, int* index) {
                 }
 
                 ptr_vector_push_back(p_postfix_expr_node->assign_expr_nodes, assign_expr_node); 
+                token = vec->tokens[*index];
             }
 
             ++(*index);
-
             break;
         }
         case TK_DOT: {
@@ -420,6 +406,7 @@ static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index) {
     assign_expr_node->assign_operator       = OP_NONE;
 
     const int buf = *index;
+
     assign_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
     if (assign_expr_node->unary_expr_node == NULL) {
         error("Failed to create unary-expression node.\n");
@@ -602,6 +589,78 @@ static InitializerNode* create_initializer_node(TokenVec* vec, int* index) {
     return initializer_node;
 }
 
+static bool is_declarator(TokenVec* vec, int index) {
+    const Token* token = vec->tokens[index];
+    return (token->type == TK_IDENT || token->type == TK_ASTER);
+}
+
+static ParamDeclarationNode* create_param_declaration_node(TokenVec* vec, int* index) {
+    ParamDeclarationNode* param_declaration_node = malloc(sizeof(ParamDeclarationNode));
+    param_declaration_node->decl_spec_nodes          = create_ptr_vector();
+    param_declaration_node->declarator_node          = NULL;
+    param_declaration_node->abstract_declarator_node = NULL;
+
+    while (is_declaration(vec, *index)) {
+        DeclSpecifierNode* decl_spec_node = create_decl_specifier_node(vec, index);
+        if (decl_spec_node == NULL) {
+            error("Failed to create declaration-specifier node.\n");
+            return NULL;
+        }
+
+        ptr_vector_push_back(param_declaration_node->decl_spec_nodes, decl_spec_node);
+    }
+
+    if (is_declarator(vec, *index)) {
+        param_declaration_node->declarator_node = create_declarator_node(vec, index); 
+    } 
+
+    return param_declaration_node;
+}
+
+static ParamListNode* create_param_list_node(TokenVec* vec, int* index) {
+    ParamListNode* param_list_node = malloc(sizeof(ParamListNode));
+    
+    param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
+    if (param_list_node->param_declaration_node == NULL) {
+        error("Failed to create parameter-declaration node.\n");
+        return NULL;
+    }
+    
+    ParamListNode* current = param_list_node;
+    const Token* token = vec->tokens[*index];
+    while (token->type == TK_COMMA) {
+        ParamListNode* p_param_list_node = malloc(sizeof(ParamListNode));
+        p_param_list_node->param_list_node = current;
+        p_param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
+        if (p_param_list_node->param_declaration_node == NULL) {
+            error("Failed to create parameter-declaration node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        current = p_param_list_node;
+    }
+
+    return current;
+}
+
+static ParamTypeListNode* create_param_type_list_node(TokenVec* vec, int* index) {
+    ParamTypeListNode* param_type_list_node = malloc(sizeof(ParamTypeListNode));
+
+    param_type_list_node->param_list_node = create_param_list_node(vec, index);
+    if (param_type_list_node->param_list_node == NULL) {
+        error("Failed to create parameter-type-list node.\n");
+        return NULL;
+    }
+
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_COMMA) {
+        // @todo
+    }
+
+    return param_type_list_node;
+}
+
 static DirectDeclaratorNode* create_direct_declarator_node(TokenVec* vec, int* index) {
     DirectDeclaratorNode* direct_declarator_node = malloc(sizeof(DirectDeclaratorNode));
     direct_declarator_node->identifier             = NULL;
@@ -613,14 +672,90 @@ static DirectDeclaratorNode* create_direct_declarator_node(TokenVec* vec, int* i
     direct_declarator_node->identifier_list        = NULL; // @todo
 
     const Token* token = vec->tokens[*index];
-    if (token->type == TK_IDENT) {
+    switch (token->type) {
+    case TK_IDENT: {
         direct_declarator_node->identifier     = malloc(sizeof(char) * token->strlen);
         direct_declarator_node->identifier_len = token->strlen;
         strncpy(direct_declarator_node->identifier, token->str, token->strlen);
         ++(*index);
+
+        break;
+    }
+    case TK_LPAREN: {
+        ++(*index);
+
+        // @todo
+        break;
+    }
+    default: {
+        break;
+    }
     }
 
-    return direct_declarator_node;
+    DirectDeclaratorNode* current = direct_declarator_node;
+    token = vec->tokens[*index];
+    while (token->type == TK_LSQUARE || token->type == TK_LPAREN) {
+        ++(*index);
+   
+        DirectDeclaratorNode* p_direct_declarator_node   = malloc(sizeof(DirectDeclaratorNode));
+        p_direct_declarator_node->identifier             = NULL;
+        p_direct_declarator_node->identifier_len         = 0;
+        p_direct_declarator_node->declarator_node        = NULL; 
+        p_direct_declarator_node->direct_declarator_node = current;
+        p_direct_declarator_node->constant_expr_node     = NULL; 
+        p_direct_declarator_node->param_type_list_node   = NULL; 
+        p_direct_declarator_node->identifier_list        = create_ptr_vector();
+
+        switch (token->type) {
+        case TK_LSQUARE: {
+            // @todo
+            break;
+        }
+        case TK_LPAREN: {
+            if (is_declaration(vec, *index)) {
+                p_direct_declarator_node->param_type_list_node = create_param_type_list_node(vec, index);
+                if (p_direct_declarator_node->param_type_list_node == NULL) {
+                    error("Failed to create parameter-type-list node.\n");
+                    return NULL;
+                } 
+
+                token = vec->tokens[*index];
+                if (token->type != TK_RPAREN) {
+                    error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                    return NULL;
+                }
+                ++(*index);
+            } 
+            else {
+                token = vec->tokens[*index];
+                while (token->type == TK_IDENT) {
+                    char* identifier = malloc(sizeof(char) * token->strlen);
+                    strncpy(identifier, token->str, token->strlen);
+                    ptr_vector_push_back(p_direct_declarator_node->identifier_list, identifier);
+
+                    ++(*index);
+                    token = vec->tokens[*index];
+                }
+
+                if (token->type != TK_RPAREN) {
+                    error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                    return NULL;
+                }
+                ++(*index);
+            }
+              
+            break;
+        }
+        default: {
+            break;
+        }
+        }
+
+        token = vec->tokens[*index];
+        current = p_direct_declarator_node;
+    }
+
+    return current;
 }
 
 static DeclaratorNode* create_declarator_node(TokenVec* vec, int* index) {
@@ -884,8 +1019,40 @@ static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
 
 static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
     FuncDefNode* func_def_node = malloc(sizeof(FuncDefNode));
+    func_def_node->decl_specifier_nodes = create_ptr_vector();
+    func_def_node->declarator_node      = NULL;
+    func_def_node->declaration_nodes    = create_ptr_vector();
+    func_def_node->compound_stmt_node   = NULL;
 
-    // type specifier
+    // {<declaration-specifier>}*
+    while (is_declaration(vec, *index)) {
+        DeclSpecifierNode* decl_specifier_node = create_decl_specifier_node(vec, index);
+        if (decl_specifier_node == NULL) {
+            error("Failed to create declaration-specifier node.\n");
+            return NULL;
+        }
+        
+        ptr_vector_push_back(func_def_node->decl_specifier_nodes, decl_specifier_node);
+    }
+
+    // <declarator>
+    func_def_node->declarator_node = create_declarator_node(vec, index);
+    if (func_def_node->declarator_node == NULL) {
+        error("Failed to create declarator node.\n");
+        return NULL;
+    }
+
+    // {<declaration>}*
+    // @todo
+
+    // <compound-statement>
+    func_def_node->compound_stmt_node = create_compound_stmt_node(vec, index);
+    if (func_def_node->compound_stmt_node == NULL) {
+        error("Failed to create compound-statement node\n");
+        return NULL;
+    }
+
+#if 0    
     {
         const Token* token = vec->tokens[*index];
         switch (token->type) {
@@ -944,12 +1111,7 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
         }
         ++(*index);
     }
-
-    func_def_node->compound_stmt_node = create_compound_stmt_node(vec, index);
-    if (func_def_node->compound_stmt_node == NULL) {
-        error("Failed to create compound-statement node\n");
-        return NULL;
-    }
+#endif
 
     return func_def_node;
 }
@@ -1321,4 +1483,5 @@ static void print_name(const char* s, int indent) {
     }
     printf("%s\n", s);
 }
+
 #endif

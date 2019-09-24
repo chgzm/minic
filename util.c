@@ -21,13 +21,12 @@ void _print_tmsp() {
     snprintf(
         buf
       , 30
-      , "%4d/%02d/%02d %02d:%02d:%02d.%09ld"
+      , "%4d/%02d/%02d %02d:%02d:%02d"
       , tm.tm_year + 1900 , tm.tm_mon + 1
       , tm.tm_mday
       , tm.tm_hour
       , tm.tm_min
       , tm.tm_sec
-      , ts.tv_nsec
     );
 
     fprintf(stderr, "[%s ", buf);

@@ -10,6 +10,6 @@ struct LocalVar {
     int   offset;
 };
 
-void gen(TransUnitNode* node);
+void gen(const TransUnitNode* node);
 
 #endif

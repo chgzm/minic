@@ -632,7 +632,7 @@ static void process_external_decl(const ExternalDeclNode* node) {
     }
 }
 
-void gen(TransUnitNode* node) {
+void gen(const TransUnitNode* node) {
     print_header();
     print_global(node);
     

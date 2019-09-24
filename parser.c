@@ -4,16 +4,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-static ExprNode* create_expr_node(TokenVec* vec, int* index);
-static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index);
-static DeclSpecifierNode* create_decl_specifier_node(TokenVec* vec, int* index);
-static DeclaratorNode* create_declarator_node(TokenVec* vec, int* index);
-static bool is_declaration(TokenVec* vec, int index);
-static bool is_storage_class_specifier(TokenVec* vec, int index);
-static bool is_type_qualifier(TokenVec* vec, int index);
-static bool is_type_specifier(TokenVec* vec, int index);
+static ExprNode* create_expr_node(const TokenVec* vec, int* index);
+static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index);
+static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index);
+static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index);
+static bool is_declaration(const TokenVec* vec, int index);
+static bool is_storage_class_specifier(const TokenVec* vec, int index);
+static bool is_type_qualifier(const TokenVec* vec, int index);
+static bool is_type_specifier(const TokenVec* vec, int index);
 
-static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
+static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
     ConstantNode* constant_node = malloc(sizeof(ConstantNode));
 
     const Token* token = vec->tokens[*index];
@@ -39,7 +39,7 @@ static ConstantNode* create_constant_node(TokenVec* vec, int* index) {
     return constant_node;
 }
 
-static PrimaryExprNode* create_primary_expr_node(TokenVec* vec, int* index) {
+static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index) {
     PrimaryExprNode* primary_expr_node = malloc(sizeof(PrimaryExprNode));
     primary_expr_node->constant_node  = NULL;
     primary_expr_node->expr_node      = NULL;
@@ -93,7 +93,7 @@ static PrimaryExprNode* create_primary_expr_node(TokenVec* vec, int* index) {
     return primary_expr_node;
 }
 
-static PostfixExprNode* create_postfix_expr_node(TokenVec* vec, int* index) {
+static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index) {
     PostfixExprNode* postfix_expr_node = malloc(sizeof(PostfixExprNode));
     postfix_expr_node->primary_expr_node = NULL;
     postfix_expr_node->postfix_expr_node = NULL;
@@ -176,7 +176,7 @@ static PostfixExprNode* create_postfix_expr_node(TokenVec* vec, int* index) {
     return current;
 }
 
-static UnaryExprNode* create_unary_expr_node(TokenVec* vec, int* index) {
+static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
     UnaryExprNode* unary_expr_node = malloc(sizeof(UnaryExprNode));
     unary_expr_node->postfix_expr_node = NULL;
     unary_expr_node->unary_expr_node   = NULL;
@@ -191,7 +191,7 @@ static UnaryExprNode* create_unary_expr_node(TokenVec* vec, int* index) {
     return unary_expr_node;
 }
 
-static CastExprNode* create_cast_expr_node(TokenVec* vec, int* index) {
+static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index) {
     CastExprNode* cast_expr_node = malloc(sizeof(CastExprNode));
     cast_expr_node->unary_expr_node = NULL;
     cast_expr_node->cast_expr_node  = NULL;
@@ -205,7 +205,7 @@ static CastExprNode* create_cast_expr_node(TokenVec* vec, int* index) {
     return cast_expr_node;
 }
 
-static MultiPlicativeExprNode* create_multiplicative_expr_node(TokenVec* vec, int* index) {
+static MultiPlicativeExprNode* create_multiplicative_expr_node(const TokenVec* vec, int* index) {
     MultiPlicativeExprNode* multiplicative_expr_node = malloc(sizeof(MultiPlicativeExprNode));
     multiplicative_expr_node->operator_type            = OP_NONE;
     multiplicative_expr_node->cast_expr_node           = NULL;
@@ -240,7 +240,7 @@ static MultiPlicativeExprNode* create_multiplicative_expr_node(TokenVec* vec, in
     return current;
 }
 
-static AdditiveExprNode* create_additive_expr_node(TokenVec* vec, int* index) {
+static AdditiveExprNode* create_additive_expr_node(const TokenVec* vec, int* index) {
     AdditiveExprNode* additive_expr_node = malloc(sizeof(AdditiveExprNode));
     additive_expr_node->operator_type            = OP_NONE;
     additive_expr_node->multiplicative_expr_node = NULL;
@@ -272,7 +272,7 @@ static AdditiveExprNode* create_additive_expr_node(TokenVec* vec, int* index) {
     return current;
 }
 
-static ShiftExprNode* create_shift_expr(TokenVec* vec, int* index) {
+static ShiftExprNode* create_shift_expr(const TokenVec* vec, int* index) {
     ShiftExprNode* shift_expr_node = malloc(sizeof(ShiftExprNode));
     shift_expr_node->additive_expr_node = NULL;
     shift_expr_node->shift_expr_node    = NULL;
@@ -286,7 +286,7 @@ static ShiftExprNode* create_shift_expr(TokenVec* vec, int* index) {
     return shift_expr_node;
 }
 
-static RelationalExprNode* create_relational_expr_node(TokenVec* vec, int* index) {
+static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int* index) {
     RelationalExprNode* relational_expr_node = malloc(sizeof(RelationalExprNode));
     relational_expr_node->shift_expr_node      = NULL;
     relational_expr_node->relational_expr_node = NULL;
@@ -300,7 +300,7 @@ static RelationalExprNode* create_relational_expr_node(TokenVec* vec, int* index
     return relational_expr_node;
 }
 
-static EqualityExprNode* create_equality_expr_node(TokenVec* vec, int* index) {
+static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* index) {
     EqualityExprNode* equality_expr_node = malloc(sizeof(EqualityExprNode));
     equality_expr_node->equality_expr_node = NULL;
 
@@ -313,7 +313,7 @@ static EqualityExprNode* create_equality_expr_node(TokenVec* vec, int* index) {
     return equality_expr_node;
 }
 
-static AndExprNode* create_and_expr_node(TokenVec* vec, int* index) {
+static AndExprNode* create_and_expr_node(const TokenVec* vec, int* index) {
     AndExprNode* and_expr_node = malloc(sizeof(AndExprNode));
     and_expr_node->equality_expr_node = NULL;
     and_expr_node->and_expr_node      = NULL;
@@ -327,7 +327,7 @@ static AndExprNode* create_and_expr_node(TokenVec* vec, int* index) {
     return and_expr_node;
 }
 
-static ExclusiveOrExprNode* create_exclusive_or_expr_node(TokenVec* vec, int* index) {
+static ExclusiveOrExprNode* create_exclusive_or_expr_node(const TokenVec* vec, int* index) {
     ExclusiveOrExprNode* exclusive_or_expr_node = malloc(sizeof(ExclusiveOrExprNode));
     exclusive_or_expr_node->and_expr_node          = NULL;
     exclusive_or_expr_node->exclusive_or_expr_node = NULL;
@@ -341,7 +341,7 @@ static ExclusiveOrExprNode* create_exclusive_or_expr_node(TokenVec* vec, int* in
     return exclusive_or_expr_node;
 }
 
-static InclusiveOrExprNode* create_inclusive_or_expr_node(TokenVec* vec, int* index) {
+static InclusiveOrExprNode* create_inclusive_or_expr_node(const TokenVec* vec, int* index) {
     InclusiveOrExprNode* inclusive_or_expr_node = malloc(sizeof(InclusiveOrExprNode));
     inclusive_or_expr_node->exclusive_or_expr_node = NULL;
     inclusive_or_expr_node->inclusive_or_expr_node = NULL;
@@ -355,7 +355,7 @@ static InclusiveOrExprNode* create_inclusive_or_expr_node(TokenVec* vec, int* in
     return inclusive_or_expr_node;
 }
 
-static LogicalAndExprNode* create_logical_and_expr_node(TokenVec* vec, int* index) {
+static LogicalAndExprNode* create_logical_and_expr_node(const TokenVec* vec, int* index) {
     LogicalAndExprNode* logical_and_expr_node = malloc(sizeof(LogicalAndExprNode));
     logical_and_expr_node->inclusive_or_expr_node = NULL;
     logical_and_expr_node->logical_and_expr_node  = NULL;
@@ -369,7 +369,7 @@ static LogicalAndExprNode* create_logical_and_expr_node(TokenVec* vec, int* inde
     return logical_and_expr_node;
 }
 
-static LogicalOrExprNode* create_logical_or_expr_node(TokenVec* vec, int* index) {
+static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* index) {
     LogicalOrExprNode* logical_or_expr_node = malloc(sizeof(LogicalOrExprNode));
     logical_or_expr_node->logical_or_expr_node  = NULL;
     logical_or_expr_node->logical_and_expr_node = NULL;
@@ -383,7 +383,7 @@ static LogicalOrExprNode* create_logical_or_expr_node(TokenVec* vec, int* index)
     return logical_or_expr_node;
 }
 
-static ConditionalExprNode* create_conditional_expr_node(TokenVec* vec, int* index) {
+static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, int* index) {
     ConditionalExprNode* conditional_expr_node = malloc(sizeof(ConditionalExprNode));
     conditional_expr_node->logical_or_expr_node  = NULL;
     conditional_expr_node->logical_and_expr_node = NULL;
@@ -398,7 +398,7 @@ static ConditionalExprNode* create_conditional_expr_node(TokenVec* vec, int* ind
     return conditional_expr_node;
 }
 
-static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index) {
+static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index) {
     AssignExprNode* assign_expr_node = malloc(sizeof(AssignExprNode));
     assign_expr_node->conditional_expr_node = NULL;
     assign_expr_node->unary_expr_node       = NULL;
@@ -447,7 +447,7 @@ static AssignExprNode* create_assign_expr_node(TokenVec* vec, int* index) {
     return assign_expr_node;
 }
 
-static ExprNode* create_expr_node(TokenVec* vec, int* index) {
+static ExprNode* create_expr_node(const TokenVec* vec, int* index) {
     ExprNode* expr_node = malloc(sizeof(ExprNode));
     expr_node->assign_expr_node = NULL;
     expr_node->expr_node        = NULL;
@@ -462,7 +462,7 @@ static ExprNode* create_expr_node(TokenVec* vec, int* index) {
     const Token* token = vec->tokens[*index];
     while (token->type == TK_COMMA) {
         ++(*index);
-        ExprNode* p_expr_node = malloc(sizeof(ExprNode));
+        ExprNode* p_expr_node         = malloc(sizeof(ExprNode));
         p_expr_node->expr_node        = current;
         p_expr_node->assign_expr_node = create_assign_expr_node(vec, index);
         if (p_expr_node->assign_expr_node == NULL) {
@@ -477,7 +477,7 @@ static ExprNode* create_expr_node(TokenVec* vec, int* index) {
     return current;
 }
 
-static JumpStmtNode* create_jump_stmt_node(TokenVec* vec, int* index) {
+static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
     JumpStmtNode* jump_stmt_node = malloc(sizeof(JumpStmtNode));
     jump_stmt_node->identifier = NULL;
     jump_stmt_node->expr_node  = NULL;
@@ -523,7 +523,7 @@ static JumpStmtNode* create_jump_stmt_node(TokenVec* vec, int* index) {
     return jump_stmt_node;
 }
 
-static ExprStmtNode* create_expr_stmt_node(TokenVec* vec, int* index) {
+static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
     ExprStmtNode* expr_stmt_node = malloc(sizeof(ExprStmtNode));
 
     const Token* token = vec->tokens[*index];
@@ -548,7 +548,7 @@ static ExprStmtNode* create_expr_stmt_node(TokenVec* vec, int* index) {
     return expr_stmt_node;
 }
 
-static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
+static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
     StmtNode* stmt_node = malloc(sizeof(StmtNode));
 
     const Token* token = vec->tokens[*index];
@@ -576,7 +576,7 @@ static StmtNode* create_stmt_node(TokenVec* vec, int* index) {
     return stmt_node;
 }
 
-static InitializerNode* create_initializer_node(TokenVec* vec, int* index) {
+static InitializerNode* create_initializer_node(const TokenVec* vec, int* index) {
     InitializerNode* initializer_node = malloc(sizeof(InitializerNode));
     initializer_node->initializer_list_node = NULL; // @todo
 
@@ -589,12 +589,12 @@ static InitializerNode* create_initializer_node(TokenVec* vec, int* index) {
     return initializer_node;
 }
 
-static bool is_declarator(TokenVec* vec, int index) {
+static bool is_declarator(const TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
     return (token->type == TK_IDENT || token->type == TK_ASTER);
 }
 
-static ParamDeclarationNode* create_param_declaration_node(TokenVec* vec, int* index) {
+static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, int* index) {
     ParamDeclarationNode* param_declaration_node = malloc(sizeof(ParamDeclarationNode));
     param_declaration_node->decl_spec_nodes          = create_ptr_vector();
     param_declaration_node->declarator_node          = NULL;
@@ -617,7 +617,7 @@ static ParamDeclarationNode* create_param_declaration_node(TokenVec* vec, int* i
     return param_declaration_node;
 }
 
-static ParamListNode* create_param_list_node(TokenVec* vec, int* index) {
+static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
     ParamListNode* param_list_node = malloc(sizeof(ParamListNode));
     
     param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
@@ -644,7 +644,7 @@ static ParamListNode* create_param_list_node(TokenVec* vec, int* index) {
     return current;
 }
 
-static ParamTypeListNode* create_param_type_list_node(TokenVec* vec, int* index) {
+static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* index) {
     ParamTypeListNode* param_type_list_node = malloc(sizeof(ParamTypeListNode));
 
     param_type_list_node->param_list_node = create_param_list_node(vec, index);
@@ -661,7 +661,7 @@ static ParamTypeListNode* create_param_type_list_node(TokenVec* vec, int* index)
     return param_type_list_node;
 }
 
-static DirectDeclaratorNode* create_direct_declarator_node(TokenVec* vec, int* index) {
+static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, int* index) {
     DirectDeclaratorNode* direct_declarator_node = malloc(sizeof(DirectDeclaratorNode));
     direct_declarator_node->identifier             = NULL;
     direct_declarator_node->identifier_len         = 0;
@@ -758,7 +758,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(TokenVec* vec, int* i
     return current;
 }
 
-static DeclaratorNode* create_declarator_node(TokenVec* vec, int* index) {
+static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index) {
     DeclaratorNode* declarator_node = malloc(sizeof(DeclaratorNode));
     declarator_node->pointer_node = NULL; // @todo
 
@@ -771,7 +771,7 @@ static DeclaratorNode* create_declarator_node(TokenVec* vec, int* index) {
     return declarator_node;
 }
 
-static InitDeclaratorNode* create_init_declarator_node(TokenVec* vec, int* index) {
+static InitDeclaratorNode* create_init_declarator_node(const TokenVec* vec, int* index) {
     InitDeclaratorNode* init_declarator_node = malloc(sizeof(InitDeclaratorNode));
     init_declarator_node->initializer_node = NULL;
 
@@ -795,7 +795,7 @@ static InitDeclaratorNode* create_init_declarator_node(TokenVec* vec, int* index
     return init_declarator_node;
 }
 
-static TypeQualifierNode* create_type_qualifier_node(TokenVec* vec, int* index) {
+static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index) {
     TypeQualifierNode* type_qualifier_node = malloc(sizeof(TypeQualifierNode));
 
     const Token* token = vec->tokens[*index];
@@ -812,7 +812,7 @@ static TypeQualifierNode* create_type_qualifier_node(TokenVec* vec, int* index) 
     return type_qualifier_node;
 }
 
-static TypeSpecifierNode* create_type_specifier_node(TokenVec* vec, int* index) {
+static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index) {
     TypeSpecifierNode* type_specifier_node = malloc(sizeof(TypeSpecifierNode));
     type_specifier_node->type_specifier                 = TYPE_NONE;
     type_specifier_node->struct_or_union_specifier_node = NULL;
@@ -844,7 +844,7 @@ static TypeSpecifierNode* create_type_specifier_node(TokenVec* vec, int* index) 
     return type_specifier_node;
 }
 
-static StorageClassSpecifierNode* create_storage_class_specifier_node(TokenVec* vec, int* index) {
+static StorageClassSpecifierNode* create_storage_class_specifier_node(const TokenVec* vec, int* index) {
     StorageClassSpecifierNode* storage_class_specifier_node = malloc(sizeof(StorageClassSpecifierNode));
     const Token* token = vec->tokens[*index];
     if      (token->type == TK_AUTO)     { storage_class_specifier_node->storage_class_specifier = SC_AUTO;     }
@@ -861,7 +861,7 @@ static StorageClassSpecifierNode* create_storage_class_specifier_node(TokenVec* 
     return storage_class_specifier_node;
 }
 
-static DeclSpecifierNode* create_decl_specifier_node(TokenVec* vec, int* index) {
+static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index) {
     DeclSpecifierNode* decl_specifier_node = malloc(sizeof(DeclSpecifierNode));
     decl_specifier_node->storage_class_specifier_node = NULL;
     decl_specifier_node->type_specifier_node          = NULL;
@@ -892,7 +892,7 @@ static DeclSpecifierNode* create_decl_specifier_node(TokenVec* vec, int* index) 
     return decl_specifier_node;
 }
 
-static DeclarationNode* create_declaration_node(TokenVec* vec, int* index) {
+static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index) {
     DeclarationNode* declaration_node = malloc(sizeof(DeclarationNode));
     declaration_node->decl_specifier_nodes  = create_ptr_vector();
     declaration_node->init_declarator_nodes = create_ptr_vector();
@@ -923,7 +923,7 @@ static DeclarationNode* create_declaration_node(TokenVec* vec, int* index) {
     return declaration_node;
 }
 
-static bool is_storage_class_specifier(TokenVec* vec, int index) {
+static bool is_storage_class_specifier(const TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
 
     return (token->type == TK_AUTO
@@ -934,12 +934,12 @@ static bool is_storage_class_specifier(TokenVec* vec, int index) {
     );
 }
 
-static bool is_type_qualifier(TokenVec* vec, int index) {
+static bool is_type_qualifier(const TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
     return (token->type == TK_CONST || token->type == TK_VOLATILE);
 }
 
-static bool is_type_specifier(TokenVec* vec, int index) {
+static bool is_type_specifier(const TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
 
     return (token->type == TK_VOID
@@ -956,14 +956,14 @@ static bool is_type_specifier(TokenVec* vec, int index) {
    );
 }
 
-static bool is_declaration(TokenVec* vec, int index) {
+static bool is_declaration(const TokenVec* vec, int index) {
     return (is_storage_class_specifier(vec, index)
          || is_type_specifier(vec, index)
          || is_type_qualifier(vec, index)
     );
 }
 
-static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
+static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index) {
     CompoundStmtNode* compound_stmt_node = malloc(sizeof(CompoundStmtNode));
     compound_stmt_node->declaration_nodes = create_ptr_vector();
     compound_stmt_node->stmt_nodes = create_ptr_vector();
@@ -1017,7 +1017,7 @@ static CompoundStmtNode* create_compound_stmt_node(TokenVec* vec, int* index) {
     return compound_stmt_node;
 }
 
-static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
+static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
     FuncDefNode* func_def_node = malloc(sizeof(FuncDefNode));
     func_def_node->decl_specifier_nodes = create_ptr_vector();
     func_def_node->declarator_node      = NULL;
@@ -1116,7 +1116,7 @@ static FuncDefNode* create_func_def_node(TokenVec* vec, int* index) {
     return func_def_node;
 }
 
-static ExternalDeclNode* create_external_decl_node(TokenVec* vec, int* index) {
+static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* index) {
     ExternalDeclNode* external_decl_node = malloc(sizeof(ExternalDeclNode));
     external_decl_node->declaration_node = NULL;
 

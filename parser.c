@@ -142,6 +142,11 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
 
                 ptr_vector_push_back(p_postfix_expr_node->assign_expr_nodes, assign_expr_node); 
                 token = vec->tokens[*index];
+
+                if (token->type == TK_COMMA) {
+                    ++(*index);   
+                    token = vec->tokens[*index];
+                }
             }
 
             ++(*index);
@@ -629,6 +634,8 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
     ParamListNode* current = param_list_node;
     const Token* token = vec->tokens[*index];
     while (token->type == TK_COMMA) {
+        ++(*index);
+
         ParamListNode* p_param_list_node = malloc(sizeof(ParamListNode));
         p_param_list_node->param_list_node = current;
         p_param_list_node->param_declaration_node = create_param_declaration_node(vec, index);

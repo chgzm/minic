@@ -408,7 +408,11 @@ static void process_expr(const ExprNode* node) {
     }
     // <expression> , <assignment-expression>
     else {
-        // @todo
+        const ExprNode* current = node;
+        while (current->expr_node != NULL) {
+            process_assign_expr(current->assign_expr_node);
+            current = current->expr_node;
+        }
     }
 }
 

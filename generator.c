@@ -7,14 +7,20 @@
 
 #include "util.h"
 
+//
+// global
+//
+
 static char* arg_registers[] = {
     "rdi", "rsi", "rdx", "rcx", "r8", "r9"
 };
-
+static int label_index;
 static int current_offset;
 static PtrVector* localvar_list;
+
 static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
+static void process_stmt(const StmtNode* node);
 static void process_conditional_expr(const ConditionalExprNode* node);
 
 static void print_code(const char* fmt, ...) { 
@@ -32,7 +38,7 @@ static void print_header() {
 static void print_global(const TransUnitNode* node) {
     printf(".global");
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
-        const ExternalDeclNode*     external_decl_node     = (ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
+        const ExternalDeclNode*     external_decl_node     = (const ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
         const FuncDefNode*          func_def_node          = external_decl_node->func_def_node;
         const DeclaratorNode*       declarator_node        = func_def_node->declarator_node;
         const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
@@ -43,6 +49,12 @@ static void print_global(const TransUnitNode* node) {
         printf(" %s", direct_declarator_node->direct_declarator_node->identifier); // @todo
     } 
     printf("\n\n");
+}
+
+static const char* get_label() {
+    const char* label = fmt(".L%d", label_index);
+    ++label_index;
+    return label;
 }
 
 static void process_identifier_left(const char* identifier, int len) {
@@ -290,13 +302,32 @@ static void process_relational_expr(const RelationalExprNode* node) {
 
 static void process_equality_expr(const EqualityExprNode* node) {
     // <relational-expression>
-    if (node->equality_expr_node == NULL) {
+    switch (node->cmp_type) {
+    case CMP_NONE: {
         process_relational_expr(node->relational_expr_node);
+        break;
     }
-    //   <equality-expression> == <relational-expression> 
-    // | <equality-expression> != <relational-expression>  
-    else {
-        // @todo
+    // <equality-expression> == <relational-expression> 
+    case CMP_EQ: {
+        process_equality_expr(node->equality_expr_node);
+        process_relational_expr(node->relational_expr_node);
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cmp rax, rdi");
+        print_code("sete al");
+        print_code("movzb rax, al");
+        print_code("push rax");
+
+        break;
+    }
+    // <equality-expression> != <relational-expression>  
+    case CMP_NE: {
+        break;
+    }
+    default:{
+        break;
+    }
     }
 }
 
@@ -447,12 +478,41 @@ static void process_jump_stmt(const JumpStmtNode* node) {
     }
 }
 
+static void process_selection_stmt(const SelectionStmtNode* node) {
+    switch (node->selection_type) {
+    case SELECT_IF: {
+        const char* label = get_label();
+
+        process_expr(node->expr_node);
+        print_code("pop rax");
+        print_code("cmp rax, 0");
+        print_code("je %s", label);
+        process_stmt(node->stmt_node1);
+        printf("%s:\n", label);
+
+        break;
+    } 
+    case SELECT_IF_ELSE: {
+        break;
+    } 
+    case SELECT_SWITCH: {
+        break;
+    } 
+    default: {
+        break;
+    }
+    }
+}
+
 static void process_stmt(const StmtNode* node) {
     if (node->expr_stmt_node != NULL) {
         process_expr_stmt(node->expr_stmt_node);
     }
     else if (node->jump_stmt_node != NULL) {
         process_jump_stmt(node->jump_stmt_node);
+    }
+    else if (node->selection_stmt_node != NULL) {
+        process_selection_stmt(node->selection_stmt_node);
     }
 }
 
@@ -641,7 +701,9 @@ static void process_external_decl(const ExternalDeclNode* node) {
 void gen(const TransUnitNode* node) {
     print_header();
     print_global(node);
-    
+
+    label_index = 2;
+
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         const ExternalDeclNode* external_decl_node = (const ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
         process_external_decl(external_decl_node);

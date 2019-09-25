@@ -33,11 +33,13 @@ try test_return_mod_2.c 0
 try test_return_mix.c 33
 try test_return_paren.c 50
 try test_return_paren_2.c 35
+
 try test_localvar.c 42
 try test_localvar_2.c 7
 try test_localvar_3.c 17
 try test_localvar_4.c 7
 try test_localvar_5.c 34
+
 try test_func.c 42
 try test_func_2.c 5
 try test_func_3.c 10
@@ -46,5 +48,9 @@ try test_func_5.c 10
 try test_func_6.c 215
 try test_func_7.c 15
 try test_func_8.c 20
+try test_func_8.c 20
+
+try test_if.c 100
+try test_if_2.c 2
 
 echo -e "\e[36mPassed all tests.\e[0m"

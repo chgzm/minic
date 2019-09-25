@@ -56,6 +56,16 @@ enum OperatorType {
     OP_EXCLA,  // !
 };
 
+enum ComparisonOperatorType {
+    CMP_NONE,  // None
+    CMP_LT,    // <
+    CMP_GT,    // >
+    CMP_EQ,    // ==
+    CMP_NE,    // !=
+    CMP_LE,    // <=
+    CMP_GE,    // >=
+};
+
 enum ConstType {
     CONST_INT,
     CONST_STR,
@@ -82,6 +92,12 @@ enum PostfixType {
 enum ParamListType {
     PL_NONE, // 
     PL_DOT,  // , ...
+};
+
+enum SelectionStmtType {
+    SELECT_IF,
+    SELECT_IF_ELSE,
+    SELECT_SWITCH,
 };
 
 typedef struct TransUnitNode TransUnitNode;
@@ -136,7 +152,7 @@ typedef struct CompoundStmtNode CompoundStmtNode;
 typedef struct StmtNode StmtNode;
 typedef struct LabeledStmtNode LabeledStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
-typedef struct SelectStmtNode SelectStmtNode;
+typedef struct SelectionStmtNode SelectionStmtNode;
 typedef struct IterStmtNode IterStmtNode;
 typedef struct JumpStmtNode JumpStmtNode;
 
@@ -240,6 +256,7 @@ struct AndExprNode {
 };
 
 struct EqualityExprNode {
+    int                 cmp_type;
     RelationalExprNode* relational_expr_node;
     EqualityExprNode*   equality_expr_node;
 };
@@ -380,8 +397,9 @@ struct CompoundStmtNode {
 };
 
 struct StmtNode {
-    ExprStmtNode* expr_stmt_node; 
-    JumpStmtNode* jump_stmt_node;
+    ExprStmtNode*      expr_stmt_node; 
+    SelectionStmtNode* selection_stmt_node;
+    JumpStmtNode*      jump_stmt_node;
 };
 
 struct LabeledStmtNode {
@@ -391,7 +409,11 @@ struct ExprStmtNode {
     ExprNode* expr_node;  
 };
 
-struct SelectStmtNode {
+struct SelectionStmtNode {
+    int selection_type;
+    ExprNode* expr_node;
+    StmtNode* stmt_node1; 
+    StmtNode* stmt_node2; 
 };
 
 struct IterStmtNode {

@@ -8,6 +8,7 @@ static ExprNode* create_expr_node(const TokenVec* vec, int* index);
 static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index);
 static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index);
 static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index);
+static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
 static bool is_declaration(const TokenVec* vec, int index);
 static bool is_storage_class_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
@@ -308,6 +309,7 @@ static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int*
 static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* index) {
     EqualityExprNode* equality_expr_node = malloc(sizeof(EqualityExprNode));
     equality_expr_node->equality_expr_node = NULL;
+    equality_expr_node->cmp_type           = CMP_NONE;
 
     equality_expr_node->relational_expr_node = create_relational_expr_node(vec, index);
     if (equality_expr_node->relational_expr_node == NULL) {
@@ -315,7 +317,30 @@ static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* ind
         return NULL;
     }
 
-    return equality_expr_node;
+    EqualityExprNode* current = equality_expr_node;
+    const Token* token = vec->tokens[*index];
+    while (token->type == TK_EQ || token->type == TK_NE) {
+        ++(*index);
+    
+        EqualityExprNode* p_equality_expr_node = malloc(sizeof(EqualityExprNode));
+        p_equality_expr_node->equality_expr_node   = current;
+        p_equality_expr_node->relational_expr_node = create_relational_expr_node(vec, index);
+        if (equality_expr_node->relational_expr_node == NULL) {
+            error("Failed to create relational-expression node.\n");
+            return NULL;
+        }
+
+        if (token->type == TK_EQ) {
+            p_equality_expr_node->cmp_type = CMP_EQ;
+        } else {
+            p_equality_expr_node->cmp_type = CMP_NE;
+        }
+        
+        token = vec->tokens[*index];
+        current = p_equality_expr_node;
+    }
+
+    return current;
 }
 
 static AndExprNode* create_and_expr_node(const TokenVec* vec, int* index) {
@@ -553,8 +578,77 @@ static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
     return expr_stmt_node;
 }
 
+static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* index) {
+    SelectionStmtNode* selection_stmt_node = malloc(sizeof(SelectionStmtNode));
+    selection_stmt_node->expr_node  = NULL;
+    selection_stmt_node->stmt_node1 = NULL;
+    selection_stmt_node->stmt_node2 = NULL;
+
+    const Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_IF: {
+        ++(*index);
+        token = vec->tokens[*index];
+        if (token->type != TK_LPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        selection_stmt_node->expr_node = create_expr_node(vec, index);
+        if (selection_stmt_node->expr_node == NULL) {
+            error("Failed to create expression-statement node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        if (token->type != TK_RPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        selection_stmt_node->stmt_node1 = create_stmt_node(vec, index);
+        if (selection_stmt_node->stmt_node1 == NULL) {
+            error("Failed to create statement node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        if (token->type == TK_ELSE) {
+            ++(*index);
+            selection_stmt_node->selection_type = SELECT_IF_ELSE;
+
+            selection_stmt_node->stmt_node2 = create_stmt_node(vec, index);
+            if (selection_stmt_node->stmt_node2 == NULL) {
+                error("Failed to create statement node.\n");
+                return NULL;
+            }
+        } 
+        else {
+            selection_stmt_node->selection_type = SELECT_IF;
+        }
+
+        break;
+    }
+    case TK_SWITCH: {
+        selection_stmt_node->selection_type = SELECT_SWITCH;
+        break;
+    }
+    default: {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+    }
+ 
+    return selection_stmt_node;
+}
+
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
     StmtNode* stmt_node = malloc(sizeof(StmtNode));
+    stmt_node->jump_stmt_node      = NULL;
+    stmt_node->expr_stmt_node      = NULL;
+    stmt_node->selection_stmt_node = NULL;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -562,6 +656,16 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
         stmt_node->jump_stmt_node = create_jump_stmt_node(vec, index);
         if (stmt_node->jump_stmt_node == NULL) {
             error("Failed to create jump-statement node.\n");
+            return NULL;
+        }
+
+        break;
+    }
+    case TK_IF: 
+    case TK_SWITCH: {
+        stmt_node->selection_stmt_node = create_selection_stmt_node(vec, index);
+        if (stmt_node->selection_stmt_node == NULL) {
+            error("Failed to create selection-statement node.\n");
             return NULL;
         }
 

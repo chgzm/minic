@@ -105,6 +105,5 @@ TokenVec* tokenize(void* addr);
 //
 
 const char* decode_token_type(int type);
-void dump_tokens(TokenVec* vec);
 
 #endif

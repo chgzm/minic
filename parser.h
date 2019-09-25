@@ -398,6 +398,7 @@ struct CompoundStmtNode {
 
 struct StmtNode {
     ExprStmtNode*      expr_stmt_node; 
+    CompoundStmtNode*  compound_stmt_node;
     SelectionStmtNode* selection_stmt_node;
     JumpStmtNode*      jump_stmt_node;
 };
@@ -430,11 +431,5 @@ struct JumpStmtNode {
 //
 
 TransUnitNode* parse(TokenVec* vec);
-
-//
-// debug
-//
-
-void dump_nodes(const TransUnitNode* node);
 
 #endif

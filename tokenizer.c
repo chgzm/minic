@@ -640,8 +640,4 @@ const char* decode_token_type(int type) {
     }
 }
 
-void dump_tokens(TokenVec* vec) {
-    for (int i = 0; i < vec->size; ++i) {
-        fprintf(stdout, "index=%d,token=%s\n", i, decode_token_type(vec->tokens[i]->type));
-    }
-}
+

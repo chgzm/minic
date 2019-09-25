@@ -56,5 +56,20 @@ try test_if_3.c 200
 try test_if_4.c 100
 try test_if_5.c 100
 try test_if_6.c 1
+try test_if_7.c 100
+try test_if_8.c 1
+try test_if_9.c 100
+try test_if_10.c 1
+try test_if_11.c 100
+try test_if_12.c 1
+try test_if_13.c 100
+try test_if_14.c 1
+
+try test_if_else.c 100
+try test_if_else_2.c 200
+try test_if_else_3.c 200
+try test_if_else_4.c 30
+
+try fib.c 89
 
 echo -e "\e[36mPassed all tests.\e[0m"

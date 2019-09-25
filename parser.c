@@ -302,13 +302,38 @@ static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int*
 
     relational_expr_node->shift_expr_node      = NULL;
     relational_expr_node->relational_expr_node = NULL;
+    relational_expr_node->cmp_type             = CMP_NONE;
     relational_expr_node->shift_expr_node      = create_shift_expr(vec, index);
     if (relational_expr_node->shift_expr_node == NULL) {
         error("Failed to create shift-expression node.\n");
         return NULL;
     }
+    
+    RelationalExprNode* current = relational_expr_node;
+    const Token* token = vec->tokens[*index];
+    while (token->type == TK_LANGLE || token->type == TK_RANGLE || token->type == TK_LE || token->type == TK_GE) {
+        ++(*index);
+    
+        RelationalExprNode* parent = malloc(sizeof(EqualityExprNode));
 
-    return relational_expr_node;
+        parent->shift_expr_node      = NULL;
+        parent->relational_expr_node = current;
+        parent->shift_expr_node      = create_shift_expr(vec, index);
+        if (parent->shift_expr_node == NULL) {
+            error("Failed to create shif-texpression node.\n");
+            return NULL;
+        }
+
+        if      (token->type == TK_LANGLE) { parent->cmp_type = CMP_LT; }
+        else if (token->type == TK_RANGLE) { parent->cmp_type = CMP_GT; }
+        else if (token->type == TK_LE)     { parent->cmp_type = CMP_LE; }
+        else if (token->type == TK_GE)     { parent->cmp_type = CMP_GE; }
+     
+        token = vec->tokens[*index];
+        current = parent;
+    }
+
+    return current;
 }
 
 static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* index) {
@@ -336,12 +361,9 @@ static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* ind
             return NULL;
         }
 
-        if (token->type == TK_EQ) {
-            p_equality_expr_node->cmp_type = CMP_EQ;
-        } else {
-            p_equality_expr_node->cmp_type = CMP_NE;
-        }
-        
+        if      (token->type == TK_EQ) { p_equality_expr_node->cmp_type = CMP_EQ; }
+        else if (token->type == TK_NE) { p_equality_expr_node->cmp_type = CMP_NE; }
+
         token = vec->tokens[*index];
         current = p_equality_expr_node;
     }

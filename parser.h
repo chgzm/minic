@@ -262,6 +262,7 @@ struct EqualityExprNode {
 };
 
 struct RelationalExprNode {
+    int                 cmp_type;
     ShiftExprNode*      shift_expr_node;
     RelationalExprNode* relational_expr_node;
 };

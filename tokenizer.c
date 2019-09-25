@@ -216,6 +216,11 @@ static Token* read_symbol(const char* p, int* pos) {
             ++(*pos);
             return token;
         }
+        case '=': {
+            token->type = TK_LE;
+            ++(*pos);
+            return token;
+        }
         default: {
             token->type = TK_LANGLE;
             return token;
@@ -227,6 +232,11 @@ static Token* read_symbol(const char* p, int* pos) {
         switch (s) {
         case '>': {
             token->type = TK_RSH;
+            ++(*pos);
+            return token;
+        }
+        case '=': {
+            token->type = TK_GE;
             ++(*pos);
             return token;
         }

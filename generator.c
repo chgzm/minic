@@ -17,6 +17,7 @@ static char* arg_registers[] = {
 static int label_index;
 static int current_offset;
 static PtrVector* localvar_list;
+static char* ret_label;
 
 static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
@@ -288,22 +289,77 @@ static void process_shift_expr(const ShiftExprNode* node) {
 }
 
 static void process_relational_expr(const RelationalExprNode* node) {
+    switch (node->cmp_type) {
     // <shift-expression>
-    if (node->relational_expr_node == NULL) {
+    case CMP_NONE: {
         process_shift_expr(node->shift_expr_node);
+        break;
     }
-    //   <relational-expression> <  <shift-expression>
-    // | <relational-expression> >  <shift-expression> 
-    // | <relational-expression> <= <shift-expression> 
-    // | <relational-expression> >= <shift-expression> 
-    else {
-        // @todo
+    // <relational-expression> <  <shift-expression>
+    case CMP_LT: {
+        process_relational_expr(node->relational_expr_node);
+        process_shift_expr(node->shift_expr_node);
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cmp rax, rdi");
+        print_code("setl al");
+        print_code("movzb rax, al");
+        print_code("push rax");
+
+        break;
+    }
+    // <relational-expression> >  <shift-expression> 
+    case CMP_GT: {
+        process_relational_expr(node->relational_expr_node);
+        process_shift_expr(node->shift_expr_node);
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cmp rax, rdi");
+        print_code("setg al");
+        print_code("movzb rax, al");
+        print_code("push rax");
+
+        break;
+    }
+    // <relational-expression> <= <shift-expression> 
+    case CMP_LE: {
+        process_relational_expr(node->relational_expr_node);
+        process_shift_expr(node->shift_expr_node);
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cmp rax, rdi");
+        print_code("setle al");
+        print_code("movzb rax, al");
+        print_code("push rax");
+
+        break;
+    }
+    // <relational-expression> >= <shift-expression> 
+    case CMP_GE: {
+        process_relational_expr(node->relational_expr_node);
+        process_shift_expr(node->shift_expr_node);
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cmp rax, rdi");
+        print_code("setge al");
+        print_code("movzb rax, al");
+        print_code("push rax");
+
+        break;
+    }
+    default: {
+        break;
+    }
     }
 }
 
 static void process_equality_expr(const EqualityExprNode* node) {
-    // <relational-expression>
     switch (node->cmp_type) {
+    // <relational-expression>
     case CMP_NONE: {
         process_relational_expr(node->relational_expr_node);
         break;
@@ -479,7 +535,10 @@ static void process_jump_stmt(const JumpStmtNode* node) {
             process_expr(node->expr_node);
         }
         print_code("pop rax");
-        // print_code("ret");
+        if (ret_label == NULL) {
+            ret_label = (char*)(get_label());
+        }
+        print_code("jmp %s", ret_label);
 
         break;
     }
@@ -504,6 +563,19 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         break;
     } 
     case SELECT_IF_ELSE: {
+        const char* label1 = get_label();
+        const char* label2 = get_label();
+
+        process_expr(node->expr_node);
+        print_code("pop rax");
+        print_code("cmp rax, 0");
+        print_code("je %s", label1);
+        process_stmt(node->stmt_node1);
+        print_code("jmp %s", label2);
+        printf("%s:\n", label1); 
+        process_stmt(node->stmt_node2);
+        printf("%s:\n", label2); 
+
         break;
     } 
     case SELECT_SWITCH: {
@@ -698,11 +770,14 @@ static void process_func_def(const FuncDefNode* node) {
     process_compound_stmt(node->compound_stmt_node);
 
     // epilogue
+    printf("%s:\n", ret_label);
     print_code("mov rsp, rbp"); 
     print_code("pop rbp"); 
     print_code("ret");
 
     free(localvar_list);
+    free(ret_label);
+    ret_label = NULL;
     current_offset = 8;
 }
 

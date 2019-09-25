@@ -237,8 +237,18 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '!': {
-        token->type = TK_EXCLA;
-        return token;
+        const char s = p[*pos];
+        switch (s) {
+        case '=': {
+            token->type = TK_NE;
+            ++(*pos);
+            return token;
+        }
+        default: {
+            token->type = TK_EXCLA;
+            return token;
+        }
+        }
     }
     case '&': {
         const char s = p[*pos];

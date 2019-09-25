@@ -324,6 +324,16 @@ static void process_equality_expr(const EqualityExprNode* node) {
     }
     // <equality-expression> != <relational-expression>  
     case CMP_NE: {
+        process_equality_expr(node->equality_expr_node);
+        process_relational_expr(node->relational_expr_node);
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("cmp rax, rdi");
+        print_code("setne al");
+        print_code("movzb rax, al");
+        print_code("push rax");
+
         break;
     }
     default:{

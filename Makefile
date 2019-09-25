@@ -5,8 +5,6 @@ OBJS=$(SRCS:.c=.o)
 minic: $(OBJS)
 	gcc -o $@ $(OBJS) $(LDFLAGS)
 
-minic: minic.c tokenizer.c
-
 test: minic
 	./test/test.sh
 

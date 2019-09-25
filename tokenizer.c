@@ -640,4 +640,6 @@ const char* decode_token_type(int type) {
     }
 }
 
-
+int get_token_type(const TokenVec* vec, int index) {
+    return vec->tokens[index]->type;
+}

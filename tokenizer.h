@@ -98,6 +98,8 @@ struct TokenVec {
 };
 typedef struct TokenVec TokenVec;
 
+int get_token_type(const TokenVec* vec, int index);
+
 TokenVec* tokenize(void* addr);
 
 //

@@ -22,6 +22,7 @@ static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
 static void process_stmt(const StmtNode* node);
 static void process_conditional_expr(const ConditionalExprNode* node);
+static void process_compound_stmt(const CompoundStmtNode* node);
 
 static void print_code(const char* fmt, ...) { 
     va_list ap;
@@ -507,6 +508,9 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
 static void process_stmt(const StmtNode* node) {
     if (node->expr_stmt_node != NULL) {
         process_expr_stmt(node->expr_stmt_node);
+    }
+    else if (node->compound_stmt_node != NULL) {
+        process_compound_stmt(node->compound_stmt_node);
     }
     else if (node->jump_stmt_node != NULL) {
         process_jump_stmt(node->jump_stmt_node);

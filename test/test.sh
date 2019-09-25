@@ -53,5 +53,6 @@ try test_func_8.c 20
 try test_if.c 100
 try test_if_2.c 2
 try test_if_3.c 200
+try test_if_4.c 100
 
 echo -e "\e[36mPassed all tests.\e[0m"

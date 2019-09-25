@@ -17,7 +17,7 @@ static TokenVec* tokenvec_create() {
 }
 
 static void tokenvec_push_back(TokenVec* vec, Token* token) {
-    if (vec->size == (vec->capacity - 1)) {
+    if (vec->size == vec->capacity) {
         vec->capacity *= 2;
         vec->tokens = realloc(vec->tokens, sizeof(Token*) * vec->capacity);
     }

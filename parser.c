@@ -1,5 +1,4 @@
 #include "parser.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +8,7 @@ static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index);
 static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index);
 static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index);
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
+static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
 static bool is_declaration(const TokenVec* vec, int index);
 static bool is_storage_class_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
@@ -653,6 +653,7 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
 
     stmt_node->jump_stmt_node      = NULL;
     stmt_node->expr_stmt_node      = NULL;
+    stmt_node->compound_stmt_node  = NULL;
     stmt_node->selection_stmt_node = NULL;
 
     const Token* token = vec->tokens[*index];
@@ -671,6 +672,15 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
         stmt_node->selection_stmt_node = create_selection_stmt_node(vec, index);
         if (stmt_node->selection_stmt_node == NULL) {
             error("Failed to create selection-statement node.\n");
+            return NULL;
+        }
+
+        break;
+    }
+    case TK_LBRCKT: {
+        stmt_node->compound_stmt_node = create_compound_stmt_node(vec, index);
+        if (stmt_node->compound_stmt_node == NULL) {
+            error("Failed to create compound-statement node.\n");
             return NULL;
         }
 

@@ -236,6 +236,7 @@ struct DirectDeclaratorNode {
 };
 
 struct ConstantExprNode {
+    ConditionalExprNode* conditional_expr_node;
 };
 
 struct ConditionalExprNode {
@@ -310,6 +311,7 @@ struct UnaryExprNode {
     UnaryExprNode*   unary_expr_node;
     CastExprNode*    cast_expr_node;
     int              type;
+    int              op_type;
 }; 
 
 struct PostfixExprNode {

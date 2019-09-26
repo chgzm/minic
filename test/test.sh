@@ -1,5 +1,4 @@
 #!/bin/bash
-
 function try() {
     file="$1"
     expected="$2"
@@ -95,5 +94,8 @@ try test_diveq.c 3
 try test_modeq.c 1
 try test_addeq.c 6
 try test_subeq.c 0
+
+try test_array.c 100
+try test_array_2.c 10
 
 echo -e "\e[36mPassed all tests.\e[0m"

@@ -3,8 +3,24 @@
 
 #include "parser.h"
 
+extern bool debug_flag;
+
+enum VarType {
+    VAR_INT,
+    VAR_PTR,
+};
+
+typedef struct Type Type;
+struct Type {
+    int   type;
+    int   type_size;
+    int   array_size;
+    Type* ptr;
+};
+
 typedef struct LocalVar LocalVar;
 struct LocalVar {
+    Type* type; 
     char* name;
     int   name_len;
     int   offset;

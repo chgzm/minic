@@ -9,6 +9,7 @@ static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* i
 static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index);
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
 static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
+static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
 static bool is_declaration(const TokenVec* vec, int index);
 static bool is_storage_class_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
@@ -120,7 +121,28 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
         PostfixExprNode* p_postfix_expr_node = NULL;
         switch (token->type) {
         case TK_LSQUARE: {
-            current->postfix_expr_type = PS_LSQUARE;
+            ++(*index);
+
+            p_postfix_expr_node                     = malloc(sizeof(PostfixExprNode));
+            p_postfix_expr_node->postfix_expr_node  = current;
+            p_postfix_expr_node->identifier         = NULL;
+            p_postfix_expr_node->identifier_len     = 0;
+            p_postfix_expr_node->primary_expr_node  = NULL;
+            p_postfix_expr_node->assign_expr_nodes  = create_ptr_vector();
+            p_postfix_expr_node->postfix_expr_type  = PS_LSQUARE;
+            p_postfix_expr_node->expr_node          = create_expr_node(vec, index);
+            if (p_postfix_expr_node->expr_node == NULL) {
+                error("Failed to create assignment-expression node.\n");
+                return NULL;
+            }
+
+            token = vec->tokens[*index];
+            if (token->type != TK_RSQUARE) {
+                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                return NULL;    
+            }
+            ++(*index);
+
             break;
         }
         case TK_LPAREN: {
@@ -221,6 +243,27 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
     case TK_SIZEOF: {
         unary_expr_node->type = UN_SIZEOF;
         ++(*index);
+
+        break;
+    }
+    case TK_AMP:   case TK_ASTER:
+    case TK_PLUS:  case TK_MINUS:
+    case TK_TILDE: case TK_EXCLA: {
+        unary_expr_node->type = UN_OP;
+        if      (token->type == TK_AMP)   { unary_expr_node->op_type = OP_AND;   }
+        else if (token->type == TK_ASTER) { unary_expr_node->op_type = OP_MUL;   }
+        else if (token->type == TK_PLUS)  { unary_expr_node->op_type = OP_ADD;   }
+        else if (token->type == TK_MINUS) { unary_expr_node->op_type = OP_SUB;   }
+        else if (token->type == TK_TILDE) { unary_expr_node->op_type = OP_TILDE; }
+        else if (token->type == TK_EXCLA) { unary_expr_node->op_type = OP_EXCLA; }
+
+        ++(*index);
+
+        unary_expr_node->cast_expr_node = create_cast_expr_node(vec, index);
+        if (unary_expr_node->cast_expr_node == NULL) {
+            error("Failed to create cast-expression node.\n");
+            return NULL;
+        }
 
         break;
     }
@@ -1023,6 +1066,18 @@ static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* 
     return param_type_list_node;
 }
 
+static ConstantExprNode* create_constant_expr_node(const TokenVec* vec, int* index) {
+    ConstantExprNode* constant_expr_node = malloc(sizeof(ConstantExprNode));
+    
+    constant_expr_node->conditional_expr_node = create_conditional_expr_node(vec, index);
+    if (constant_expr_node->conditional_expr_node == NULL) {
+        error("Failed to create conditional-expression node.\n");
+        return NULL;
+    }
+
+    return constant_expr_node;
+}
+
 static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, int* index) {
     DirectDeclaratorNode* direct_declarator_node = malloc(sizeof(DirectDeclaratorNode));
 
@@ -1072,7 +1127,24 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
 
         switch (token->type) {
         case TK_LSQUARE: {
-            // @todo
+            token = vec->tokens[*index];
+            if (token->type == TK_RSQUARE) {
+                break;
+            }
+
+            p_direct_declarator_node->constant_expr_node = create_constant_expr_node(vec, index);
+            if (p_direct_declarator_node->constant_expr_node == NULL) {
+                error("Failed to create constant-expression node.\n");
+                return NULL;
+            }
+
+            token = vec->tokens[*index];
+            if (token->type != TK_RSQUARE) {
+                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                return NULL;
+            }
+            ++(*index);
+
             break;
         }
         case TK_LPAREN: {

@@ -3,21 +3,31 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 
 //
-// error 
+// debug, error 
 //
 
+extern bool debug_flag;
+
+#define debug(fmt, ...) \
+    _debug_print_tmsp(); \
+    if (debug_flag) fprintf(stdout, "%s:%d %s] ", __FILE__, __LINE__, __func__); \
+    _debug(fmt, ## __VA_ARGS__); 
+
 #define error(fmt, ...) \
-    _print_tmsp(); \
+    _error_print_tmsp(); \
     fprintf(stderr, "%s:%d %s] ", __FILE__, __LINE__, __func__); \
     _error(fmt, ## __VA_ARGS__); 
 
-void _print_tmsp();
+void _debug_print_tmsp();
+void _debug(const char* fmt, ...);
+void _error_print_tmsp();
 void _error(const char* fmt, ...);
 
 //

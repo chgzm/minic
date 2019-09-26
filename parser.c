@@ -186,14 +186,49 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
 
 static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
     UnaryExprNode* unary_expr_node = malloc(sizeof(UnaryExprNode));
+
     unary_expr_node->postfix_expr_node = NULL;
     unary_expr_node->unary_expr_node   = NULL;
     unary_expr_node->cast_expr_node    = NULL;
+    unary_expr_node->type              = UN_NONE;
 
-    unary_expr_node->postfix_expr_node = create_postfix_expr_node(vec, index);
-    if (unary_expr_node->postfix_expr_node == NULL) {
-        error("Failed to create postfix-expression node.\n");
-        return NULL;
+    const Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_INC: {
+        unary_expr_node->type = UN_INC;
+        ++(*index);
+
+        unary_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
+        if (unary_expr_node->unary_expr_node == NULL) {
+            error("Failed to create unary-expression node.\n");
+            return NULL;
+        }
+
+        break;
+    }
+    case TK_DEC: {
+        unary_expr_node->type = UN_DEC;
+        ++(*index);
+
+        break;
+    }
+    case TK_SIZEOF: {
+        unary_expr_node->type = UN_SIZEOF;
+        ++(*index);
+
+        break;
+    }
+    default: {
+        unary_expr_node->type = UN_NONE;
+
+        unary_expr_node->postfix_expr_node = create_postfix_expr_node(vec, index);
+        if (unary_expr_node->postfix_expr_node == NULL) {
+            error("Failed to create postfix-expression node.\n");
+            return NULL;
+        }
+
+        break;
+    }
     }
 
     return unary_expr_node;

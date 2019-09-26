@@ -180,23 +180,57 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 }
 
 static void process_unary_expr_left(const UnaryExprNode* node) {
+    switch (node->type) {
     // <postfix-expression>
-    if (node->postfix_expr_node != NULL) {
+    case UN_NONE: {
         process_postfix_expr_left(node->postfix_expr_node);
-    }
-    else {
+        break;
+    }    
+    // ++ <unary-expression>
+    case UN_INC: {
         // @todo
-    } 
+        break;
+    }
+    case UN_DEC: {
+        break;
+    }
+    case UN_SIZEOF: {
+        break;
+    }
+    default: {
+        break;
+    }
+    }
 }
 
 static void process_unary_expr_right(const UnaryExprNode* node) {
+    switch (node->type) {
     // <postfix-expression>
-    if (node->postfix_expr_node != NULL) {
+    case UN_NONE: {
         process_postfix_expr_right(node->postfix_expr_node);
+        break;
+    }    
+    // ++ <unary-expression>
+    case UN_INC: {
+        process_unary_expr_left(node->unary_expr_node);
+
+        print_code("pop rax");
+        print_code("mov rdi, [rax]");
+        print_code("add rdi, 1");
+        print_code("mov [rax], rdi");
+
+        break;
     }
-    else {
-        // @todo
-    } 
+    case UN_DEC: {
+        break;
+    }
+    case UN_SIZEOF: {
+        break;
+    }
+    default: {
+        break;
+    }
+    }
 }
 
 static void process_cast_expr(const CastExprNode* node) {
@@ -479,7 +513,6 @@ static void process_assign_expr(const AssignExprNode* node) {
             print_code("pop rdi");
             print_code("pop rax");
             print_code("mov [rax], rdi");
-            print_code("push rax");
 
             break;
         } 

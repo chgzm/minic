@@ -38,6 +38,7 @@ enum TokenType {
     TK_BREAK,     // "break"
     TK_CONTINUE,  // "continue"
     TK_RETURN,    // "return"
+    TK_SIZEOF,    // "sizeof"
     TK_PLUS,      // +
     TK_MINUS,     // -
     TK_ASTER,     // *

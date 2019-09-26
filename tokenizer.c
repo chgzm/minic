@@ -458,6 +458,7 @@ static Token* read_identifier(const char* p, int* pos) {
         else if (strncmp("switch", &p[*pos], 6) == 0) { token->type = TK_SWITCH; }
         else if (strncmp("static", &p[*pos], 6) == 0) { token->type = TK_STATIC; }
         else if (strncmp("signed", &p[*pos], 6) == 0) { token->type = TK_SIGNED; }
+        else if (strncmp("sizeof", &p[*pos], 6) == 0) { token->type = TK_SIZEOF; }
 
         break;
     }

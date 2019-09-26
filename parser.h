@@ -79,14 +79,22 @@ enum JumpType {
     JMP_RETURN,
 };
 
+enum UnaryType {
+    UN_NONE,   // none
+    UN_INC,    // ++
+    UN_DEC,    // --
+    UN_OP,     // <unary-operator>
+    UN_SIZEOF, // "sizeof"
+};
+
 enum PostfixType {
-    PS_PRIMARY,
-    PS_LSQUARE,
-    PS_LPAREN,
-    PS_DOT,
-    PS_ARROW,
-    PS_INC,
-    PS_DEC,
+    PS_PRIMARY, // <primary-expreesion>
+    PS_LSQUARE, // <postfix-expression> [ <expression> ]
+    PS_LPAREN,  // <postfix-expression> ( {assignment-expression>}* )
+    PS_DOT,     // <postfix-expression> . <identifier>
+    PS_ARROW,   // <postfix-expression> -> <identifier>
+    PS_INC,     // <postfix-expression> ++
+    PS_DEC,     // <postfix-expression> --
 };
 
 enum ParamListType {
@@ -301,7 +309,7 @@ struct UnaryExprNode {
     PostfixExprNode* postfix_expr_node;
     UnaryExprNode*   unary_expr_node;
     CastExprNode*    cast_expr_node;
-    int              type_name;
+    int              type;
 }; 
 
 struct PostfixExprNode {

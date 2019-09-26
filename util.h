@@ -46,4 +46,21 @@ struct PtrVector {
 PtrVector* create_ptr_vector();
 void ptr_vector_push_back(PtrVector* vec, void* e);
 
+//
+// Stack for Pointers
+//
+
+typedef struct PtrStack PtrStack;
+struct PtrStack {
+    void** elements;
+    int    top;
+    int    capacity;
+};
+
+PtrStack* create_ptr_stack();
+void ptr_stack_push(PtrStack* stack, void* e);
+void* ptr_stack_top(PtrStack* stack);
+void ptr_stack_pop(PtrStack* stack);
+
+
 #endif

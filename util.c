@@ -105,3 +105,38 @@ void ptr_vector_push_back(PtrVector* vec, void* e) {
     vec->elements[vec->size] = e;
     ++(vec->size);
 }
+
+//
+// Stack for Pointers
+//
+
+PtrStack* create_ptr_stack() {
+    PtrStack* stack = malloc(sizeof(PtrStack));
+    stack->elements = malloc(sizeof(void*) * 16);
+    stack->capacity = 16;
+    stack->top      = -1;
+
+    return stack;
+}
+
+void ptr_stack_push(PtrStack* stack, void* e) {
+    ++(stack->top);
+    if (stack->top == stack->capacity) {
+        stack->capacity *= 2;
+        stack->elements = realloc(stack->elements, sizeof(void*) * stack->capacity);
+    }
+
+    stack->elements[stack->top] = e;
+}
+
+void* ptr_stack_top(PtrStack* stack) {
+    if (stack->top < 0) {
+        return NULL;
+    }
+
+    return stack->elements[stack->top];
+}
+
+void ptr_stack_pop(PtrStack* stack) {
+    --(stack->top);
+}

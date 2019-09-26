@@ -18,7 +18,8 @@ static int label_index;
 static int current_offset;
 static PtrVector* localvar_list;
 static char* ret_label;
-static char* break_label;
+static PtrStack* break_label_stack;
+static PtrStack* continue_label_stack;
 
 static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
@@ -568,10 +569,14 @@ static void process_jump_stmt(const JumpStmtNode* node) {
     switch (node->jump_type) {
     case JMP_GOTO:
     case JMP_CONTINUE: {
+        const char* label = ptr_stack_top(continue_label_stack);
+        print_code("jmp %s", label);
+
         break;
     }
     case JMP_BREAK: {
-        print_code("jmp %s", break_label);
+        const char* label = ptr_stack_top(break_label_stack);
+        print_code("jmp %s", label);
 
         break;
     }
@@ -637,7 +642,8 @@ static void process_itr_stmt(const ItrStmtNode* node) {
     case ITR_WHILE: {
         const char* label1 = get_label();
         const char* label2 = get_label();
-        break_label = (char*)(label2);
+        ptr_stack_push(continue_label_stack, (void*)(label1));
+        ptr_stack_push(break_label_stack, (void*)(label2));
 
         printf("%s:\n", label1);
         process_expr(node->expr_node[0]);
@@ -648,9 +654,8 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         print_code("jmp %s", label1);
         printf("%s:\n", label2);
 
-        free(break_label);
-        break_label = NULL;
-
+        ptr_stack_pop(continue_label_stack);
+        ptr_stack_pop(break_label_stack);
         break; 
     }
     case ITR_DO_WHILE: {
@@ -659,7 +664,9 @@ static void process_itr_stmt(const ItrStmtNode* node) {
     case ITR_FOR: {
         const char* label1 = get_label();
         const char* label2 = get_label();
-        break_label = (char*)(label2);
+        const char* label3 = get_label();
+        ptr_stack_push(continue_label_stack, (void*)(label2));
+        ptr_stack_push(break_label_stack, (void*)(label3));
 
         if (node->expr_node[0] != NULL) {
             process_expr(node->expr_node[0]);
@@ -671,19 +678,20 @@ static void process_itr_stmt(const ItrStmtNode* node) {
 
         print_code("pop rax");
         print_code("cmp rax, 0");
-        print_code("je %s", label2);
+        print_code("je %s", label3);
 
         process_stmt(node->stmt_node);
+
+        printf("%s:\n", label2);
         if (node->expr_node[2] != NULL) {
             process_expr(node->expr_node[2]);
         }
 
         print_code("jmp %s", label1);
-        printf("%s:\n", label2);
+        printf("%s:\n", label3);
 
-        free(break_label);
-        break_label = NULL;
-
+        ptr_stack_pop(continue_label_stack);
+        ptr_stack_pop(break_label_stack);
         break; 
     }
     default: {
@@ -900,6 +908,8 @@ void gen(const TransUnitNode* node) {
     print_global(node);
 
     label_index = 2;
+    break_label_stack = create_ptr_stack();
+    continue_label_stack = create_ptr_stack();
 
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         const ExternalDeclNode* external_decl_node = (const ExternalDeclNode*)(node->external_decl_nodes->elements[i]);

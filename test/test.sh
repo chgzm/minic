@@ -90,4 +90,10 @@ try test_break_3.c 100
 try test_continue.c 7
 try test_continue_2.c 7
 
+try test_muleq.c 9
+try test_diveq.c 3
+try test_modeq.c 1
+try test_addeq.c 6
+try test_subeq.c 0
+
 echo -e "\e[36mPassed all tests.\e[0m"

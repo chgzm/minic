@@ -526,11 +526,49 @@ static void process_assign_expr(const AssignExprNode* node) {
 
             break;
         } 
-        case OP_MUL_EQ: 
-        case OP_DIV_EQ: 
-        case OP_MOD_EQ: 
-        case OP_ADD_EQ: 
-        case OP_SUB_EQ: 
+        case OP_MUL_EQ: {
+            print_code("pop rdi");
+            print_code("pop rax");
+            print_code("mov rsi, [rax]");
+            print_code("imul rdi, rsi");
+            print_code("mov [rax], rdi");
+
+            break;
+        }
+        case OP_DIV_EQ: {
+            print_code("pop rdi");
+            print_code("pop rsi");
+            print_code("mov rax, [rsi]");
+            print_code("cqo");
+            print_code("idiv rdi");
+            print_code("mov [rsi], rax");
+
+            break;
+        }
+        case OP_MOD_EQ: {
+            print_code("pop rdi");
+            print_code("pop rsi");
+            print_code("mov rax, [rsi]");
+            print_code("cqo");
+            print_code("idiv rdi");
+            print_code("mov [rsi], rdx");
+
+            break;
+        }
+        case OP_ADD_EQ: {
+            print_code("pop rdi");
+            print_code("pop rax");
+            print_code("add [rax], rdi");
+
+            break;
+        }
+        case OP_SUB_EQ: {
+            print_code("pop rdi");
+            print_code("pop rax");
+            print_code("sub [rax], rdi");
+
+            break;
+        }
         case OP_AND_EQ: 
         case OP_XOR_EQ: 
         case OP_OR_EQ: {

@@ -138,7 +138,7 @@ static Token* read_symbol(const char* p, int* pos) {
         const char s = p[*pos];
         switch (s) {
         case '=': {
-            token->type = TK_MUL_EQ;
+            token->type = TK_DIV_EQ;
             ++(*pos);
             return token;
         }

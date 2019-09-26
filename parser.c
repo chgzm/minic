@@ -587,6 +587,16 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
         break;
     }
     case TK_BREAK: {
+        jump_stmt_node->jump_type = JMP_BREAK;        
+        ++(*index);
+
+        token = vec->tokens[*index];
+        if (token->type != TK_SEMICOL) {
+            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+    
         break;
     }
     case TK_RETURN: {
@@ -870,7 +880,9 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
 
         break;
     } 
-    case TK_RETURN: {
+    case TK_RETURN: 
+    case TK_BREAK:
+    case TK_CONTINUE: {
         stmt_node->jump_stmt_node = create_jump_stmt_node(vec, index);
         if (stmt_node->jump_stmt_node == NULL) {
             error("Failed to create jump-statement node.\n");

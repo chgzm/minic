@@ -83,4 +83,7 @@ try test_dec_2.c 1
 try test_for.c 10
 try test_for_2.c 10
 
+try test_break.c 6
+try test_break_2.c 6
+
 echo -e "\e[36mPassed all tests.\e[0m"

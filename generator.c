@@ -18,6 +18,7 @@ static int label_index;
 static int current_offset;
 static PtrVector* localvar_list;
 static char* ret_label;
+static char* break_label;
 
 static LocalVar* get_localvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
@@ -566,9 +567,12 @@ static void process_expr_stmt(const ExprStmtNode* node) {
 static void process_jump_stmt(const JumpStmtNode* node) {
     switch (node->jump_type) {
     case JMP_GOTO:
-    case JMP_CONTINUE:
+    case JMP_CONTINUE: {
+        break;
+    }
     case JMP_BREAK: {
-        // @todo
+        print_code("jmp %s", break_label);
+
         break;
     }
     case JMP_RETURN: {
@@ -633,6 +637,7 @@ static void process_itr_stmt(const ItrStmtNode* node) {
     case ITR_WHILE: {
         const char* label1 = get_label();
         const char* label2 = get_label();
+        break_label = (char*)(label2);
 
         printf("%s:\n", label1);
         process_expr(node->expr_node[0]);
@@ -643,6 +648,9 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         print_code("jmp %s", label1);
         printf("%s:\n", label2);
 
+        free(break_label);
+        break_label = NULL;
+
         break; 
     }
     case ITR_DO_WHILE: {
@@ -651,6 +659,7 @@ static void process_itr_stmt(const ItrStmtNode* node) {
     case ITR_FOR: {
         const char* label1 = get_label();
         const char* label2 = get_label();
+        break_label = (char*)(label2);
 
         if (node->expr_node[0] != NULL) {
             process_expr(node->expr_node[0]);
@@ -671,6 +680,9 @@ static void process_itr_stmt(const ItrStmtNode* node) {
 
         print_code("jmp %s", label1);
         printf("%s:\n", label2);
+
+        free(break_label);
+        break_label = NULL;
 
         break; 
     }

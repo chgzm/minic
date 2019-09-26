@@ -761,6 +761,83 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
     }
     case TK_FOR: {
         itr_stmt_node->itr_type = ITR_FOR;
+        ++(*index);
+
+        // '('
+        token = vec->tokens[*index];
+        if (token->type != TK_LPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        // {<expression>}? ;
+        token = vec->tokens[*index];
+        if (token->type == TK_SEMICOL) {
+            ++(*index);
+        } else {
+            itr_stmt_node->expr_node[0] = create_expr_node(vec, index);
+            if (itr_stmt_node->expr_node == NULL) {
+                error("Failed to create expression-node.\n");
+                return NULL;
+            }
+
+            // ';'
+            token = vec->tokens[*index];
+            if (token->type != TK_SEMICOL) {
+                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                return NULL;
+            }
+            ++(*index);
+        }
+       
+        // {<expression>}? ;
+        token = vec->tokens[*index];
+        if (token->type == TK_SEMICOL) {
+            ++(*index);
+        } else {
+            itr_stmt_node->expr_node[1] = create_expr_node(vec, index);
+            if (itr_stmt_node->expr_node == NULL) {
+                error("Failed to create expression-node.\n");
+                return NULL;
+            }
+
+            // ';'
+            token = vec->tokens[*index];
+            if (token->type != TK_SEMICOL) {
+                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                return NULL;
+            }
+            ++(*index);
+        }
+
+        // {<expression>}? )
+        token = vec->tokens[*index];
+        if (token->type == TK_RPAREN) {
+            ++(*index);
+        } else {
+            itr_stmt_node->expr_node[2] = create_expr_node(vec, index);
+            if (itr_stmt_node->expr_node == NULL) {
+                error("Failed to create expression-node.\n");
+                return NULL;
+            }
+
+            // ')'
+            token = vec->tokens[*index];
+            if (token->type != TK_RPAREN) {
+                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                return NULL;
+            }
+            ++(*index);
+        }
+
+        // <statement>
+        itr_stmt_node->stmt_node = create_stmt_node(vec, index); 
+        if (itr_stmt_node->stmt_node == NULL) {
+            error("Failed to create statement-node.\n");
+            return NULL;
+        }
+
         break;
     }
     default: {

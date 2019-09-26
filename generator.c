@@ -649,6 +649,29 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         break; 
     }
     case ITR_FOR: {
+        const char* label1 = get_label();
+        const char* label2 = get_label();
+
+        if (node->expr_node[0] != NULL) {
+            process_expr(node->expr_node[0]);
+        }
+        printf("%s:\n", label1);
+        if (node->expr_node[1] != NULL) {
+            process_expr(node->expr_node[1]);
+        }
+
+        print_code("pop rax");
+        print_code("cmp rax, 0");
+        print_code("je %s", label2);
+
+        process_stmt(node->stmt_node);
+        if (node->expr_node[2] != NULL) {
+            process_expr(node->expr_node[2]);
+        }
+
+        print_code("jmp %s", label1);
+        printf("%s:\n", label2);
+
         break; 
     }
     default: {

@@ -606,9 +606,9 @@ static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
 static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* index) {
     SelectionStmtNode* selection_stmt_node = malloc(sizeof(SelectionStmtNode));
 
-    selection_stmt_node->expr_node  = NULL;
-    selection_stmt_node->stmt_node1 = NULL;
-    selection_stmt_node->stmt_node2 = NULL;
+    selection_stmt_node->expr_node    = NULL;
+    selection_stmt_node->stmt_node[0] = NULL;
+    selection_stmt_node->stmt_node[1] = NULL;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -634,8 +634,8 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
         }
         ++(*index);
 
-        selection_stmt_node->stmt_node1 = create_stmt_node(vec, index);
-        if (selection_stmt_node->stmt_node1 == NULL) {
+        selection_stmt_node->stmt_node[0] = create_stmt_node(vec, index);
+        if (selection_stmt_node->stmt_node[0] == NULL) {
             error("Failed to create statement node.\n");
             return NULL;
         }
@@ -645,8 +645,8 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
             ++(*index);
             selection_stmt_node->selection_type = SELECT_IF_ELSE;
 
-            selection_stmt_node->stmt_node2 = create_stmt_node(vec, index);
-            if (selection_stmt_node->stmt_node2 == NULL) {
+            selection_stmt_node->stmt_node[1] = create_stmt_node(vec, index);
+            if (selection_stmt_node->stmt_node[1] == NULL) {
                 error("Failed to create statement node.\n");
                 return NULL;
             }
@@ -670,16 +670,88 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
     return selection_stmt_node;
 }
 
+static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
+    ItrStmtNode* itr_stmt_node = malloc(sizeof(ItrStmtNode));
+    itr_stmt_node->expr_node[1] = NULL;
+    itr_stmt_node->expr_node[2] = NULL;
+    
+    const Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_WHILE: {
+        itr_stmt_node->itr_type = ITR_WHILE;
+        ++(*index);
+
+        // '('
+        token = vec->tokens[*index];
+        if (token->type != TK_LPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        // <expression>
+        itr_stmt_node->expr_node[0] = create_expr_node(vec, index);
+        if (itr_stmt_node->expr_node == NULL) {
+            error("Failed to create expression-node.\n");
+            return NULL;
+        }
+
+        // ')'
+        token = vec->tokens[*index];
+        if (token->type != TK_RPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        // <statement>
+        itr_stmt_node->stmt_node = create_stmt_node(vec, index); 
+        if (itr_stmt_node->stmt_node == NULL) {
+            error("Failed to create statement-node.\n");
+            return NULL;
+        }
+
+        break;
+    }
+    case TK_DO: {
+        // @todo
+        itr_stmt_node->itr_type = ITR_DO_WHILE;
+        break;
+    }
+    case TK_FOR: {
+        itr_stmt_node->itr_type = ITR_FOR;
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+
+    return itr_stmt_node;
+}
+
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
     StmtNode* stmt_node = malloc(sizeof(StmtNode));
 
     stmt_node->jump_stmt_node      = NULL;
+    stmt_node->itr_stmt_node       = NULL;
     stmt_node->expr_stmt_node      = NULL;
     stmt_node->compound_stmt_node  = NULL;
     stmt_node->selection_stmt_node = NULL;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
+    case TK_WHILE: 
+    case TK_DO:
+    case TK_FOR: {
+        stmt_node->itr_stmt_node = create_itr_stmt_node(vec, index);
+        if (stmt_node->itr_stmt_node == NULL) {
+            error("Failed to create iteration-statement node.\n");
+            return NULL;
+        }
+
+        break;
+    } 
     case TK_RETURN: {
         stmt_node->jump_stmt_node = create_jump_stmt_node(vec, index);
         if (stmt_node->jump_stmt_node == NULL) {

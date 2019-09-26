@@ -72,4 +72,6 @@ try test_if_else_4.c 30
 
 try fib.c 89
 
+try test_while.c 55
+
 echo -e "\e[36mPassed all tests.\e[0m"

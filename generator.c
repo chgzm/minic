@@ -557,7 +557,7 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         print_code("pop rax");
         print_code("cmp rax, 0");
         print_code("je %s", label);
-        process_stmt(node->stmt_node1);
+        process_stmt(node->stmt_node[0]);
         printf("%s:\n", label);
 
         break;
@@ -570,10 +570,10 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         print_code("pop rax");
         print_code("cmp rax, 0");
         print_code("je %s", label1);
-        process_stmt(node->stmt_node1);
+        process_stmt(node->stmt_node[0]);
         print_code("jmp %s", label2);
         printf("%s:\n", label1); 
-        process_stmt(node->stmt_node2);
+        process_stmt(node->stmt_node[1]);
         printf("%s:\n", label2); 
 
         break;
@@ -587,9 +587,41 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
     }
 }
 
+static void process_itr_stmt(const ItrStmtNode* node) {
+    switch (node->itr_type) {
+    case ITR_WHILE: {
+        const char* label1 = get_label();
+        const char* label2 = get_label();
+
+        printf("%s:\n", label1);
+        process_expr(node->expr_node[0]);
+        print_code("pop rax");
+        print_code("cmp rax, 0");
+        print_code("je %s", label2);
+        process_stmt(node->stmt_node);
+        print_code("jmp %s", label1);
+        printf("%s:\n", label2);
+
+        break; 
+    }
+    case ITR_DO_WHILE: {
+        break; 
+    }
+    case ITR_FOR: {
+        break; 
+    }
+    default: {
+        break;
+    }
+    } 
+}
+
 static void process_stmt(const StmtNode* node) {
     if (node->expr_stmt_node != NULL) {
         process_expr_stmt(node->expr_stmt_node);
+    }
+    else if (node->itr_stmt_node != NULL) {
+        process_itr_stmt(node->itr_stmt_node);
     }
     else if (node->compound_stmt_node != NULL) {
         process_compound_stmt(node->compound_stmt_node);

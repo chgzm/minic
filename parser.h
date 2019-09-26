@@ -100,6 +100,12 @@ enum SelectionStmtType {
     SELECT_SWITCH,
 };
 
+enum IterationType {
+    ITR_WHILE,
+    ITR_DO_WHILE,
+    ITR_FOR,
+};
+
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
@@ -153,7 +159,7 @@ typedef struct StmtNode StmtNode;
 typedef struct LabeledStmtNode LabeledStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
 typedef struct SelectionStmtNode SelectionStmtNode;
-typedef struct IterStmtNode IterStmtNode;
+typedef struct ItrStmtNode ItrStmtNode;
 typedef struct JumpStmtNode JumpStmtNode;
 
 struct TransUnitNode {
@@ -401,6 +407,7 @@ struct StmtNode {
     ExprStmtNode*      expr_stmt_node; 
     CompoundStmtNode*  compound_stmt_node;
     SelectionStmtNode* selection_stmt_node;
+    ItrStmtNode*       itr_stmt_node;
     JumpStmtNode*      jump_stmt_node;
 };
 
@@ -414,11 +421,13 @@ struct ExprStmtNode {
 struct SelectionStmtNode {
     int selection_type;
     ExprNode* expr_node;
-    StmtNode* stmt_node1; 
-    StmtNode* stmt_node2; 
+    StmtNode* stmt_node[2];
 };
 
-struct IterStmtNode {
+struct ItrStmtNode {
+    int itr_type;
+    StmtNode* stmt_node;
+    ExprNode* expr_node[3];
 };
 
 struct JumpStmtNode {

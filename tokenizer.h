@@ -31,6 +31,7 @@ enum TokenType {
     TK_ELSE,      // "else"
     TK_FOR,       // "for"
     TK_WHILE,     // "while"
+    TK_DO,        // "do"
     TK_SWITCH,    // "switch"
     TK_CASE,      // "case"
     TK_GOTO,      // "goto"

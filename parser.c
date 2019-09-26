@@ -210,6 +210,12 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
         unary_expr_node->type = UN_DEC;
         ++(*index);
 
+        unary_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
+        if (unary_expr_node->unary_expr_node == NULL) {
+            error("Failed to create unary-expression node.\n");
+            return NULL;
+        }
+
         break;
     }
     case TK_SIZEOF: {

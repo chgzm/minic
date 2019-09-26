@@ -221,7 +221,15 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
 
         break;
     }
+    // -- <unary-expression>
     case UN_DEC: {
+        process_unary_expr_left(node->unary_expr_node);
+
+        print_code("pop rax");
+        print_code("mov rdi, [rax]");
+        print_code("sub rdi, 1");
+        print_code("mov [rax], rdi");
+
         break;
     }
     case UN_SIZEOF: {

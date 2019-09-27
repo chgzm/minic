@@ -26,7 +26,8 @@ static void process_expr(const ExprNode* node);
 static void process_stmt(const StmtNode* node);
 static void process_conditional_expr(const ConditionalExprNode* node);
 static void process_compound_stmt(const CompoundStmtNode* node);
-static int get_array_size_from_constant_expr(ConstantExprNode* node);
+static void process_cast_expr(const CastExprNode* node);
+static int get_array_size_from_constant_expr(const ConstantExprNode* node);
 
 static void print_code(const char* fmt, ...) { 
     va_list ap;
@@ -77,6 +78,15 @@ static void process_identifier_right(const char* identifier, int len) {
         print_code("mov rax, rbp");
         print_code("sub rax, %d", localvar->offset);
         print_code("mov rax, [rax]");
+        print_code("push rax");
+    }
+}
+
+static void process_identifier_addr(const char* identifier, int len) {
+    const LocalVar* localvar = get_localvar(identifier, len);
+    if (localvar != NULL) {
+        print_code("mov rax, rbp");
+        print_code("sub rax, %d", localvar->offset);
         print_code("push rax");
     }
 }
@@ -135,6 +145,26 @@ static void process_primary_expr_right(const PrimaryExprNode* node) {
         // @todo
     }
 }
+
+static void process_primary_expr_addr(const PrimaryExprNode* node) {
+    // <constant>
+    if (node->constant_node != NULL) {
+        process_constant_node(node->constant_node);
+    }
+    // ( <expression> )
+    else if (node->expr_node != NULL) {
+        process_expr(node->expr_node);
+    }
+    // <identifier>
+    else if (node->identifier != NULL) {
+        process_identifier_addr(node->identifier, node->identifier_len);  
+    }
+    else {
+        // @todo
+    }
+}
+
+
 
 static void process_postfix_expr_left(const PostfixExprNode* node) {
     switch (node->postfix_expr_type) {
@@ -213,11 +243,74 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     }
 }
 
+static void process_postfix_expr_addr(const PostfixExprNode* node) {
+    switch (node->postfix_expr_type) {
+    // <primary-expression>
+    case PS_PRIMARY: {
+        process_primary_expr_addr(node->primary_expr_node);
+        break;
+    }
+    // <postfix-expression> ( {assignment-expression}* )
+    case PS_LPAREN: {
+        break;
+    }
+    // <postfix-expression> [ <expression> ]
+    case PS_LSQUARE: {
+        break;
+    }
+    default: {
+        // @todo
+        break;
+    }
+    }
+}
+
 static void process_unary_expr_left(const UnaryExprNode* node) {
     switch (node->type) {
     // <postfix-expression>
     case UN_NONE: {
         process_postfix_expr_left(node->postfix_expr_node);
+        break;
+    }    
+    // ++ <unary-expression>
+    case UN_INC: {
+        // @todo
+        break;
+    }
+    case UN_DEC: {
+        break;
+    }
+    case UN_OP: {
+        switch (node->op_type) {
+        case OP_MUL: {
+            process_cast_expr(node->cast_expr_node);
+            // print_code("pop rax");
+            // print_code("lea rax, rax");
+            // print_code("push rax");
+
+            break;
+        }
+        default: {
+            break;
+        }
+        }
+
+        break;
+    } 
+    case UN_SIZEOF: {
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+}
+
+static void process_unary_expr_addr(const UnaryExprNode* node) {
+    switch (node->type) {
+    // <postfix-expression>
+    case UN_NONE: {
+        process_postfix_expr_addr(node->postfix_expr_node);
         break;
     }    
     // ++ <unary-expression>
@@ -234,6 +327,18 @@ static void process_unary_expr_left(const UnaryExprNode* node) {
     default: {
         break;
     }
+    }
+}
+
+
+static void process_cast_expr_addr(const CastExprNode* node) {
+    // <unary-expression>
+    if (node->unary_expr_node != NULL) {
+        process_unary_expr_addr(node->unary_expr_node);    
+    }
+    // ( <type-name> ) <cast-expression>
+    else {
+        // @todo
     }
 }
 
@@ -270,9 +375,16 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
     case UN_OP: {
         switch (node->op_type) {
         case OP_AND: {
+            process_cast_expr_addr(node->cast_expr_node);
+
             break;
         }
         case OP_MUL: {
+            process_cast_expr(node->cast_expr_node);
+            print_code("pop rax");
+            print_code("mov rax, [rax]");
+            print_code("push rax");
+
             break;
         }
         case OP_ADD: {
@@ -816,16 +928,6 @@ static void process_stmt(const StmtNode* node) {
     }
 }
 
-static void process_initializer(const InitializerNode* node) {
-    if (node->assign_expr_node != NULL) {
-        process_assign_expr(node->assign_expr_node);
-    }
-
-    print_code("pop rdi");
-    print_code("pop rax");
-    print_code("mov [rax], rdi");
-}
-
 static LocalVar* get_localvar(const char* str, int len) {
     for (int i = 0; i < localvar_list->size; ++i) {
         LocalVar* localvar = (LocalVar*)(localvar_list->elements[i]);
@@ -846,87 +948,95 @@ static const DirectDeclaratorNode* get_identifier_direct_declarator(const Direct
     return current;
 }
 
-static void process_direct_declarator(const DirectDeclaratorNode* node, int type, int is_init) {
-    const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(node);
-
-    LocalVar* localvar = get_localvar(ident_node->identifier, ident_node->identifier_len);
-    if (localvar == NULL) {
-        Type* t      = malloc(sizeof(Type));
-        t->type      = type;
-        t->type_size = 8; // @todo
-
-        if (node->constant_expr_node == NULL) {
-            t->array_size = 1;
-        } else {
-            t->array_size = get_array_size_from_constant_expr(node->constant_expr_node);
-        }
-        
-        localvar           = malloc(sizeof(LocalVar));
-        localvar->type     = t;
-        localvar->offset   = current_offset;
-        localvar->name_len = ident_node->identifier_len;
-        localvar->name     = malloc(sizeof(char) * localvar->name_len);
-        strncpy(localvar->name, ident_node->identifier, localvar->name_len); 
-        ptr_vector_push_back(localvar_list, localvar);
-
-        current_offset += (t->array_size * t->type_size);
-    }
-
-    if (is_init) {
-        print_code("mov rax, rbp"); 
-        print_code("sub rax, %d", localvar->offset); 
-        print_code("push rax");
-    }
-}
-
-static void process_declarator(const DeclaratorNode* node, int type, int is_init) {
-    if (node->direct_declarator_node != NULL) { 
-        process_direct_declarator(node->direct_declarator_node, type, is_init);
-    }
-}
-
-static void process_init_declarator(const InitDeclaratorNode* node, int type) {
-    const int is_init = (node->initializer_node != NULL) ? 1 : 0;
-    process_declarator(node->declarator_node, type, is_init);
-
-    if (node->initializer_node != NULL) {
-        process_initializer(node->initializer_node);
-    }
-}
-
 static void process_declaration(const DeclarationNode* node) {
-    int type = VAR_INT;
+    // decide base type
+    int base_type = 0;
     for (int i = 0; i < node->decl_specifier_nodes->size; ++i) {
-        const DeclSpecifierNode* decl_specifier_node = (const DeclSpecifierNode*)(node->decl_specifier_nodes->elements[i]);
-        if (decl_specifier_node->type_specifier_node == NULL) {
+        const DeclSpecifierNode* decl_specifier_node = node->decl_specifier_nodes->elements[i];
+        const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
+        if (type_specifier_node == NULL) {
             continue;
         }
 
-        switch (decl_specifier_node->type_specifier_node->type_specifier) {
-        case TYPE_INT: {
-            type = VAR_INT;
-            break;
-        }
-        default: {
-            break;
-        }
+        switch (type_specifier_node->type_specifier) {
+        case TYPE_VOID:     { base_type = VAR_VOID;     break; }
+        case TYPE_CHAR:     { base_type = VAR_CHAR;     break; }
+        case TYPE_SHORT:    { base_type = VAR_SHORT;    break; }
+        case TYPE_INT:      { base_type = VAR_INT;      break; }
+        case TYPE_LONG:     { base_type = VAR_LONG;     break; }
+        case TYPE_FLOAT:    { base_type = VAR_FLOAT;    break; }
+        case TYPE_DOUBLE:   { base_type = VAR_DOUBLE;   break; }
+        case TYPE_SIGNED:   { base_type = VAR_SIGNED;   break; }
+        case TYPE_UNSIGNED: { base_type = VAR_UNSIGNED; break; }
+        default:            {                           break; }
         }
 
         break;
     }
 
+    // add local-variable to list
     for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
-        process_init_declarator(node->init_declarator_nodes->elements[i], type);
+        LocalVar* lv = malloc(sizeof(LocalVar));
+        lv->offset   = current_offset;
+
+        lv->type            = malloc(sizeof(Type));
+        lv->type->base_type = base_type;
+        lv->type->type_size = 8; // @todo
+        lv->type->ptr       = NULL;
+
+        const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
+        const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
+
+        const PointerNode* current = declarator_node->pointer_node;
+        while (current != NULL) {
+            lv->type->ptr       = malloc(sizeof(Type));
+            lv->type->ptr->ptr  = NULL;
+
+            current = current->pointer_node; 
+        }
+
+        const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
+        const ConstantExprNode*     constant_expr_node     = direct_declarator_node->constant_expr_node;
+        if (constant_expr_node == NULL) {
+            lv->type->array_size = 1;
+        } else {
+            lv->type->array_size = get_array_size_from_constant_expr(constant_expr_node);
+        }
+
+        const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
+        lv->name_len = ident_node->identifier_len;
+        lv->name     = malloc(sizeof(char) * lv->name_len);
+        strncpy(lv->name, ident_node->identifier, lv->name_len); 
+        ptr_vector_push_back(localvar_list, lv);
+
+        current_offset += (lv->type->array_size * lv->type->type_size);
+
+        if (init_declarator_node->initializer_node != NULL) {
+            const InitializerNode* initializer_node = init_declarator_node->initializer_node;
+            print_code("mov rax, rbp"); 
+            print_code("sub rax, %d", lv->offset); 
+            print_code("push rax");
+
+            if (initializer_node->assign_expr_node != NULL) {
+                process_assign_expr(initializer_node->assign_expr_node);
+            }
+
+            print_code("pop rdi");
+            print_code("pop rax");
+            print_code("mov [rax], rdi");
+        }
     }
 }
 
 static void process_compound_stmt(const CompoundStmtNode* node) {
     for (int i = 0; i < node->declaration_nodes->size; ++i) {
-        process_declaration((const DeclarationNode*)(node->declaration_nodes->elements[i]));
+        const DeclarationNode* declaration_node = node->declaration_nodes->elements[i];
+        process_declaration(declaration_node);
     }
 
     for (int i = 0; i < node->stmt_nodes->size; ++i) {
-        process_stmt((const StmtNode*)(node->stmt_nodes->elements[i]));
+        const StmtNode* stmt_node = node->stmt_nodes->elements[i];
+        process_stmt(stmt_node);
     }
 }
 
@@ -952,7 +1062,7 @@ static int calc_arg_size(const FuncDefNode* node) {
     return cnt * 8;
 }
 
-static int get_array_size_from_constant_expr(ConstantExprNode* node) {
+static int get_array_size_from_constant_expr(const ConstantExprNode* node) {
     return node->conditional_expr_node
                ->logical_or_expr_node
                ->logical_and_expr_node
@@ -1069,6 +1179,10 @@ static void process_func_def(const FuncDefNode* node) {
 }
 
 static void process_external_decl(const ExternalDeclNode* node) {
+    if (node->declaration_node != NULL) {
+        process_declaration(node->declaration_node);
+    }
+
     if (node->func_def_node != NULL) {
         process_func_def(node->func_def_node);
     }

@@ -10,6 +10,7 @@ static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index);
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
 static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
+static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index);
 static bool is_declaration(const TokenVec* vec, int index);
 static bool is_storage_class_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
@@ -1194,10 +1195,53 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
     return current;
 }
 
+static PointerNode* create_pointer_node(const TokenVec* vec, int* index) {
+    PointerNode* pointer_node = malloc(sizeof(PointerNode));
+
+    pointer_node->pointer_node         = NULL;
+    pointer_node->type_qualifier_nodes = create_ptr_vector();
+
+    const Token* token = vec->tokens[*index];
+    if (token->type != TK_ASTER) {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+    ++(*index);
+
+    token = vec->tokens[*index];
+    while (token->type == TK_CONST || token->type == TK_VOLATILE) {
+        TypeQualifierNode* type_qualifier_node = create_type_qualifier_node(vec, index);
+        if (type_qualifier_node == NULL) {
+            error("Failed to type-qualifier node.\n");
+            return NULL;
+        }
+
+        ptr_vector_push_back(pointer_node->type_qualifier_nodes, type_qualifier_node);
+
+        token = vec->tokens[*index];
+    }
+
+    if (token->type == TK_ASTER) {
+        pointer_node->pointer_node = create_pointer_node(vec, index);
+        if (pointer_node->pointer_node == NULL) {
+            error("Failed to create pointer node.\n");
+            return NULL;
+        }
+    } 
+    
+    return pointer_node;  
+}
+
 static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index) {
     DeclaratorNode* declarator_node = malloc(sizeof(DeclaratorNode));
 
-    declarator_node->pointer_node           = NULL; // @todo
+    declarator_node->pointer_node = NULL;
+
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_ASTER) {
+        declarator_node->pointer_node = create_pointer_node(vec, index); 
+    }
+
     declarator_node->direct_declarator_node = create_direct_declarator_node(vec, index);
     if (declarator_node->direct_declarator_node == NULL) {
         error("Failed to create direct-declarator node.\n");

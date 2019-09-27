@@ -219,6 +219,8 @@ struct DeclaratorNode {
 };
 
 struct PointerNode {
+    PtrVector* type_qualifier_nodes;
+    PointerNode* pointer_node;
 };
 
 struct TypeQualifierNode {

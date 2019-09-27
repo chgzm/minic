@@ -69,7 +69,6 @@ static void process_identifier_left(const char* identifier, int len) {
         print_code("sub rax, %d", localvar->offset);
         print_code("push rax");
     }
-
 }
 
 static void process_identifier_right(const char* identifier, int len) {

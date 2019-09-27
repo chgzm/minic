@@ -9,7 +9,7 @@
 bool debug_flag = false;
 
 static struct option longopts[] = {
-    { "debug", no_argument, NULL, 'd' },
+    {"debug", no_argument, NULL, 'd'},
 };
 
 static void usage() {

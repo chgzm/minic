@@ -1506,7 +1506,7 @@ static TransUnitNode* create_trans_unit_node() {
     return trans_unit_node;
 }
 
-TransUnitNode* parse(TokenVec* vec) {
+TransUnitNode* parse(const TokenVec* vec) {
     TransUnitNode* trans_unit_node = create_trans_unit_node();
 
     int index = 0;

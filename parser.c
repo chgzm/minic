@@ -11,7 +11,7 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
 static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
 static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index);
-static bool is_declaration(const TokenVec* vec, int index);
+static bool is_declaration_specifier(const TokenVec* vec, int index);
 static bool is_storage_class_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
 static bool is_type_specifier(const TokenVec* vec, int index);
@@ -1003,7 +1003,7 @@ static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, 
     param_declaration_node->declarator_node          = NULL;
     param_declaration_node->abstract_declarator_node = NULL;
 
-    while (is_declaration(vec, *index)) {
+    while (is_declaration_specifier(vec, *index)) {
         DeclSpecifierNode* decl_spec_node = create_decl_specifier_node(vec, index);
         if (decl_spec_node == NULL) {
             error("Failed to create declaration-specifier node.\n");
@@ -1149,7 +1149,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
             break;
         }
         case TK_LPAREN: {
-            if (is_declaration(vec, *index)) {
+            if (is_declaration_specifier(vec, *index)) {
                 p_direct_declarator_node->param_type_list_node = create_param_type_list_node(vec, index);
                 if (p_direct_declarator_node->param_type_list_node == NULL) {
                     error("Failed to create parameter-type-list node.\n");
@@ -1381,7 +1381,7 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
     declaration_node->decl_specifier_nodes  = create_ptr_vector();
     declaration_node->init_declarator_nodes = create_ptr_vector();
 
-    while (is_declaration(vec, *index)) {
+    while (is_declaration_specifier(vec, *index)) {
         DeclSpecifierNode* decl_specifier_node = create_decl_specifier_node(vec, index);
         if (decl_specifier_node == NULL) {
             error("Failed to create declaration-specifier node.\n");
@@ -1428,7 +1428,7 @@ static bool is_type_specifier(const TokenVec* vec, int index) {
     );
 }
 
-static bool is_declaration(const TokenVec* vec, int index) {
+static bool is_declaration_specifier(const TokenVec* vec, int index) {
     return (is_storage_class_specifier(vec, index)
          || is_type_specifier(vec, index)
          || is_type_qualifier(vec, index)
@@ -1453,7 +1453,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
 
     // <declaration>*
     {
-        while (is_declaration(vec, *index)) {
+        while (is_declaration_specifier(vec, *index)) {
             DeclarationNode* declaration_node = create_declaration_node(vec, index);
             if (declaration_node == NULL) {
                 error("Failed to create declaration-node.\n");
@@ -1499,7 +1499,7 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
     func_def_node->compound_stmt_node   = NULL;
 
     // {<declaration-specifier>}*
-    while (is_declaration(vec, *index)) {
+    while (is_declaration_specifier(vec, *index)) {
         DeclSpecifierNode* decl_specifier_node = create_decl_specifier_node(vec, index);
         if (decl_specifier_node == NULL) {
             error("Failed to create declaration-specifier node.\n");
@@ -1529,15 +1529,35 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
     return func_def_node;
 }
 
+static bool is_func_def(const TokenVec* vec, int index) {
+    const Token* token = vec->tokens[index];
+    while (token->type != TK_IDENT) {
+        ++index;
+        token = vec->tokens[index];
+    }
+    ++index;
+    token = vec->tokens[index];
+
+    return (token->type == TK_LPAREN);
+}
+
 static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* index) {
     ExternalDeclNode* external_decl_node = malloc(sizeof(ExternalDeclNode));
 
-    external_decl_node->declaration_node = NULL;
-    external_decl_node->func_def_node    = create_func_def_node(vec, index);
-    if (external_decl_node->func_def_node == NULL) {
-        error("Failed to create function-definition node.\n");
-        return NULL;
+    if (is_func_def(vec, *index)) {
+        external_decl_node->func_def_node = create_func_def_node(vec, index);
+        if (external_decl_node->func_def_node == NULL) {
+            error("Failed to create function-definition node.\n");
+            return NULL;
+        }
     }
+    else {
+        external_decl_node->declaration_node = create_declaration_node(vec, index);
+        if (external_decl_node->declaration_node == NULL) {
+            error("Failed to create declaration-definition node.\n");
+            return NULL;
+        }
+    } 
 
     return external_decl_node;
 }

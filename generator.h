@@ -34,6 +34,13 @@ struct LocalVar {
     int   offset;
 };
 
+typedef struct GlobalVar GlobalVar;
+struct GlobalVar {
+    Type* type;
+    char* name;
+    int   name_len;
+};
+
 void gen(const TransUnitNode* node);
 
 #endif

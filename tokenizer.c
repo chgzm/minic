@@ -48,7 +48,6 @@ static bool is_symbol(char p) {
     }
 }
 
-
 static Token* read_character(const char* p, int* pos) {
     ++(*pos);
 
@@ -73,7 +72,26 @@ static Token* read_character(const char* p, int* pos) {
 }
 
 static Token* read_string(const char* p, int* pos) {
-    return NULL;
+    ++(*pos);
+    int len = 0, cur = 0;  
+    while (p[*pos + cur] != '"') {
+        if (p[*pos + cur] != '\\') { 
+            ++len;
+        }
+        ++cur;
+    }
+
+    Token* token  = calloc(1, sizeof(Token));
+    token->type   = TK_STR;
+    token->strlen = len;
+    token->str    = malloc(sizeof(char) * token->strlen + 1);
+    strncpy(token->str, &p[*pos], token->strlen);
+    token->str[token->strlen] = '\0';
+
+    *pos += (cur + 1);
+
+
+    return token;
 }
 
 static Token* read_symbol(const char* p, int* pos) {
@@ -513,6 +531,7 @@ static Token* read_identifier(const char* p, int* pos) {
         token->str    = calloc(1, sizeof(char) * len + 1);
         token->strlen = len + 1;
         strncpy(token->str, &p[*pos], len);
+        token->str[len] = '\0';
     }
 
     *(pos) += len;

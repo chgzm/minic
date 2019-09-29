@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "generator.h"
 #include "util.h"
+#include "debug.h"
 
 #include <unistd.h>
 #include <getopt.h>
@@ -58,6 +59,10 @@ int main(int argc, char* argv[]) {
     if (vec == NULL) {
         error("Failed to tokenize.\n");
         return -1;
+    }
+
+    if (debug_flag) {
+        dump_tokens(vec);
     }
 
     TransUnitNode* node = parse(vec);

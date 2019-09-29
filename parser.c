@@ -18,6 +18,7 @@ static bool is_type_specifier(const TokenVec* vec, int index);
 
 static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
     ConstantNode* constant_node = malloc(sizeof(ConstantNode));
+    constant_node->character_constant = NULL;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -28,6 +29,7 @@ static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
     }
     case TK_STR: {
         constant_node->const_type = CONST_STR;
+        constant_node->character_constant = malloc(sizeof(char) * token->strlen);
         strncpy(constant_node->character_constant, token->str, token->strlen);
         break;
     }

@@ -15,6 +15,7 @@ static char* arg_registers[] = {
     "rdi", "rsi", "rdx", "rcx", "r8", "r9"
 };
 static int label_index;
+static int string_index;
 static int current_offset;
 static PtrVector* localvar_list;
 static PtrVector* globalvar_list;
@@ -87,6 +88,12 @@ static const char* get_label() {
     return label;
 }
 
+static const char* get_string_label() {
+     const char* label = fmt(".LC%d", string_index);
+    ++string_index;
+    return label;
+}
+
 static void process_identifier_left(const char* identifier, int len) {
     const LocalVar* lv = get_localvar(identifier, len);
     if (lv != NULL) {
@@ -131,6 +138,14 @@ static void process_constant_node(const ConstantNode* node) {
         break;
     }
     case CONST_STR: {
+        const char* label = get_string_label();
+
+        printf(".data\n");
+        printf("%s:\n", label);
+        print_code(".string \"%s\"", node->character_constant);
+        print_code(".text\n");
+        print_code("lea rax, %s[rip]", label);
+        print_code("push rax");
         break;
     }
     case CONST_FLOAT: {
@@ -246,6 +261,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         }
 
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
+        print_code("mov rax, 0");
         print_code("call %s", identifier);
         print_code("push rax");
 

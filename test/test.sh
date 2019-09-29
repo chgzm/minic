@@ -104,5 +104,6 @@ try test_ptr_3.c 100
 try test_ptr_4.c 10
 
 try test_global.c 9
+try test_global_2.c 10
 
 echo -e "\e[36mPassed all tests.\e[0m"

@@ -88,10 +88,15 @@ static const char* get_label() {
 }
 
 static void process_identifier_left(const char* identifier, int len) {
-    const LocalVar* localvar = get_localvar(identifier, len);
-    if (localvar != NULL) {
+    const LocalVar* lv = get_localvar(identifier, len);
+    if (lv != NULL) {
         print_code("mov rax, rbp");
-        print_code("sub rax, %d", localvar->offset);
+        print_code("sub rax, %d", lv->offset);
+        print_code("push rax");
+    } 
+    else {
+        const GlobalVar* gv = get_globalvar(identifier, len);    
+        print_code("lea rax, %s[rip]", gv->name);
         print_code("push rax");
     }
 }
@@ -1296,6 +1301,7 @@ static void process_global_declaration(const DeclarationNode* node) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
             const int int_constant = get_int_constant(initializer_node);
 
+            printf(".data\n");
             printf("%s:\n", gv->name);
             print_code(".long %d", int_constant); 
         }

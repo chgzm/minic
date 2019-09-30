@@ -7,6 +7,7 @@ static ExprNode* create_expr_node(const TokenVec* vec, int* index);
 static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index);
 static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index);
 static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index);
+static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index);
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
 static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
@@ -781,6 +782,8 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
     ItrStmtNode* itr_stmt_node = malloc(sizeof(ItrStmtNode));
     itr_stmt_node->expr_node[1] = NULL;
     itr_stmt_node->expr_node[2] = NULL;
+
+    itr_stmt_node->declaration_nodes = create_ptr_vector();
     
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -837,11 +840,30 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         }
         ++(*index);
 
-        // {<expression>}? ;
         token = vec->tokens[*index];
         if (token->type == TK_SEMICOL) {
             ++(*index);
-        } else {
+        } 
+        // <declaration>* ;
+        else if (is_declaration_specifier(vec, *index)) {
+            while (is_declaration_specifier(vec, *index)) {
+                DeclarationNode* declaration_node = create_declaration_node(vec, index);
+                if (declaration_node == NULL) {
+                    error("Failed to create declaration-node.\n");
+                    return NULL;
+                }
+                ptr_vector_push_back(itr_stmt_node->declaration_nodes, declaration_node);
+            }
+
+            // token = vec->tokens[*index];
+            // if (token->type != TK_SEMICOL) {
+            //     error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            //     return NULL;
+            // }
+            // ++(*index);
+        } 
+        // {<expression>}? ;
+        else {
             itr_stmt_node->expr_node[0] = create_expr_node(vec, index);
             if (itr_stmt_node->expr_node == NULL) {
                 error("Failed to create expression-node.\n");
@@ -856,7 +878,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             }
             ++(*index);
         }
-       
+
         // {<expression>}? ;
         token = vec->tokens[*index];
         if (token->type == TK_SEMICOL) {

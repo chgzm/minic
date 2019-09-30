@@ -30,6 +30,7 @@ static void process_stmt(const StmtNode* node);
 static void process_conditional_expr(const ConditionalExprNode* node);
 static void process_compound_stmt(const CompoundStmtNode* node);
 static void process_cast_expr(const CastExprNode* node);
+static void process_declaration(const DeclarationNode* node);
 static int get_array_size_from_constant_expr(const ConstantExprNode* node);
 
 static void print_code(const char* fmt, ...) {
@@ -922,7 +923,12 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         ptr_stack_push(continue_label_stack, (void*)(label2));
         ptr_stack_push(break_label_stack, (void*)(label3));
 
-        if (node->expr_node[0] != NULL) {
+        if (node->declaration_nodes->size != 0) {
+            for (int i = 0; i < node->declaration_nodes->size; ++i) {
+                process_declaration(node->declaration_nodes->elements[i]);
+            }
+        }
+        else if (node->expr_node[0] != NULL) {
             process_expr(node->expr_node[0]);
         }
         printf("%s:\n", label1);
@@ -1138,15 +1144,14 @@ static int get_array_size_from_constant_expr(const ConstantExprNode* node) {
                ->integer_constant;
 }
 
-static int calc_localvar_size(const FuncDefNode* node) {
-    const CompoundStmtNode* compound_stmt_node = node->compound_stmt_node;
-    if (compound_stmt_node == NULL) {
+static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
+    if (node == NULL) {
         return 0;
     }
 
     int size = 0;
-    for (int i = 0; i < compound_stmt_node->declaration_nodes->size; ++i) {
-        const DeclarationNode* declaration_node = (const DeclarationNode*)(compound_stmt_node->declaration_nodes->elements[i]);
+    for (int i = 0; i < node->declaration_nodes->size; ++i) {
+        const DeclarationNode* declaration_node = (const DeclarationNode*)(node->declaration_nodes->elements[i]);
         const PtrVector* init_declarator_nodes = declaration_node->init_declarator_nodes;
 
         for (int j = 0; j < init_declarator_nodes->size; ++j) {
@@ -1159,6 +1164,34 @@ static int calc_localvar_size(const FuncDefNode* node) {
             } else {
                 const int array_size = get_array_size_from_constant_expr(direct_declarator_node->constant_expr_node);
                 size += (array_size * 8);
+            }
+        }
+    }
+
+    for (int i = 0; i < node->stmt_nodes->size; ++i) {
+        const StmtNode* stmt_node = node->stmt_nodes->elements[i];
+        size += calc_localvar_size_in_compound_stmt(stmt_node->compound_stmt_node);
+
+        if (stmt_node->itr_stmt_node == NULL) {
+            continue;
+        }
+
+        const ItrStmtNode* itr_stmt_node = stmt_node->itr_stmt_node;
+        for (int j = 0; j < itr_stmt_node->declaration_nodes->size; ++j) {
+            const DeclarationNode* declaration_node = (const DeclarationNode*)(itr_stmt_node->declaration_nodes->elements[j]);
+            const PtrVector* init_declarator_nodes = declaration_node->init_declarator_nodes;
+
+            for (int k = 0; k < init_declarator_nodes->size; ++k) {
+                const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[k]);
+                const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
+                const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
+
+                if (direct_declarator_node->constant_expr_node == NULL) {
+                    size += 8;
+                } else {
+                    const int array_size = get_array_size_from_constant_expr(direct_declarator_node->constant_expr_node);
+                    size += (array_size * 8);
+                }
             }
         }
     }
@@ -1211,7 +1244,7 @@ static void process_func_def(const FuncDefNode* node) {
     const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
     printf("%s:\n", direct_declarator_node->direct_declarator_node->identifier); // @todo
 
-    const int localvar_size = calc_localvar_size(node);
+    const int localvar_size = calc_localvar_size_in_compound_stmt(node->compound_stmt_node);
     const int arg_size      = calc_arg_size(node);
 
     // prologue

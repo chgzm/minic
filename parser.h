@@ -114,6 +114,10 @@ enum IterationType {
     ITR_FOR,
 };
 
+struct Context {
+
+};
+
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
@@ -440,6 +444,8 @@ struct ItrStmtNode {
     int itr_type;
     StmtNode* stmt_node;
     ExprNode* expr_node[3];
+    
+    PtrVector* declaration_nodes;
 };
 
 struct JumpStmtNode {

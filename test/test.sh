@@ -101,6 +101,7 @@ assert_return test_dec_2.c 1
 
 assert_return test_for.c 10
 assert_return test_for_2.c 10
+assert_return test_for_3.c 10
 
 assert_return test_break.c 6
 assert_return test_break_2.c 6

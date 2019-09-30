@@ -12,6 +12,7 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
 static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
 static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index);
+static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index);
 static bool is_declaration_specifier(const TokenVec* vec, int index);
 static bool is_storage_class_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
@@ -1304,7 +1305,7 @@ static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* i
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
-    case TK_STRUCT:   { type_qualifier_node->type_qualifier = TQ_CONST;    break; }
+    case TK_CONST:    { type_qualifier_node->type_qualifier = TQ_CONST;    break; }
     case TK_VOLATILE: { type_qualifier_node->type_qualifier = TQ_VOLATILE; break; }
     default: {
         error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
@@ -1314,6 +1315,181 @@ static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* i
     ++(*index);
 
     return type_qualifier_node;
+}
+
+static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* vec, int* index) {
+    SpecifierQualifierNode* specifier_qualifier_node = malloc(sizeof(SpecifierQualifierNode));
+    specifier_qualifier_node->type_specifier_node = NULL;
+    specifier_qualifier_node->type_qualifier_node = NULL;
+
+    if (is_type_specifier(vec, *index)) {
+        specifier_qualifier_node->type_specifier_node = create_type_specifier_node(vec, index);
+        if (specifier_qualifier_node->type_specifier_node == NULL) {
+            error("Failed to create type-specifier node.\n");
+            return NULL;
+        }
+    } 
+    else if (is_type_qualifier(vec, *index)) {
+        specifier_qualifier_node->type_qualifier_node = create_type_qualifier_node(vec, index);
+        if (specifier_qualifier_node->type_qualifier_node == NULL) {
+            error("Failed to create type-qualifier node.\n");
+            return NULL;
+        }
+    }
+    else {
+        const Token* token = vec->tokens[*index];
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+
+    return specifier_qualifier_node;
+}
+
+static StructDeclaratorNode* create_struct_declarator_node(const TokenVec* vec, int* index) {
+    StructDeclaratorNode* struct_declarator_node = malloc(sizeof(StructDeclaratorNode));
+
+    struct_declarator_node->declarator_node    = NULL; 
+    struct_declarator_node->constant_expr_node = NULL; 
+
+    // @todo
+    struct_declarator_node->declarator_node    = create_declarator_node(vec, index);
+    if (struct_declarator_node->declarator_node == NULL) {
+        error("Failed to create declarator node.\n");
+        return NULL;
+    }
+
+    return struct_declarator_node;
+}
+
+static StructDeclaratorListNode* create_struct_declarator_list_node(const TokenVec* vec, int* index) {
+    StructDeclaratorListNode* struct_declarator_list_node = malloc(sizeof(StructDeclaratorListNode));
+
+    struct_declarator_list_node->struct_declarator_list_node = NULL;
+    struct_declarator_list_node->struct_declarator_node      = create_struct_declarator_node(vec, index);
+    if (struct_declarator_list_node->struct_declarator_node  == NULL) {
+        error("Failed to create struct-declarator node.\n");
+        return NULL;
+    }
+
+    StructDeclaratorListNode* current = struct_declarator_list_node;
+    const Token* token = vec->tokens[*index];
+    while (token->type == TK_COMMA) {
+        StructDeclaratorListNode* parent = malloc(sizeof(StructDeclaratorListNode));
+        current->struct_declarator_list_node = current;
+        current->struct_declarator_node      = create_struct_declarator_node(vec, index);
+        if (current->struct_declarator_node == NULL) {
+            error("Failed to create struct-declarator node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        current = parent;
+    }
+
+    return current;
+}
+
+static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec, int* index) {
+    StructDeclarationNode* struct_declaration_node = malloc(sizeof(StructDeclarationNode));  
+    struct_declaration_node->specifier_qualifier_nodes = create_ptr_vector();
+    
+    if (is_type_specifier(vec, *index) || is_type_qualifier(vec, *index)) {
+        while (is_type_specifier(vec, *index) || is_type_qualifier(vec, *index)) {
+            SpecifierQualifierNode* specifier_qualifier_node = create_specifier_qualifier_node(vec, index);
+            if (specifier_qualifier_node == NULL) {
+                error("Failed to create specifier-qualifier node.\n");
+                return NULL;
+            }
+        
+            ptr_vector_push_back(struct_declaration_node->specifier_qualifier_nodes, specifier_qualifier_node);
+        }
+    } 
+    
+    struct_declaration_node->struct_declarator_list_node = create_struct_declarator_list_node(vec, index);
+    if (struct_declaration_node->struct_declarator_list_node == NULL) {
+        error("Failed to create struct-declarator-list node.\n");
+        return NULL;
+    }
+
+    const Token* token = vec->tokens[*index];
+    if (token->type != TK_SEMICOL) {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+    ++(*index);
+
+    return struct_declaration_node;
+}
+
+static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const TokenVec* vec, int* index) {
+    StructOrUnionSpecifierNode* struct_or_union_specifier_node = malloc(sizeof(StructOrUnionSpecifierNode));
+    struct_or_union_specifier_node->struct_declaration_nodes = create_ptr_vector();
+
+    const Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_STRUCT: { struct_or_union_specifier_node->struct_or_union = SU_STRUCT; break; } 
+    case TK_UNION:  { struct_or_union_specifier_node->struct_or_union = SU_UNION;  break; } 
+    default: {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+    }
+    ++(*index);
+    
+    token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_IDENT: {
+        ++(*index);
+        struct_or_union_specifier_node->identifier_len = token->strlen;
+        struct_or_union_specifier_node->identifier     = malloc(sizeof(char) * token->strlen);
+        strncpy(struct_or_union_specifier_node->identifier, token->str, token->strlen);
+
+        token = vec->tokens[*index];
+        if (token->type == TK_LBRCKT) {
+            ++(*index);
+            token = vec->tokens[*index];
+            while (token->type != TK_RBRCKT) {
+                StructDeclarationNode* struct_declaration_node = create_struct_declaration_node(vec, index);
+                if (struct_declaration_node == NULL) {
+                    error("Failed to create struct-declaration node.\n");
+                    return NULL;
+                }
+
+                ptr_vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
+                token = vec->tokens[*index];
+            }
+
+            ++(*index); 
+        }
+
+        break;
+    }
+    case TK_LBRCKT: {
+        ++(*index);
+        
+        token = vec->tokens[*index];
+        while (token->type != TK_RBRCKT) {
+            StructDeclarationNode* struct_declaration_node = create_struct_declaration_node(vec, index);
+            if (struct_declaration_node == NULL) {
+               error("Failed to create struct-declaration node.\n");
+               return NULL;
+            }
+
+            ptr_vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
+            token = vec->tokens[*index];
+        }
+
+        ++(*index); 
+
+        break;
+    }
+    default: {
+        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        return NULL;
+    }
+    }
+
+    return struct_or_union_specifier_node;
 }
 
 static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index) {
@@ -1335,8 +1511,15 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE;   break; }
     case TK_SIGNED:   { type_specifier_node->type_specifier = TYPE_SIGNED;   break; }
     case TK_UNSIGNED: { type_specifier_node->type_specifier = TYPE_UNSIGNED; break; }
-    case TK_STRUCT:   { break; } // @todo
-    case TK_UNION:    { break; } // @todo
+    case TK_STRUCT:   
+    case TK_UNION: { 
+        type_specifier_node->struct_or_union_specifier_node = create_struct_or_union_specifier_node(vec, index);
+        if (type_specifier_node->struct_or_union_specifier_node == NULL) {
+            error("Failed to create struct-or-union-specifier node.\n");
+            return NULL;
+        }
+        break; 
+    } 
     case TK_ENUM:     { break; } // @todo
     case TK_TYPEDEF:  { break; } // @todo
     default: {

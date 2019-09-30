@@ -114,10 +114,6 @@ enum IterationType {
     ITR_FOR,
 };
 
-struct Context {
-
-};
-
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
@@ -126,7 +122,10 @@ typedef struct StorageClassSpecifierNode StorageClassSpecifierNode;
 typedef struct TypeSpecifierNode TypeSpecifierNode;
 typedef struct StructOrUnionSpecifierNode StructOrUnionSpecifierNode;
 typedef struct StructOrUnionNode StructOrUnionNode;
-typedef struct StructDeclNode StructDeclNode;
+typedef struct StructDeclarationNode StructDeclarationNode;
+typedef struct StructDeclaratorListNode StructDeclaratorListNode;
+typedef struct StructDeclaratorNode StructDeclaratorNode;
+typedef struct SpecifierQualifierNode SpecifierQualifierNode;
 typedef struct DeclaratorNode DeclaratorNode;
 typedef struct PointerNode PointerNode;
 typedef struct TypeQualifierNode TypeQualifierNode;
@@ -201,20 +200,37 @@ struct StorageClassSpecifierNode {
 };
 
 struct TypeSpecifierNode {
-    int                type_specifier;
-    StructOrUnionNode* struct_or_union_specifier_node;
-    EnumSpecifierNode* enum_specifier_node;
-    TypedefNameNode*   typedef_name_node;
+    int                         type_specifier;
+    StructOrUnionSpecifierNode* struct_or_union_specifier_node;
+    EnumSpecifierNode*          enum_specifier_node;
+    TypedefNameNode*            typedef_name_node;
 };
 
 struct StructOrUnionSpecifierNode {
-    int struct_or_union;
+    int        struct_or_union;
+    int        identifier_len;
+    char*      identifier;
+    PtrVector* struct_declaration_nodes; 
 };
 
-struct StructOrUnionNode {
+struct StructDeclarationNode {
+    PtrVector*                specifier_qualifier_nodes;
+    StructDeclaratorListNode* struct_declarator_list_node;    
 };
 
-struct StructDeclNode {
+struct SpecifierQualifierNode {
+    TypeSpecifierNode* type_specifier_node;
+    TypeQualifierNode* type_qualifier_node;
+};
+
+struct StructDeclaratorListNode {
+    StructDeclaratorNode*     struct_declarator_node;
+    StructDeclaratorListNode* struct_declarator_list_node;
+};
+
+struct StructDeclaratorNode {
+    DeclaratorNode*   declarator_node;
+    ConstantExprNode* constant_expr_node;
 };
 
 struct DeclaratorNode {

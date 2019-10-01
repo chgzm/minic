@@ -62,7 +62,6 @@ static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index
         primary_expr_node->identifier_len = token->strlen;
         strncpy(primary_expr_node->identifier, token->str, token->strlen);
         ++(*index);
-
         break;
     }
     case TK_NUM:
@@ -183,7 +182,27 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
             break;
         }
         case TK_DOT: {
-            current->postfix_expr_type = PS_DOT;
+            ++(*index);
+
+            p_postfix_expr_node                     = malloc(sizeof(PostfixExprNode));
+            p_postfix_expr_node->postfix_expr_node  = current;
+            p_postfix_expr_node->expr_node          = NULL;
+            p_postfix_expr_node->primary_expr_node  = NULL;
+            p_postfix_expr_node->assign_expr_nodes  = NULL;
+            p_postfix_expr_node->postfix_expr_type  = PS_DOT;
+
+            token = vec->tokens[*index];
+            if (token->type != TK_IDENT) {
+                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                return NULL;    
+            }
+            
+            p_postfix_expr_node->identifier_len = token->strlen;
+            p_postfix_expr_node->identifier     = malloc(sizeof(char) * token->strlen);
+            strncpy(p_postfix_expr_node->identifier, token->str, token->strlen);
+
+            ++(*index);
+
             break;
         }
         case TK_ARROW: {

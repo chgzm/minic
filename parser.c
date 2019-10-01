@@ -1122,12 +1122,10 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
         direct_declarator_node->identifier_len = token->strlen;
         strncpy(direct_declarator_node->identifier, token->str, token->strlen);
         ++(*index);
-
         break;
     }
     case TK_LPAREN: {
         ++(*index);
-
         // @todo
         break;
     }
@@ -1502,15 +1500,15 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
-    case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;     break; }
-    case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;     break; }
-    case TK_SHORT:    { type_specifier_node->type_specifier = TYPE_SHORT;    break; }
-    case TK_INT:      { type_specifier_node->type_specifier = TYPE_INT;      break; }
-    case TK_LONG:     { type_specifier_node->type_specifier = TYPE_LONG;     break; }
-    case TK_FLOAT:    { type_specifier_node->type_specifier = TYPE_FLOAT;    break; }
-    case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE;   break; }
-    case TK_SIGNED:   { type_specifier_node->type_specifier = TYPE_SIGNED;   break; }
-    case TK_UNSIGNED: { type_specifier_node->type_specifier = TYPE_UNSIGNED; break; }
+    case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;     ++(*index); break; }
+    case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;     ++(*index); break; }
+    case TK_SHORT:    { type_specifier_node->type_specifier = TYPE_SHORT;    ++(*index); break; }
+    case TK_INT:      { type_specifier_node->type_specifier = TYPE_INT;      ++(*index); break; }
+    case TK_LONG:     { type_specifier_node->type_specifier = TYPE_LONG;     ++(*index); break; }
+    case TK_FLOAT:    { type_specifier_node->type_specifier = TYPE_FLOAT;    ++(*index); break; }
+    case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE;   ++(*index); break; }
+    case TK_SIGNED:   { type_specifier_node->type_specifier = TYPE_SIGNED;   ++(*index); break; }
+    case TK_UNSIGNED: { type_specifier_node->type_specifier = TYPE_UNSIGNED; ++(*index); break; }
     case TK_STRUCT:   
     case TK_UNION: { 
         type_specifier_node->struct_or_union_specifier_node = create_struct_or_union_specifier_node(vec, index);
@@ -1527,7 +1525,6 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
         return NULL;
     }
     }
-    ++(*index);
 
     return type_specifier_node;
 }
@@ -1588,7 +1585,8 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
     declaration_node->decl_specifier_nodes  = create_ptr_vector();
     declaration_node->init_declarator_nodes = create_ptr_vector();
 
-    while (is_declaration_specifier(vec, *index)) {
+    const Token* token = vec->tokens[*index];
+    while (is_declaration_specifier(vec, *index) && token->type != TK_SEMICOL) {
         DeclSpecifierNode* decl_specifier_node = create_decl_specifier_node(vec, index);
         if (decl_specifier_node == NULL) {
             error("Failed to create declaration-specifier node.\n");
@@ -1598,7 +1596,7 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
         ptr_vector_push_back(declaration_node->decl_specifier_nodes, decl_specifier_node);
     }
 
-    const Token* token = vec->tokens[*index];
+    token = vec->tokens[*index];
     while (token->type != TK_SEMICOL) {
         InitDeclaratorNode* init_declarator_node = create_init_declarator_node(vec, index);
         if (init_declarator_node == NULL) {
@@ -1722,7 +1720,6 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
         error("Failed to create declarator node.\n");
         return NULL;
     }
-
     // {<declaration>}*
     // @todo
 

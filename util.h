@@ -18,12 +18,14 @@ extern bool debug_flag;
 #define debug(fmt, ...) \
     _debug_print_tmsp(); \
     if (debug_flag) fprintf(stdout, "%s:%d %s] ", __FILE__, __LINE__, __func__); \
-    _debug(fmt, ## __VA_ARGS__); 
+    _debug(fmt, ## __VA_ARGS__); \
+    fflush(stdout)
 
 #define error(fmt, ...) \
     _error_print_tmsp(); \
     fprintf(stderr, "%s:%d %s] ", __FILE__, __LINE__, __func__); \
-    _error(fmt, ## __VA_ARGS__); 
+    _error(fmt, ## __VA_ARGS__); \
+    fflush(stderr)
 
 void _debug_print_tmsp();
 void _debug(const char* fmt, ...);
@@ -71,6 +73,5 @@ PtrStack* create_ptr_stack();
 void ptr_stack_push(PtrStack* stack, void* e);
 void* ptr_stack_top(PtrStack* stack);
 void ptr_stack_pop(PtrStack* stack);
-
 
 #endif

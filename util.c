@@ -6,8 +6,7 @@
 #include <stdarg.h>
 #include <time.h>
 
-//
-// debug, error
+// // debug, error
 //
 
 void _debug_print_tmsp() {
@@ -143,6 +142,29 @@ void ptr_vector_push_back(PtrVector* vec, void* e) {
 }
 
 //
+// Vector for int
+//
+
+IntVector* create_int_vector() {
+    IntVector* vec = malloc(sizeof(IntVector));
+    vec->elements  = malloc(sizeof(int) * 16);
+    vec->capacity  = 16;
+    vec->size      = 0;
+
+    return vec;
+}
+
+void int_vector_push_back(IntVector* vec, int e) {
+    if (vec->size == vec->capacity) {
+        vec->capacity *= 2;
+        vec->elements = realloc(vec->elements, sizeof(int) * vec->capacity);
+    }
+
+    vec->elements[vec->size] = e;
+    ++(vec->size);
+}
+
+//
 // Stack for Pointers
 //
 
@@ -175,4 +197,80 @@ void* ptr_stack_top(PtrStack* stack) {
 
 void ptr_stack_pop(PtrStack* stack) {
     --(stack->top);
+}
+
+//
+// Hashmap of char* => int
+//
+
+StrHashMap* create_strhashmap(int capacity) {
+    StrHashMap* map = (StrHashMap*)(malloc(sizeof(StrHashMap)));
+    map->size     = 0;
+    map->capacity = capacity;
+    map->entries  = (StrHashMapEntry**)(malloc(sizeof(StrHashMapEntry*) * capacity));
+
+    for (int i = 0; i < map->capacity; ++i) {
+        map->entries[i] = NULL;
+    } 
+
+    return map;
+}
+
+static int calc_hash(const char* str) {
+    int h = 0, pos = 0;
+    while (str[pos] != '\0') {
+        h = h * 31 + str[pos];
+        ++pos;
+    }
+
+    return h;
+}
+
+void strhashmap_put(StrHashMap* map, const char* key, void* val) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    if (map->entries[index] == NULL) {
+        map->entries[index] = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
+        map->entries[index]->key  = strdup(key);
+        map->entries[index]->val  = strdup(val);
+        map->entries[index]->next = NULL;
+    }
+    else {
+        StrHashMapEntry* current = map->entries[index];
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
+        map->entries[index]->key = strdup(key);
+        map->entries[index]->val = strdup(val);
+        current->next->next      = NULL;
+    }
+
+    ++(map->size);
+}
+
+bool strhashmap_contains(StrHashMap* map, const char* key) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    return (map->entries[index] != NULL);
+}
+
+void* strhashmap_get(StrHashMap* map, const char* key) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    if (map->entries[index] == NULL) {
+        return NULL;
+    }
+    else {
+        StrHashMapEntry* current = map->entries[index];
+        while (current != NULL) {
+            if (strcmp(current->key, key) == 0) {
+                return current->val;
+            }
+             
+            current = current->next;
+        }
+
+        return NULL;
+    }
 }

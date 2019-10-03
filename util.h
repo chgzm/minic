@@ -59,6 +59,20 @@ PtrVector* create_ptr_vector();
 void ptr_vector_push_back(PtrVector* vec, void* e);
 
 //
+// Vector for int
+//
+
+typedef struct IntVector IntVector;
+struct IntVector {
+    int* elements;
+    int  size;
+    int  capacity;
+};
+
+IntVector* create_int_vector();
+void int_vector_push_back(IntVector* vec, int e);
+
+//
 // Stack for Pointers
 //
 
@@ -73,5 +87,28 @@ PtrStack* create_ptr_stack();
 void ptr_stack_push(PtrStack* stack, void* e);
 void* ptr_stack_top(PtrStack* stack);
 void ptr_stack_pop(PtrStack* stack);
+
+//
+// Hashmap for string => pointer
+//
+
+typedef struct StrHashMapEntry StrHashMapEntry;
+struct StrHashMapEntry {
+    char*            key;
+    void*            val;
+    StrHashMapEntry* next;
+};
+
+typedef struct StrHashMap StrHashMap;
+struct StrHashMap {
+    StrHashMapEntry** entries;
+    int               size;
+    int               capacity;
+};
+
+StrHashMap* create_strhashmap(int capacity);
+void strhashmap_put(StrHashMap* map, const char* key, void* val);
+bool strhashmap_contains(StrHashMap* map, const char* key);
+void* strhashmap_get(StrHashMap* map, const char* key);
 
 #endif

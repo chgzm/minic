@@ -8,10 +8,7 @@ enum TokenType {
     TK_NUM,       // number literal
     TK_STR,       // string literal
     TK_IDENT,     // identifier
-    TK_AUTO,      // "auto"
-    TK_REGISTER,  // "register"
     TK_STATIC,    // "static"
-    TK_EXTERN,    // "extern"
     TK_TYPEDEF,   // "typedef"
     TK_VOID,      // "void"
     TK_CHAR,      // "char"
@@ -20,8 +17,6 @@ enum TokenType {
     TK_LONG,      // "long"
     TK_FLOAT,     // "float"
     TK_DOUBLE,    // "double"
-    TK_SIGNED,    // "signed"
-    TK_UNSIGNED,  // "unsigned"
     TK_STRUCT,    // "struct"
     TK_UNION,     // "union"
     TK_ENUM,      // "enum"
@@ -31,10 +26,8 @@ enum TokenType {
     TK_ELSE,      // "else"
     TK_FOR,       // "for"
     TK_WHILE,     // "while"
-    TK_DO,        // "do"
     TK_SWITCH,    // "switch"
     TK_CASE,      // "case"
-    TK_GOTO,      // "goto"
     TK_BREAK,     // "break"
     TK_CONTINUE,  // "continue"
     TK_RETURN,    // "return"
@@ -82,7 +75,6 @@ enum TokenType {
     TK_AND_EQ,    // &=
     TK_XOR_EQ,    // ^=
     TK_OR_EQ,     // |=
-    TK_EOF,       // EOF
 };
 
 struct Token {

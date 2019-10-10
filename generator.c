@@ -17,8 +17,9 @@ static char* arg_registers[] = {
 static int label_index;
 static int string_index;
 static int current_offset;
-static PtrVector* localvar_list;
-static PtrVector* globalvar_list;
+static PtrVector*  localvar_list;
+static PtrVector*  globalvar_list;
+static StrHashMap* struct_map;  
 static char* ret_label;
 static PtrStack* break_label_stack;
 static PtrStack* continue_label_stack;
@@ -31,7 +32,7 @@ static void process_conditional_expr(const ConditionalExprNode* node);
 static void process_compound_stmt(const CompoundStmtNode* node);
 static void process_cast_expr(const CastExprNode* node);
 static void process_declaration(const DeclarationNode* node);
-static int get_array_size_from_constant_expr(const ConstantExprNode* node);
+static int get_array_size_from_constant_expr(const ConditionalExprNode* node);
 
 static void print_code(const char* fmt, ...) {
     va_list ap;
@@ -822,7 +823,6 @@ static void process_expr_stmt(const ExprStmtNode* node) {
 
 static void process_jump_stmt(const JumpStmtNode* node) {
     switch (node->jump_type) {
-    case JMP_GOTO:
     case JMP_CONTINUE: {
         const char* label = ptr_stack_top(continue_label_stack);
         print_code("jmp %s", label);
@@ -911,9 +911,6 @@ static void process_itr_stmt(const ItrStmtNode* node) {
 
         ptr_stack_pop(continue_label_stack);
         ptr_stack_pop(break_label_stack);
-        break;
-    }
-    case ITR_DO_WHILE: {
         break;
     }
     case ITR_FOR: {
@@ -1013,6 +1010,8 @@ static const DirectDeclaratorNode* get_identifier_direct_declarator(const Direct
 static void process_declaration(const DeclarationNode* node) {
     // decide base type
     int base_type = 0;
+    int type_size = 8; // @todo
+
     for (int i = 0; i < node->decl_specifier_nodes->size; ++i) {
         const DeclSpecifierNode* decl_specifier_node = node->decl_specifier_nodes->elements[i];
         const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
@@ -1028,8 +1027,7 @@ static void process_declaration(const DeclarationNode* node) {
         case TYPE_LONG:     { base_type = VAR_LONG;     break; }
         case TYPE_FLOAT:    { base_type = VAR_FLOAT;    break; }
         case TYPE_DOUBLE:   { base_type = VAR_DOUBLE;   break; }
-        case TYPE_SIGNED:   { base_type = VAR_SIGNED;   break; }
-        case TYPE_UNSIGNED: { base_type = VAR_UNSIGNED; break; }
+        case TYPE_STRUCT:   { base_type = VAR_STRUCT;   break; } 
         default:            {                           break; }
         }
 
@@ -1043,26 +1041,23 @@ static void process_declaration(const DeclarationNode* node) {
 
         lv->type            = malloc(sizeof(Type));
         lv->type->base_type = base_type;
-        lv->type->type_size = 8; // @todo
-        lv->type->ptr       = NULL;
+        lv->type->type_size = type_size; // @todo
+        lv->type->ptr_count = 0;
 
         const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
 
-        const PointerNode* current = declarator_node->pointer_node;
-        while (current != NULL) {
-            lv->type->ptr       = malloc(sizeof(Type));
-            lv->type->ptr->ptr  = NULL;
-
-            current = current->pointer_node;
+        const PointerNode* pointer_node = declarator_node->pointer_node;
+        if (pointer_node != NULL) {
+            lv->type->ptr_count = pointer_node->count;
         }
 
         const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-        const ConstantExprNode*     constant_expr_node     = direct_declarator_node->constant_expr_node;
-        if (constant_expr_node == NULL) {
+        const ConditionalExprNode*  conditional_expr_node  = direct_declarator_node->conditional_expr_node;
+        if (conditional_expr_node == NULL) {
             lv->type->array_size = 1;
         } else {
-            lv->type->array_size = get_array_size_from_constant_expr(constant_expr_node);
+            lv->type->array_size = get_array_size_from_constant_expr(conditional_expr_node);
         }
 
         const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
@@ -1124,9 +1119,8 @@ static int calc_arg_size(const FuncDefNode* node) {
     return cnt * 8;
 }
 
-static int get_array_size_from_constant_expr(const ConstantExprNode* node) {
-    return node->conditional_expr_node
-               ->logical_or_expr_node
+static int get_array_size_from_constant_expr(const ConditionalExprNode* node) {
+    return node->logical_or_expr_node
                ->logical_and_expr_node
                ->inclusive_or_expr_node
                ->exclusive_or_expr_node
@@ -1159,10 +1153,10 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
             const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
             const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
 
-            if (direct_declarator_node->constant_expr_node == NULL) {
+            if (direct_declarator_node->conditional_expr_node == NULL) {
                 size += 8;
             } else {
-                const int array_size = get_array_size_from_constant_expr(direct_declarator_node->constant_expr_node);
+                const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
                 size += (array_size * 8);
             }
         }
@@ -1186,10 +1180,10 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
                 const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
                 const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
 
-                if (direct_declarator_node->constant_expr_node == NULL) {
+                if (direct_declarator_node->conditional_expr_node == NULL) {
                     size += 8;
                 } else {
-                    const int array_size = get_array_size_from_constant_expr(direct_declarator_node->constant_expr_node);
+                    const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
                     size += (array_size * 8);
                 }
             }
@@ -1291,6 +1285,7 @@ static int get_int_constant(const InitializerNode* node) {
 static void process_global_declaration(const DeclarationNode* node) {
     // add global-variable to list
     int base_type = 0;
+    StructInfo* struct_info = NULL;
     for (int i = 0; i < node->decl_specifier_nodes->size; ++i) {
         const DeclSpecifierNode* decl_specifier_node = node->decl_specifier_nodes->elements[i];
         const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
@@ -1306,9 +1301,53 @@ static void process_global_declaration(const DeclarationNode* node) {
         case TYPE_LONG:     { base_type = VAR_LONG;     break; }
         case TYPE_FLOAT:    { base_type = VAR_FLOAT;    break; }
         case TYPE_DOUBLE:   { base_type = VAR_DOUBLE;   break; }
-        case TYPE_SIGNED:   { base_type = VAR_SIGNED;   break; }
-        case TYPE_UNSIGNED: { base_type = VAR_UNSIGNED; break; }
-        default:            {                           break; }
+        case TYPE_STRUCT:   { 
+            base_type = VAR_STRUCT;   
+            StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;         
+            if (struct_or_union_specifier_node->identifier != NULL) {
+                const char* struct_name = struct_or_union_specifier_node->identifier;
+                const PtrVector* struct_declaration_nodes = struct_or_union_specifier_node->struct_declaration_nodes;
+                //  <struct-or-union> <identifier> { {<struct-declaration>}+ }
+                if (struct_declaration_nodes->size != 0) {
+                    struct_info = malloc(sizeof(StructInfo));
+                    struct_info->field_info_map = create_strhashmap(1024);
+
+                    for (int j = 0; j < struct_declaration_nodes->size; ++j) {
+                        const StructDeclarationNode* struct_declaration_node = struct_declaration_nodes->elements[j];
+                        
+                        int offset = 0;
+                        const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
+                        for (int i = 0; i < struct_declarator_list_node->declarator_nodes->size; ++i) {
+                            FieldInfo* field_info = malloc(sizeof(FieldInfo));
+                            field_info->type      = malloc(sizeof(Type)); // @todo
+
+                            field_info->offset = offset;
+                            offset += 8;
+
+                            const DeclaratorNode* node = (const DeclaratorNode*)(struct_declarator_list_node->declarator_nodes->elements[i]);
+                            const char* field_name = node->direct_declarator_node->identifier;
+                                                        
+                            strhashmap_put(struct_info->field_info_map, field_name, field_info);
+                        }
+                    }
+                    printf("name=%s\n", struct_name);
+                    strhashmap_put(struct_map, struct_name, struct_info);
+                }
+                // <struct-or-union> <identifier>
+                else {
+                    // @todo
+                }
+            }
+            // <struct-or-union> { {<struct-declaration>}+ }
+            else {
+                // @todo
+            }
+
+            break; 
+        }
+        default: {
+            break;
+        }
         }
 
         break;
@@ -1319,25 +1358,22 @@ static void process_global_declaration(const DeclarationNode* node) {
         gv->type            = malloc(sizeof(Type));
         gv->type->base_type = base_type;
         gv->type->type_size = 8; // @todo
-        gv->type->ptr       = NULL;
+        gv->type->ptr_count = 0;
 
         const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
 
-        const PointerNode* current = declarator_node->pointer_node;
-        while (current != NULL) {
-            gv->type->ptr       = malloc(sizeof(Type));
-            gv->type->ptr->ptr  = NULL;
-
-            current = current->pointer_node;
+        const PointerNode* pointer_node = declarator_node->pointer_node;
+        if (pointer_node != NULL) {
+            gv->type->ptr_count = pointer_node->count;
         }
 
         const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-        const ConstantExprNode*     constant_expr_node     = direct_declarator_node->constant_expr_node;
-        if (constant_expr_node == NULL) {
+        const ConditionalExprNode*     conditional_expr_node     = direct_declarator_node->conditional_expr_node;
+        if (conditional_expr_node == NULL) {
             gv->type->array_size = 1;
         } else {
-            gv->type->array_size = get_array_size_from_constant_expr(constant_expr_node);
+            gv->type->array_size = get_array_size_from_constant_expr(conditional_expr_node);
         }
 
         const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
@@ -1376,6 +1412,7 @@ void gen(const TransUnitNode* node) {
     break_label_stack = create_ptr_stack();
     continue_label_stack = create_ptr_stack();
     globalvar_list = create_ptr_vector();
+    struct_map = create_strhashmap(1024);
 
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         const ExternalDeclNode* external_decl_node = (const ExternalDeclNode*)(node->external_decl_nodes->elements[i]);

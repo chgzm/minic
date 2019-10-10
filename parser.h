@@ -13,8 +13,10 @@ enum TypeSpecifier {
     TYPE_LONG,
     TYPE_FLOAT,
     TYPE_DOUBLE,
-    TYPE_SIGNED,
-    TYPE_UNSIGNED,
+    TYPE_STRUCT,
+    TYPE_UNION,
+    TYPE_ENUM,
+    TYPE_TYPEDEFNAME
 };
 
 enum TypeQualifier {
@@ -23,10 +25,7 @@ enum TypeQualifier {
 };
 
 enum StorageClassSpecifier {
-    SC_AUTO,
-    SC_REGISTER,
     SC_STATIC,
-    SC_EXTERN,
     SC_TYPEDEF,
 };
 
@@ -73,7 +72,6 @@ enum ConstType {
 };
 
 enum JumpType {
-    JMP_GOTO,
     JMP_CONTINUE,
     JMP_BREAK,
     JMP_RETURN,
@@ -83,18 +81,18 @@ enum UnaryType {
     UN_NONE,   // none
     UN_INC,    // ++
     UN_DEC,    // --
-    UN_OP,     // <unary-operator>
+    UN_OP,     // unary-operator
     UN_SIZEOF, // "sizeof"
 };
 
 enum PostfixType {
-    PS_PRIMARY, // <primary-expreesion>
-    PS_LSQUARE, // <postfix-expression> [ <expression> ]
-    PS_LPAREN,  // <postfix-expression> ( {assignment-expression>}* )
-    PS_DOT,     // <postfix-expression> . <identifier>
-    PS_ARROW,   // <postfix-expression> -> <identifier>
-    PS_INC,     // <postfix-expression> ++
-    PS_DEC,     // <postfix-expression> --
+    PS_PRIMARY, // primary-expreesion
+    PS_LSQUARE, // postfix-expression [ <expression> ]
+    PS_LPAREN,  // postfix-expression ( {assignment-expression}* )
+    PS_DOT,     // postfix-expression . identifier
+    PS_ARROW,   // postfix-expression -> identifier
+    PS_INC,     // postfix-expression ++
+    PS_DEC,     // postfix-expression --
 };
 
 enum ParamListType {
@@ -110,7 +108,6 @@ enum SelectionStmtType {
 
 enum IterationType {
     ITR_WHILE,
-    ITR_DO_WHILE,
     ITR_FOR,
 };
 
@@ -124,13 +121,11 @@ typedef struct StructOrUnionSpecifierNode StructOrUnionSpecifierNode;
 typedef struct StructOrUnionNode StructOrUnionNode;
 typedef struct StructDeclarationNode StructDeclarationNode;
 typedef struct StructDeclaratorListNode StructDeclaratorListNode;
-typedef struct StructDeclaratorNode StructDeclaratorNode;
 typedef struct SpecifierQualifierNode SpecifierQualifierNode;
 typedef struct DeclaratorNode DeclaratorNode;
 typedef struct PointerNode PointerNode;
 typedef struct TypeQualifierNode TypeQualifierNode;
 typedef struct DirectDeclaratorNode DirectDeclaratorNode;
-typedef struct ConstantExprNode ConstantExprNode;
 typedef struct ConditionalExprNode ConditionalExprNode;
 typedef struct LogicalOrExprNode LogicalOrExprNode;
 typedef struct LogicalAndExprNode LogicalAndExprNode;
@@ -185,7 +180,6 @@ struct ExternalDeclNode {
 struct FuncDefNode {
     PtrVector*        decl_specifier_nodes;
     DeclaratorNode*   declarator_node;
-    PtrVector*        declaration_nodes;
     CompoundStmtNode* compound_stmt_node;
 };
 
@@ -224,13 +218,7 @@ struct SpecifierQualifierNode {
 };
 
 struct StructDeclaratorListNode {
-    StructDeclaratorNode*     struct_declarator_node;
-    StructDeclaratorListNode* struct_declarator_list_node;
-};
-
-struct StructDeclaratorNode {
-    DeclaratorNode*   declarator_node;
-    ConstantExprNode* constant_expr_node;
+    PtrVector* declarator_nodes;
 };
 
 struct DeclaratorNode {
@@ -239,8 +227,7 @@ struct DeclaratorNode {
 };
 
 struct PointerNode {
-    PtrVector* type_qualifier_nodes;
-    PointerNode* pointer_node;
+    int count;
 };
 
 struct TypeQualifierNode {
@@ -252,18 +239,14 @@ struct DirectDeclaratorNode {
     int                   identifier_len;
     DeclaratorNode*       declarator_node;
     DirectDeclaratorNode* direct_declarator_node;  
-    ConstantExprNode*     constant_expr_node;
+    ConditionalExprNode*  conditional_expr_node;
     ParamTypeListNode*    param_type_list_node;
     PtrVector*            identifier_list;
 };
 
-struct ConstantExprNode {
-    ConditionalExprNode* conditional_expr_node;
-};
-
 struct ConditionalExprNode {
     LogicalOrExprNode*   logical_or_expr_node;
-    LogicalAndExprNode*  logical_and_expr_node;
+    ExprNode*            expr_node;
     ConditionalExprNode* conditional_expr_node;
 };
 
@@ -325,7 +308,7 @@ struct MultiPlicativeExprNode {
 struct CastExprNode {
     UnaryExprNode* unary_expr_node;
     CastExprNode*  cast_expr_node;
-    int            type_name;
+    TypeNameNode*  type_name_node;
 };  
 
 struct UnaryExprNode {
@@ -460,7 +443,6 @@ struct ItrStmtNode {
     int itr_type;
     StmtNode* stmt_node;
     ExprNode* expr_node[3];
-    
     PtrVector* declaration_nodes;
 };
 

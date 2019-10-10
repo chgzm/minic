@@ -183,14 +183,11 @@ assignment-expression:
     unary-expression assignment-operator assignment-expression
 
 assignment-operator:
-    "="
-    "*="
+    "=" "*="
     "/="
     "%="
     "+="
     "-="
-    "<<="
-    ">>="
     "&="
     "^="
     "|="

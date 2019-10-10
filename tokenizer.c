@@ -358,17 +358,6 @@ static Token* read_identifier(const char* p, int* pos) {
     //
 
     switch (p[*pos]) {
-    case 'a': {
-        if (len != 4) {
-            break;
-        }
-
-        if (strncmp("auto", &p[*pos], 4) == 0) {
-            token->type = TK_AUTO;
-        } 
-        
-        break;
-    }
     case 'b': {
         if (len != 5) {
             break;
@@ -404,13 +393,12 @@ static Token* read_identifier(const char* p, int* pos) {
         break;
     }
     case 'e': {
-        if (len != 4 && len != 6) {
+        if (len != 4) {
             break;
         }
 
-        if      (strncmp("else",   &p[*pos], 4) == 0) { token->type = TK_ELSE;   } 
-        else if (strncmp("enum",   &p[*pos], 4) == 0) { token->type = TK_ENUM;   }
-        else if (strncmp("extern", &p[*pos], 6) == 0) { token->type = TK_EXTERN; }
+        if      (strncmp("else",   &p[*pos], 4) == 0) { token->type = TK_ELSE; } 
+        else if (strncmp("enum",   &p[*pos], 4) == 0) { token->type = TK_ENUM; }
 
         break;
     }
@@ -421,17 +409,6 @@ static Token* read_identifier(const char* p, int* pos) {
 
         if      (strncmp("for",   &p[*pos], 3) == 0) { token->type = TK_FOR;   }
         else if (strncmp("float", &p[*pos], 5) == 0) { token->type = TK_FLOAT; }
-
-        break;
-    }
-    case 'g': {
-        if (len != 4) {
-            break;
-        }
-
-        if (strncmp("goto", &p[*pos], 4) == 0) {
-            token->type = TK_GOTO;
-        }
 
         break;
     }
@@ -457,12 +434,13 @@ static Token* read_identifier(const char* p, int* pos) {
         break;
     }
     case 'r': {
-        if (len != 6 && len != 8) {
+        if (len != 6) {
             break;
         }
 
-        if      (strncmp("return",   &p[*pos], 6) == 0) { token->type = TK_RETURN;   }
-        else if (strncmp("register", &p[*pos], 8) == 0) { token->type = TK_REGISTER; }
+        if (strncmp("return", &p[*pos], 6) == 0) {
+            token->type = TK_RETURN;   
+        }
 
         break;
     }
@@ -475,7 +453,6 @@ static Token* read_identifier(const char* p, int* pos) {
         else if (strncmp("struct", &p[*pos], 6) == 0) { token->type = TK_STRUCT; }
         else if (strncmp("switch", &p[*pos], 6) == 0) { token->type = TK_SWITCH; }
         else if (strncmp("static", &p[*pos], 6) == 0) { token->type = TK_STATIC; }
-        else if (strncmp("signed", &p[*pos], 6) == 0) { token->type = TK_SIGNED; }
         else if (strncmp("sizeof", &p[*pos], 6) == 0) { token->type = TK_SIZEOF; }
 
         break;
@@ -492,12 +469,13 @@ static Token* read_identifier(const char* p, int* pos) {
         break;
     }
     case 'u': {
-        if (len != 5 && len != 8) {
+        if (len != 5) {
             break;
         }
 
-        if      (strncmp("union",    &p[*pos], 5) == 0) { token->type = TK_UNION;    }
-        else if (strncmp("unsigned", &p[*pos], 8) == 0) { token->type = TK_UNSIGNED; }
+        if (strncmp("union", &p[*pos], 5) == 0) { 
+            token->type = TK_UNION;    
+        }
 
         break;
     }
@@ -675,7 +653,6 @@ const char* decode_token_type(int type) {
     case TK_AND_EQ:   { return "TK_AND_EQ";   }
     case TK_XOR_EQ:   { return "TK_XOR_EQ";   }
     case TK_OR_EQ:    { return "TK_OR_EQ";    }
-    case TK_EOF:      { return "TK_EOF";      }
     default:          { return "INVALID";     }
     }
 }

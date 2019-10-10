@@ -549,7 +549,7 @@ static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* 
 static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, int* index) {
     ConditionalExprNode* conditional_expr_node = malloc(sizeof(ConditionalExprNode));
 
-    conditional_expr_node->logical_and_expr_node = NULL;
+    conditional_expr_node->expr_node             = NULL;
     conditional_expr_node->conditional_expr_node = NULL;
     conditional_expr_node->logical_or_expr_node  = create_logical_or_expr_node(vec, index);
     if (conditional_expr_node->logical_or_expr_node == NULL) {
@@ -647,9 +647,6 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
-    case TK_GOTO: {
-        break;
-    }
     case TK_CONTINUE: {
         jump_stmt_node->jump_type = JMP_CONTINUE;
         ++(*index);
@@ -843,11 +840,6 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
 
         break;
     }
-    case TK_DO: {
-        // @todo
-        itr_stmt_node->itr_type = ITR_DO_WHILE;
-        break;
-    }
     case TK_FOR: {
         itr_stmt_node->itr_type = ITR_FOR;
         ++(*index);
@@ -968,7 +960,6 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
     const Token* token = vec->tokens[*index];
     switch (token->type) {
     case TK_WHILE: 
-    case TK_DO:
     case TK_FOR: {
         stmt_node->itr_stmt_node = create_itr_stmt_node(vec, index);
         if (stmt_node->itr_stmt_node == NULL) {
@@ -1111,18 +1102,6 @@ static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* 
     return param_type_list_node;
 }
 
-static ConstantExprNode* create_constant_expr_node(const TokenVec* vec, int* index) {
-    ConstantExprNode* constant_expr_node = malloc(sizeof(ConstantExprNode));
-    
-    constant_expr_node->conditional_expr_node = create_conditional_expr_node(vec, index);
-    if (constant_expr_node->conditional_expr_node == NULL) {
-        error("Failed to create conditional-expression node.\n");
-        return NULL;
-    }
-
-    return constant_expr_node;
-}
-
 static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, int* index) {
     DirectDeclaratorNode* direct_declarator_node = malloc(sizeof(DirectDeclaratorNode));
 
@@ -1130,7 +1109,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
     direct_declarator_node->identifier_len         = 0;
     direct_declarator_node->declarator_node        = NULL; // @todo
     direct_declarator_node->direct_declarator_node = NULL; // @todo
-    direct_declarator_node->constant_expr_node     = NULL; // @todo
+    direct_declarator_node->conditional_expr_node  = NULL; // @todo
     direct_declarator_node->param_type_list_node   = NULL; // @todo
     direct_declarator_node->identifier_list        = NULL; // @todo
 
@@ -1164,7 +1143,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
         p_direct_declarator_node->identifier_len         = 0;
         p_direct_declarator_node->declarator_node        = NULL; 
         p_direct_declarator_node->direct_declarator_node = current;
-        p_direct_declarator_node->constant_expr_node     = NULL; 
+        p_direct_declarator_node->conditional_expr_node  = NULL; 
         p_direct_declarator_node->param_type_list_node   = NULL; 
         p_direct_declarator_node->identifier_list        = create_ptr_vector();
 
@@ -1175,8 +1154,8 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
                 break;
             }
 
-            p_direct_declarator_node->constant_expr_node = create_constant_expr_node(vec, index);
-            if (p_direct_declarator_node->constant_expr_node == NULL) {
+            p_direct_declarator_node->conditional_expr_node = create_conditional_expr_node(vec, index);
+            if (p_direct_declarator_node->conditional_expr_node == NULL) {
                 error("Failed to create constant-expression node.\n");
                 return NULL;
             }
@@ -1240,9 +1219,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
 static PointerNode* create_pointer_node(const TokenVec* vec, int* index) {
     PointerNode* pointer_node = malloc(sizeof(PointerNode));
 
-    pointer_node->pointer_node         = NULL;
-    pointer_node->type_qualifier_nodes = create_ptr_vector();
-
+    pointer_node->count = 1;
     const Token* token = vec->tokens[*index];
     if (token->type != TK_ASTER) {
         error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
@@ -1251,24 +1228,10 @@ static PointerNode* create_pointer_node(const TokenVec* vec, int* index) {
     ++(*index);
 
     token = vec->tokens[*index];
-    while (token->type == TK_CONST || token->type == TK_VOLATILE) {
-        TypeQualifierNode* type_qualifier_node = create_type_qualifier_node(vec, index);
-        if (type_qualifier_node == NULL) {
-            error("Failed to type-qualifier node.\n");
-            return NULL;
-        }
-
-        ptr_vector_push_back(pointer_node->type_qualifier_nodes, type_qualifier_node);
-
+    while (token->type == TK_ASTER) {
+        ++(pointer_node->count);
+        ++(*index);
         token = vec->tokens[*index];
-    }
-
-    if (token->type == TK_ASTER) {
-        pointer_node->pointer_node = create_pointer_node(vec, index);
-        if (pointer_node->pointer_node == NULL) {
-            error("Failed to create pointer node.\n");
-            return NULL;
-        }
     } 
     
     return pointer_node;  
@@ -1362,48 +1325,30 @@ static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* v
     return specifier_qualifier_node;
 }
 
-static StructDeclaratorNode* create_struct_declarator_node(const TokenVec* vec, int* index) {
-    StructDeclaratorNode* struct_declarator_node = malloc(sizeof(StructDeclaratorNode));
-
-    struct_declarator_node->declarator_node    = NULL; 
-    struct_declarator_node->constant_expr_node = NULL; 
-
-    // @todo
-    struct_declarator_node->declarator_node    = create_declarator_node(vec, index);
-    if (struct_declarator_node->declarator_node == NULL) {
-        error("Failed to create declarator node.\n");
-        return NULL;
-    }
-
-    return struct_declarator_node;
-}
-
 static StructDeclaratorListNode* create_struct_declarator_list_node(const TokenVec* vec, int* index) {
     StructDeclaratorListNode* struct_declarator_list_node = malloc(sizeof(StructDeclaratorListNode));
 
-    struct_declarator_list_node->struct_declarator_list_node = NULL;
-    struct_declarator_list_node->struct_declarator_node      = create_struct_declarator_node(vec, index);
-    if (struct_declarator_list_node->struct_declarator_node  == NULL) {
-        error("Failed to create struct-declarator node.\n");
+    struct_declarator_list_node->declarator_nodes = create_ptr_vector();
+    DeclaratorNode* declarator_node = create_declarator_node(vec, index);
+    if (declarator_node == NULL) {
+        error("Failed to create declarator node.\n");
         return NULL;
     }
+    ptr_vector_push_back(struct_declarator_list_node->declarator_nodes, declarator_node);
 
-    StructDeclaratorListNode* current = struct_declarator_list_node;
     const Token* token = vec->tokens[*index];
     while (token->type == TK_COMMA) {
-        StructDeclaratorListNode* parent = malloc(sizeof(StructDeclaratorListNode));
-        current->struct_declarator_list_node = current;
-        current->struct_declarator_node      = create_struct_declarator_node(vec, index);
-        if (current->struct_declarator_node == NULL) {
-            error("Failed to create struct-declarator node.\n");
+        DeclaratorNode* node = create_declarator_node(vec, index);
+        if (node == NULL) {
+            error("Failed to create declarator node.\n");
             return NULL;
         }
 
         token = vec->tokens[*index];
-        current = parent;
+        ptr_vector_push_back(struct_declarator_list_node->declarator_nodes, node);
     }
 
-    return current;
+    return struct_declarator_list_node;
 }
 
 static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec, int* index) {
@@ -1519,17 +1464,15 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
-    case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;     ++(*index); break; }
-    case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;     ++(*index); break; }
-    case TK_SHORT:    { type_specifier_node->type_specifier = TYPE_SHORT;    ++(*index); break; }
-    case TK_INT:      { type_specifier_node->type_specifier = TYPE_INT;      ++(*index); break; }
-    case TK_LONG:     { type_specifier_node->type_specifier = TYPE_LONG;     ++(*index); break; }
-    case TK_FLOAT:    { type_specifier_node->type_specifier = TYPE_FLOAT;    ++(*index); break; }
-    case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE;   ++(*index); break; }
-    case TK_SIGNED:   { type_specifier_node->type_specifier = TYPE_SIGNED;   ++(*index); break; }
-    case TK_UNSIGNED: { type_specifier_node->type_specifier = TYPE_UNSIGNED; ++(*index); break; }
-    case TK_STRUCT:   
-    case TK_UNION: { 
+    case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;   ++(*index); break; }
+    case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;   ++(*index); break; }
+    case TK_SHORT:    { type_specifier_node->type_specifier = TYPE_SHORT;  ++(*index); break; }
+    case TK_INT:      { type_specifier_node->type_specifier = TYPE_INT;    ++(*index); break; }
+    case TK_LONG:     { type_specifier_node->type_specifier = TYPE_LONG;   ++(*index); break; }
+    case TK_FLOAT:    { type_specifier_node->type_specifier = TYPE_FLOAT;  ++(*index); break; }
+    case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE; ++(*index); break; }
+    case TK_STRUCT: {
+        type_specifier_node->type_specifier = TYPE_STRUCT;
         type_specifier_node->struct_or_union_specifier_node = create_struct_or_union_specifier_node(vec, index);
         if (type_specifier_node->struct_or_union_specifier_node == NULL) {
             error("Failed to create struct-or-union-specifier node.\n");
@@ -1537,6 +1480,7 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
         }
         break; 
     } 
+    case TK_UNION:    { break; } // @todo
     case TK_ENUM:     { break; } // @todo
     case TK_TYPEDEF:  { break; } // @todo
     default: {
@@ -1552,11 +1496,8 @@ static StorageClassSpecifierNode* create_storage_class_specifier_node(const Toke
     StorageClassSpecifierNode* storage_class_specifier_node = malloc(sizeof(StorageClassSpecifierNode));
 
     const Token* token = vec->tokens[*index];
-    if      (token->type == TK_AUTO)     { storage_class_specifier_node->storage_class_specifier = SC_AUTO;     }
-    else if (token->type == TK_REGISTER) { storage_class_specifier_node->storage_class_specifier = SC_REGISTER; }
-    else if (token->type == TK_STATIC)   { storage_class_specifier_node->storage_class_specifier = SC_STATIC;   }
-    else if (token->type == TK_EXTERN)   { storage_class_specifier_node->storage_class_specifier = SC_EXTERN;   }
-    else if (token->type == TK_TYPEDEF)  { storage_class_specifier_node->storage_class_specifier = SC_TYPEDEF;  }
+    if      (token->type == TK_STATIC)  { storage_class_specifier_node->storage_class_specifier = SC_STATIC;  }
+    else if (token->type == TK_TYPEDEF) { storage_class_specifier_node->storage_class_specifier = SC_TYPEDEF; }
     else {
         error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
         return NULL;
@@ -1633,9 +1574,7 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
 
 static bool is_storage_class_specifier(const TokenVec* vec, int index) {
     const int type = vec->tokens[index]->type;
-    return (type == TK_AUTO   || type == TK_REGISTER || type == TK_STATIC 
-         || type == TK_EXTERN || type == TK_TYPEDEF
-    );
+    return (type == TK_STATIC || type == TK_TYPEDEF);
 }
 
 static bool is_type_qualifier(const TokenVec* vec, int index) {
@@ -1647,8 +1586,7 @@ static bool is_type_specifier(const TokenVec* vec, int index) {
     const int type = vec->tokens[index]->type;
     return (type == TK_VOID   || type == TK_CHAR   || type == TK_SHORT
          || type == TK_INT    || type == TK_LONG   || type == TK_FLOAT
-         || type == TK_DOUBLE || type == TK_SIGNED || type == TK_UNSIGNED
-         || type == TK_STRUCT || type == TK_UNION
+         || type == TK_DOUBLE || type == TK_STRUCT || type == TK_UNION
     );
 }
 
@@ -1719,7 +1657,6 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
 
     func_def_node->decl_specifier_nodes = create_ptr_vector();
     func_def_node->declarator_node      = NULL;
-    func_def_node->declaration_nodes    = create_ptr_vector();
     func_def_node->compound_stmt_node   = NULL;
 
     // {<declaration-specifier>}*

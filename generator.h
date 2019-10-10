@@ -2,6 +2,7 @@
 #define GENERATOR_H
 
 #include "parser.h"
+#include "util.h"
 
 extern bool debug_flag;
 
@@ -13,20 +14,33 @@ enum VarType {
     VAR_LONG,
     VAR_FLOAT,
     VAR_DOUBLE,
-    VAR_SIGNED,
-    VAR_UNSIGNED,
     VAR_PTR,
+    VAR_STRUCT,
 };
 
+typedef struct FieldInfo FieldInfo;
+typedef struct StructInfo StructInfo;
 typedef struct Type Type;
-struct Type {
-    int   base_type;
-    int   type_size;
-    int   array_size;
-    Type* ptr;
+typedef struct LocalVar LocalVar;
+typedef struct GlobalVar GlobalVar;
+
+struct FieldInfo {
+    Type* type;
+    int   offset;
 };
 
-typedef struct LocalVar LocalVar;
+struct StructInfo {
+    StrHashMap* field_info_map; // field-name => field-info
+};
+
+struct Type {
+    int         base_type;
+    int         type_size;
+    int         array_size;
+    int         ptr_count;
+    StructInfo* struct_info;
+};
+
 struct LocalVar {
     Type* type; 
     char* name;
@@ -34,7 +48,6 @@ struct LocalVar {
     int   offset;
 };
 
-typedef struct GlobalVar GlobalVar;
 struct GlobalVar {
     Type* type;
     char* name;

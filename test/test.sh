@@ -131,6 +131,7 @@ assert_return test_struct.c 6
 assert_return test_struct_2.c 15
 
 assert_return test_comment.c 42
+assert_return test_comment_2.c 42
 
 assert_output test_printf.c "Hello, World."
 

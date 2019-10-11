@@ -118,7 +118,6 @@ typedef struct DeclSpecifierNode DeclSpecifierNode;
 typedef struct StorageClassSpecifierNode StorageClassSpecifierNode;
 typedef struct TypeSpecifierNode TypeSpecifierNode;
 typedef struct StructOrUnionSpecifierNode StructOrUnionSpecifierNode;
-typedef struct StructOrUnionNode StructOrUnionNode;
 typedef struct StructDeclarationNode StructDeclarationNode;
 typedef struct StructDeclaratorListNode StructDeclaratorListNode;
 typedef struct SpecifierQualifierNode SpecifierQualifierNode;
@@ -293,7 +292,6 @@ struct ShiftExprNode {
 };
 
 struct AdditiveExprNode {
-    int                     node_type;
     int                     operator_type;
     MultiPlicativeExprNode* multiplicative_expr_node;
     AdditiveExprNode*       additive_expr_node;
@@ -362,8 +360,8 @@ struct TypeNameNode {
 };
 
 struct ParamTypeListNode {
-    ParamListNode* param_list_node; 
     int            type;
+    ParamListNode* param_list_node; 
 };
 
 struct ParamListNode {
@@ -434,15 +432,15 @@ struct ExprStmtNode {
 };
 
 struct SelectionStmtNode {
-    int selection_type;
+    int       selection_type;
     ExprNode* expr_node;
     StmtNode* stmt_node[2];
 };
 
 struct ItrStmtNode {
-    int itr_type;
-    StmtNode* stmt_node;
-    ExprNode* expr_node[3];
+    int        itr_type;
+    StmtNode*  stmt_node;
+    ExprNode*  expr_node[3];
     PtrVector* declaration_nodes;
 };
 
@@ -457,5 +455,23 @@ struct JumpStmtNode {
 //
 
 TransUnitNode* parse(const TokenVec* vec);
+
+//
+// debug
+//
+
+const char* decode_type_specifier(int type_specifier);
+const char* decode_type_qualifier(int type_qualifier);
+const char* decode_storage_class_specifier(int storage_class_specifier);
+const char* decode_struct_or_union(int struct_or_union);
+const char* decode_operator_type(int operator_type);
+const char* decode_comparison_operator_type(int type);
+const char* decode_const_type(int type);
+const char* decode_jump_type(int type);
+const char* decode_unary_type(int type);
+const char* decode_postfix_type(int type);
+const char* decode_param_list_type(int type);
+const char* decode_selection_stmt_type(int type);
+const char* decode_itr_type(int type);
 
 #endif

@@ -188,7 +188,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
             p_postfix_expr_node->postfix_expr_node  = current;
             p_postfix_expr_node->expr_node          = NULL;
             p_postfix_expr_node->primary_expr_node  = NULL;
-            p_postfix_expr_node->assign_expr_nodes  = NULL;
+            p_postfix_expr_node->assign_expr_nodes  = create_ptr_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_DOT;
 
             token = vec->tokens[*index];
@@ -1111,7 +1111,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
     direct_declarator_node->direct_declarator_node = NULL; // @todo
     direct_declarator_node->conditional_expr_node  = NULL; // @todo
     direct_declarator_node->param_type_list_node   = NULL; // @todo
-    direct_declarator_node->identifier_list        = NULL; // @todo
+    direct_declarator_node->identifier_list        = create_ptr_vector();
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -1746,3 +1746,154 @@ TransUnitNode* parse(const TokenVec* vec) {
 
     return trans_unit_node;
 }
+
+//
+// debug
+//
+
+const char* decode_type_specifier(int type_specifier) {
+    switch (type_specifier) {
+    case TYPE_NONE:        { return "TYPE_NONE";        }
+    case TYPE_VOID:        { return "TYPE_VOID";        }
+    case TYPE_CHAR:        { return "TYPE_CHAR";        }
+    case TYPE_SHORT:       { return "TYPE_SHORT";       }
+    case TYPE_INT:         { return "TYPE_INT";         }
+    case TYPE_LONG:        { return "TYPE_LONG";        }
+    case TYPE_FLOAT:       { return "TYPE_FLOAT";       }
+    case TYPE_DOUBLE:      { return "TYPE_DOUBLE";      }
+    case TYPE_STRUCT:      { return "TYPE_STRUCT";      }
+    case TYPE_UNION:       { return "TYPE_UNION";       }
+    case TYPE_ENUM:        { return "TYPE_ENUM";        }
+    case TYPE_TYPEDEFNAME: { return "TYPE_TYPEDEFNAME"; }
+    default:               { return "INVALID";          }
+    }
+}
+
+const char* decode_type_qualifier(int type_qualifier) {
+    switch (type_qualifier) {
+    case TQ_CONST:    { return "TQ_CONST";    }
+    case TQ_VOLATILE: { return "TQ_VOLATILE"; }
+    default:          { return "INVALID";     }
+    }
+}
+
+const char* decode_storage_class_specifier(int storage_class_specifier) {
+    switch (storage_class_specifier) {
+    case SC_STATIC:  { return "SC_STATIC";  }
+    case SC_TYPEDEF: { return "SC_TYPEDEF"; }
+    default:         { return "INVALID";    }
+    }
+}
+
+const char* decode_struct_or_union(int struct_or_union) {
+    switch (struct_or_union) {
+    case SU_STRUCT: { return "SU_STRUCT"; }
+    case SU_UNION:  { return "SU_UNION";  }
+    default:        { return "INVALID";   }
+    }
+}
+
+const char* decode_operator_type(int operator_type) {
+    switch (operator_type) {
+    case OP_NONE:   { return "OP_NONE";   }
+    case OP_ASSIGN: { return "OP_ASSIGN"; }
+    case OP_MUL_EQ: { return "OP_MUL_EQ"; } 
+    case OP_DIV_EQ: { return "OP_DIV_EQ"; }
+    case OP_MOD_EQ: { return "OP_MOD_EQ"; }
+    case OP_ADD_EQ: { return "OP_ADD_EQ"; }
+    case OP_SUB_EQ: { return "OP_SUB_EQ"; }
+    case OP_AND_EQ: { return "OP_AND_EQ"; }
+    case OP_XOR_EQ: { return "OP_XOR_EQ"; }
+    case OP_OR_EQ:  { return "OP_OR_EQ";  }
+    case OP_AND:    { return "OP_AND";    }
+    case OP_ADD:    { return "OP_ADD";    }
+    case OP_SUB:    { return "OP_SUB";    }
+    case OP_MUL:    { return "OP_MUL";    }
+    case OP_DIV:    { return "OP_DIV";    }
+    case OP_MOD:    { return "OP_MOD";    }
+    case OP_TILDE:  { return "OP_TILDE";  }
+    case OP_EXCLA:  { return "OP_EXCLA";  }
+    default:        { return "INVALID";   }
+    }
+}
+
+const char* decode_comparison_operator_type(int type) {
+    switch (type) {
+    case CMP_NONE: { return "CMP_NONE"; }
+    case CMP_LT:   { return "CMP_LT";   }
+    case CMP_GT:   { return "CMP_GT";   }
+    case CMP_EQ:   { return "CMP_EQ";   }
+    case CMP_NE:   { return "CMP_NE";   }
+    case CMP_LE:   { return "CMP_LE";   }
+    case CMP_GE:   { return "CMP_GE";   }
+    default:       { return "INVALID";  }
+    }
+}
+
+const char* decode_const_type(int type) {
+    switch (type) {
+    case CONST_INT:   { return "CONST_INT";   }
+    case CONST_STR:   { return "CONST_STR";   }
+    case CONST_FLOAT: { return "CONST_FLOAT"; }
+    default:          { return "INVALID";     }
+    }
+}
+
+const char* decode_jump_type(int type) {
+    switch (type) {
+    case JMP_CONTINUE: { return "JMP_CONTINUE"; }
+    case JMP_BREAK:    { return "JMP_BREAK";    }
+    case JMP_RETURN:   { return "JMP_RETURN";   }
+    default:           { return "INVALID";      }
+    }
+}
+
+const char* decode_unary_type(int type) {
+    switch (type) {
+    case UN_NONE:   { return "UN_NONE";   }
+    case UN_INC:    { return "UN_INC";    }
+    case UN_DEC:    { return "UN_DEC";    }
+    case UN_OP:     { return "UN_OP";     }
+    case UN_SIZEOF: { return "UN_SIZEOF"; }
+    default:        { return "INVALID";   }
+    }
+}
+
+const char* decode_postfix_type(int type) {
+    switch (type) {
+    case PS_PRIMARY: { return "PS_PRIMARY"; }
+    case PS_LSQUARE: { return "PS_LSQUARE"; }
+    case PS_LPAREN:  { return "PS_LPAREN";  }
+    case PS_DOT:     { return "PS_DOT";     }
+    case PS_ARROW:   { return "PS_ARROW";   }
+    case PS_INC:     { return "PS_INC";     }
+    case PS_DEC:     { return "PS_DEC";     }
+    default:         { return "INVALID";    }
+    }
+}
+
+const char* decode_param_list_type(int type) {
+    switch (type) {
+    case PL_NONE: { return "PL_NONE"; }
+    case PL_DOT:  { return "PL_DOT";  }
+    default:      { return "INVALID"; }
+    }
+}
+
+const char* decode_selection_stmt_type(int type) {
+    switch (type) {
+    case SELECT_IF:      { return "SELECT_IF";      }
+    case SELECT_IF_ELSE: { return "SELECT_IF_ELSE"; }
+    case SELECT_SWITCH:  { return "SELECT_SWITCH";  }
+    default:             { return "INVALID";        }
+    }
+}
+
+const char* decode_itr_type(int type) {
+    switch (type) {
+    case ITR_WHILE: { return "ITR_WHILE"; }
+    case ITR_FOR:   { return "ITR_FOR";   }
+    default:        { return "INVALID";   }
+    }
+}
+

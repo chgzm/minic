@@ -10,16 +10,8 @@
 #include <unistd.h>
 
 //
-// debug, error 
+// error 
 //
-
-extern bool debug_flag;
-
-#define debug(fmt, ...) \
-    _debug_print_tmsp(); \
-    if (debug_flag) fprintf(stdout, "%s:%d %s] ", __FILE__, __LINE__, __func__); \
-    _debug(fmt, ## __VA_ARGS__); \
-    fflush(stdout)
 
 #define error(fmt, ...) \
     _error_print_tmsp(); \
@@ -27,8 +19,6 @@ extern bool debug_flag;
     _error(fmt, ## __VA_ARGS__); \
     fflush(stderr)
 
-void _debug_print_tmsp();
-void _debug(const char* fmt, ...);
 void _error_print_tmsp();
 void _error(const char* fmt, ...);
 

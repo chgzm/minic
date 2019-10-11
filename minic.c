@@ -71,6 +71,10 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    if (debug_flag) {
+        dump_nodes(node);
+    }
+
     gen(node);
 
     return 0;

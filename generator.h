@@ -4,8 +4,6 @@
 #include "parser.h"
 #include "util.h"
 
-extern bool debug_flag;
-
 enum VarType {
     VAR_VOID,
     VAR_CHAR,

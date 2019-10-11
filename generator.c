@@ -1330,7 +1330,6 @@ static void process_global_declaration(const DeclarationNode* node) {
                             strhashmap_put(struct_info->field_info_map, field_name, field_info);
                         }
                     }
-                    printf("name=%s\n", struct_name);
                     strhashmap_put(struct_map, struct_name, struct_info);
                 }
                 // <struct-or-union> <identifier>

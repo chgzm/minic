@@ -13,7 +13,8 @@
 
 static char* arg_registers[] = {
     "rdi", "rsi", "rdx", "rcx", "r8", "r9"
-}; static int label_index;
+}; 
+static int label_index;
 static int string_index;
 static int current_offset;
 static PtrVector*  localvar_list;
@@ -66,8 +67,8 @@ static void print_global(const TransUnitNode* node) {
         else {
             const DeclarationNode* declaration_node = external_decl_node->declaration_node;
             for (int j = 0; j < declaration_node->init_declarator_nodes->size; ++j) {
-                const InitDeclaratorNode* init_declarator_node = declaration_node->init_declarator_nodes->elements[j];
-                const DeclaratorNode*     declarator_node      = init_declarator_node->declarator_node;
+                const InitDeclaratorNode*   init_declarator_node   = declaration_node->init_declarator_nodes->elements[j];
+                const DeclaratorNode*       declarator_node        = init_declarator_node->declarator_node;
                 const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
                 printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
             }
@@ -116,10 +117,10 @@ static void process_identifier_right(const char* identifier, int len) {
 }
 
 static void process_identifier_addr(const char* identifier, int len) {
-    const LocalVar* localvar = get_localvar(identifier, len);
-    if (localvar != NULL) {
+    const LocalVar* lv = get_localvar(identifier, len);
+    if (lv != NULL) {
         print_code("mov rax, rbp");
-        print_code("sub rax, %d", localvar->offset);
+        print_code("sub rax, %d", lv->offset);
         print_code("push rax");
     }
 }
@@ -132,7 +133,6 @@ static void process_constant_node(const ConstantNode* node) {
     }
     case CONST_STR: {
         const char* label = get_string_label();
-
         printf(".data\n");
         printf("%s:\n", label);
         print_code(".string \"%s\"", node->character_constant);
@@ -152,15 +152,15 @@ static void process_constant_node(const ConstantNode* node) {
 }
 
 static void process_primary_expr_left(const PrimaryExprNode* node) {
-    // <constant>
+    // constant
     if (node->constant_node != NULL) {
         process_constant_node(node->constant_node);
     }
-    // ( <expression> )
+    // ( expression )
     else if (node->expr_node != NULL) {
         process_expr(node->expr_node);
     }
-    // <identifier>
+    // identifier
     else if (node->identifier != NULL) {
         process_identifier_left(node->identifier, node->identifier_len);
     }
@@ -170,15 +170,15 @@ static void process_primary_expr_left(const PrimaryExprNode* node) {
 }
 
 static void process_primary_expr_right(const PrimaryExprNode* node) {
-    // <constant>
+    // constant
     if (node->constant_node != NULL) {
         process_constant_node(node->constant_node);
     }
-    // ( <expression> )
+    // ( expression )
     else if (node->expr_node != NULL) {
         process_expr(node->expr_node);
     }
-    // <identifier>
+    // identifier
     else if (node->identifier != NULL) {
         process_identifier_right(node->identifier, node->identifier_len);
     }
@@ -216,11 +216,11 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_LSQUARE: {
         process_expr(node->expr_node);
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
-        const LocalVar* localvar = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
+        const LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
 
         print_code("pop rdi");
-        print_code("imul rdi, %d", localvar->type->type_size);
-        print_code("add rdi, %d", localvar->offset);
+        print_code("imul rdi, %d", lv->type->type_size);
+        print_code("add rdi, %d", lv->offset);
         print_code("mov rax, rbp");
         print_code("sub rax, rdi");
         print_code("push rax");
@@ -231,13 +231,13 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_DOT: {
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
         const int len = node->postfix_expr_node->primary_expr_node->identifier_len;
-        const LocalVar* localvar = get_localvar(identifier, len);
+        const LocalVar* lv = get_localvar(identifier, len);
     
-        const StructInfo* struct_info = localvar->type->struct_info;
+        const StructInfo* struct_info = lv->type->struct_info;
         const FieldInfo* field_info = strhashmap_get(struct_info->field_info_map, node->identifier);
 
         print_code("mov rax, rbp");
-        print_code("sub rax, %d", localvar->offset + field_info->offset);
+        print_code("sub rax, %d", lv->offset + field_info->offset);
         print_code("push rax");
 
         break;        
@@ -251,12 +251,12 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
 static void process_postfix_expr_right(const PostfixExprNode* node) {
     switch (node->postfix_expr_type) {
-    // <primary-expression>
+    // primary-expression
     case PS_PRIMARY: {
         process_primary_expr_right(node->primary_expr_node);
         break;
     }
-    // <postfix-expression> ( {assignment-expression}* )
+    // postfix-expression ( {assignment-expression}* )
     case PS_LPAREN: {
         for (int i = 0; i < node->assign_expr_nodes->size; ++i) {
             const AssignExprNode* assign_expr_node = (const AssignExprNode*)(node->assign_expr_nodes->elements[i]);
@@ -275,15 +275,15 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         break;
     }
-    // <postfix-expression> [ <expression> ]
+    // postfix-expression [ expression ]
     case PS_LSQUARE: {
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
-        LocalVar* localvar = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
+        LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
 
         process_expr(node->expr_node);
         print_code("pop rdi");
-        print_code("imul rdi, %d", localvar->type->type_size);
-        print_code("add rdi, %d", localvar->offset);
+        print_code("imul rdi, %d", lv->type->type_size);
+        print_code("add rdi, %d", lv->offset);
         print_code("mov rax, rbp");
         print_code("sub rax, rdi");
         print_code("mov rax, [rax]");
@@ -295,13 +295,13 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     case PS_DOT: {
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
         const int len = node->postfix_expr_node->primary_expr_node->identifier_len;
-        const LocalVar* localvar = get_localvar(identifier, len);
+        const LocalVar* lv = get_localvar(identifier, len);
     
-        const StructInfo* struct_info = localvar->type->struct_info;
+        const StructInfo* struct_info = lv->type->struct_info;
         const FieldInfo* field_info = strhashmap_get(struct_info->field_info_map, node->identifier);
 
         print_code("mov rax, rbp");
-        print_code("sub rax, %d", localvar->offset + field_info->offset);
+        print_code("sub rax, %d", lv->offset + field_info->offset);
         print_code("push [rax]");
 
         break;        
@@ -338,12 +338,12 @@ static void process_postfix_expr_addr(const PostfixExprNode* node) {
 
 static void process_unary_expr_left(const UnaryExprNode* node) {
     switch (node->type) {
-    // <postfix-expression>
+    // postfix-expression
     case UN_NONE: {
         process_postfix_expr_left(node->postfix_expr_node);
         break;
     }
-    // ++ <unary-expression>
+    // ++ unary-expression
     case UN_INC: {
         // @todo
         break;
@@ -376,14 +376,13 @@ static void process_unary_expr_left(const UnaryExprNode* node) {
 
 static void process_unary_expr_addr(const UnaryExprNode* node) {
     switch (node->type) {
-    // <postfix-expression>
+    // postfix-expression
     case UN_NONE: {
         process_postfix_expr_addr(node->postfix_expr_node);
         break;
     }
-    // ++ <unary-expression>
+    // ++ unary-expression
     case UN_INC: {
-        // @todo
         break;
     }
     case UN_DEC: {
@@ -400,11 +399,11 @@ static void process_unary_expr_addr(const UnaryExprNode* node) {
 
 
 static void process_cast_expr_addr(const CastExprNode* node) {
-    // <unary-expression>
+    // unary-expression
     if (node->unary_expr_node != NULL) {
         process_unary_expr_addr(node->unary_expr_node);
     }
-    // ( <type-name> ) <cast-expression>
+    // ( type-name ) cast-expression
     else {
         // @todo
     }
@@ -412,12 +411,12 @@ static void process_cast_expr_addr(const CastExprNode* node) {
 
 static void process_unary_expr_right(const UnaryExprNode* node) {
     switch (node->type) {
-    // <postfix-expression>
+    // postfix-expression
     case UN_NONE: {
         process_postfix_expr_right(node->postfix_expr_node);
         break;
     }
-    // ++ <unary-expression>
+    // ++ unary-expression
     case UN_INC: {
         process_unary_expr_left(node->unary_expr_node);
 
@@ -428,7 +427,7 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
 
         break;
     }
-    // -- <unary-expression>
+    // -- unary-expression
     case UN_DEC: {
         process_unary_expr_left(node->unary_expr_node);
 
@@ -439,7 +438,7 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
 
         break;
     }
-    // <unary-operator> <cast-expression>
+    // unary-operator cast-expression
     case UN_OP: {
         switch (node->op_type) {
         case OP_AND: {
@@ -999,7 +998,7 @@ static void process_stmt(const StmtNode* node) {
 
 static LocalVar* get_localvar(const char* str, int len) {
     for (int i = 0; i < localvar_list->size; ++i) {
-        LocalVar* localvar = (LocalVar*)(localvar_list->elements[i]);
+        LocalVar* localvar = localvar_list->elements[i];
         if (strncmp(localvar->name, str, len) == 0) {
             return localvar;
         }
@@ -1010,7 +1009,7 @@ static LocalVar* get_localvar(const char* str, int len) {
 
 static GlobalVar* get_globalvar(const char* str, int len) {
     for (int i = 0; i < globalvar_list->size; ++i) {
-        GlobalVar* gv = (GlobalVar*)(globalvar_list->elements[i]);
+        GlobalVar* gv = globalvar_list->elements[i];
         if (strncmp(gv->name, str, len) == 0) {
             return gv;
         }
@@ -1126,13 +1125,11 @@ static void process_declaration(const DeclarationNode* node) {
 
 static void process_compound_stmt(const CompoundStmtNode* node) {
     for (int i = 0; i < node->declaration_nodes->size; ++i) {
-        const DeclarationNode* declaration_node = node->declaration_nodes->elements[i];
-        process_declaration(declaration_node);
+        process_declaration(node->declaration_nodes->elements[i]);
     }
 
     for (int i = 0; i < node->stmt_nodes->size; ++i) {
-        const StmtNode* stmt_node = node->stmt_nodes->elements[i];
-        process_stmt(stmt_node);
+        process_stmt(node->stmt_nodes->elements[i]);
     }
 }
 
@@ -1201,10 +1198,6 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
                     const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;
                     const char* ident = struct_or_union_specifier_node->identifier;
                     const StructInfo* struct_info = strhashmap_get(struct_map, ident);
-                    if (struct_info == NULL) {
-                        error("Invalid key=\"%s\"\n", ident);
-                        exit(-1);
-                    }
                     var_size = struct_info->field_info_map->size * 8; // @todo
                 } else {
                     var_size = 8; // @todo
@@ -1373,11 +1366,11 @@ static void process_global_declaration(const DeclarationNode* node) {
         case TYPE_DOUBLE:   { base_type = VAR_DOUBLE;   break; }
         case TYPE_STRUCT:   { 
             base_type = VAR_STRUCT;   
-            StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;         
+            const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;         
             if (struct_or_union_specifier_node->identifier != NULL) {
                 const char* struct_name = struct_or_union_specifier_node->identifier;
                 const PtrVector* struct_declaration_nodes = struct_or_union_specifier_node->struct_declaration_nodes;
-                //  <struct-or-union> <identifier> { {<struct-declaration>}+ }
+                //  struct-or-union identifier { {struct-declaration}+ }
                 if (struct_declaration_nodes->size != 0) {
                     struct_info = malloc(sizeof(StructInfo));
                     struct_info->field_info_map = create_strhashmap(1024);
@@ -1389,7 +1382,7 @@ static void process_global_declaration(const DeclarationNode* node) {
                         const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
                         for (int k = 0; k < struct_declarator_list_node->declarator_nodes->size; ++k) {
                             FieldInfo* field_info = malloc(sizeof(FieldInfo));
-                            field_info->type      = malloc(sizeof(Type)); // @todo
+                            field_info->type      = malloc(sizeof(Type));
 
                             field_info->offset = offset;
                             offset += 8;
@@ -1402,12 +1395,12 @@ static void process_global_declaration(const DeclarationNode* node) {
                     }
                     strhashmap_put(struct_map, struct_name, struct_info);
                 }
-                // <struct-or-union> <identifier>
+                // struct-or-union identifier
                 else {
                     // @todo
                 }
             }
-            // <struct-or-union> { {<struct-declaration>}+ }
+            // struct-or-union { {struct-declaration}+ }
             else {
                 // @todo
             }
@@ -1478,13 +1471,12 @@ void gen(const TransUnitNode* node) {
 
     // init
     label_index = 2;
-    break_label_stack = create_ptr_stack();
+    break_label_stack    = create_ptr_stack();
     continue_label_stack = create_ptr_stack();
-    globalvar_list = create_ptr_vector();
-    struct_map = create_strhashmap(1024);
+    globalvar_list       = create_ptr_vector();
+    struct_map           = create_strhashmap(1024);
 
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
-        const ExternalDeclNode* external_decl_node = (const ExternalDeclNode*)(node->external_decl_nodes->elements[i]);
-        process_external_decl(external_decl_node);
+        process_external_decl(node->external_decl_nodes->elements[i]);
     }
 }

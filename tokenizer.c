@@ -536,6 +536,10 @@ static Token* read_number(const char* p, int* pos) {
     return token;
 }
 
+static bool is_linecomment(const char* p, int pos) {
+    return (strncmp(&p[pos], "//", 2) == 0);
+}
+
 TokenVec* tokenize(void* addr) {
     TokenVec* vec = tokenvec_create();
 
@@ -544,6 +548,11 @@ TokenVec* tokenize(void* addr) {
     while (p[pos]) {
         if (isspace(p[pos])) {
             ++pos;
+        }
+        else if (is_linecomment(p, pos)) {
+            while (p[pos] != '\n') {
+                ++pos;
+            } 
         }
         else if (p[pos] == '\'') {
             Token* token = read_character(p, &pos);

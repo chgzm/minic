@@ -197,7 +197,7 @@ void strhashmap_put(StrHashMap* map, const char* key, void* val) {
     if (map->entries[index] == NULL) {
         map->entries[index] = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
         map->entries[index]->key  = strdup(key);
-        map->entries[index]->val  = strdup(val);
+        map->entries[index]->val  = val;
         map->entries[index]->next = NULL;
     }
     else {
@@ -207,7 +207,7 @@ void strhashmap_put(StrHashMap* map, const char* key, void* val) {
         }
         current->next = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
         map->entries[index]->key = strdup(key);
-        map->entries[index]->val = strdup(val);
+        map->entries[index]->val = val;
         current->next->next      = NULL;
     }
 
@@ -238,4 +238,5 @@ void* strhashmap_get(StrHashMap* map, const char* key) {
 
         return NULL;
     }
+
 }

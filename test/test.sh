@@ -127,6 +127,8 @@ assert_return test_ptr_4.c 10
 assert_return test_global.c 9
 assert_return test_global_2.c 10
 
+assert_return test_struct.c 6
+
 assert_output test_printf.c "Hello, World."
 
 echo -e "\e[36mPassed all tests.\e[0m"

@@ -56,17 +56,17 @@ static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* 
 }
 
 static void print_global(const TransUnitNode* node) {
-    printf(".global");
+    // printf(".global");
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         const ExternalDeclNode* external_decl_node = node->external_decl_nodes->elements[i];
         if (external_decl_node->func_def_node != NULL) {
             const FuncDefNode*          func_def_node          = external_decl_node->func_def_node;
             const DeclaratorNode*       declarator_node        = func_def_node->declarator_node;
             const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-            if (i != 0) {
-                printf(",");
-            }
-            printf(" %s", get_ident_from_direct_declarator(direct_declarator_node));
+            // if (i != 0) {
+            //     printf(",");
+            // }
+            printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
         }
         else {
             const DeclarationNode* declaration_node = external_decl_node->declaration_node;
@@ -74,14 +74,14 @@ static void print_global(const TransUnitNode* node) {
                 const InitDeclaratorNode* init_declarator_node = declaration_node->init_declarator_nodes->elements[j];
                 const DeclaratorNode*     declarator_node      = init_declarator_node->declarator_node;
                 const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-                if (!(i == 0 && j == 0)) {
-                    printf(",");
-                }
-                printf(" %s", get_ident_from_direct_declarator(direct_declarator_node));
+                // if (!(i == 0 && j == 0)) {
+                //     printf(",");
+                // }
+                printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
             }
         }
     }
-    printf("\n\n");
+    // printf("\n\n");
 }
 
 static const char* get_label() {
@@ -225,7 +225,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_LSQUARE: {
         process_expr(node->expr_node);
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
-        LocalVar* localvar = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
+        const LocalVar* localvar = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
 
         print_code("pop rdi");
         print_code("imul rdi, %d", localvar->type->type_size);
@@ -235,6 +235,21 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         print_code("push rax");
 
         break;
+    }
+    // postfix-expression . identifier
+    case PS_DOT: {
+        const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
+        const int len = node->postfix_expr_node->primary_expr_node->identifier_len;
+        const LocalVar* localvar = get_localvar(identifier, len);
+    
+        const StructInfo* struct_info = localvar->type->struct_info;
+        const FieldInfo* field_info = strhashmap_get(struct_info->field_info_map, node->identifier);
+
+        print_code("mov rax, rbp");
+        print_code("sub rax, %d", localvar->offset + field_info->offset);
+        print_code("push rax");
+
+        break;        
     }
     default: {
         // @todo
@@ -285,6 +300,22 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         break;
     }
+    // postfix-expression . identifier
+    case PS_DOT: {
+        const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
+        const int len = node->postfix_expr_node->primary_expr_node->identifier_len;
+        const LocalVar* localvar = get_localvar(identifier, len);
+    
+        const StructInfo* struct_info = localvar->type->struct_info;
+        const FieldInfo* field_info = strhashmap_get(struct_info->field_info_map, node->identifier);
+
+        print_code("mov rax, rbp");
+        print_code("sub rax, %d", localvar->offset + field_info->offset);
+        print_code("push [rax]");
+
+        break;        
+    }
+
     default: {
         // @todo
         break;
@@ -294,16 +325,16 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
 static void process_postfix_expr_addr(const PostfixExprNode* node) {
     switch (node->postfix_expr_type) {
-    // <primary-expression>
+    // primary-expression
     case PS_PRIMARY: {
         process_primary_expr_addr(node->primary_expr_node);
         break;
     }
-    // <postfix-expression> ( {assignment-expression}* )
+    // postfix-expression ( {assignment-expression}* )
     case PS_LPAREN: {
         break;
     }
-    // <postfix-expression> [ <expression> ]
+    // postfix-expression [ expression ]
     case PS_LSQUARE: {
         break;
     }
@@ -1008,9 +1039,12 @@ static const DirectDeclaratorNode* get_identifier_direct_declarator(const Direct
 }
 
 static void process_declaration(const DeclarationNode* node) {
+    //
     // decide base type
+    // 
     int base_type = 0;
-    int type_size = 8; // @todo
+    int type_size = 8; 
+    StructInfo* struct_info = NULL; 
 
     for (int i = 0; i < node->decl_specifier_nodes->size; ++i) {
         const DeclSpecifierNode* decl_specifier_node = node->decl_specifier_nodes->elements[i];
@@ -1020,15 +1054,29 @@ static void process_declaration(const DeclarationNode* node) {
         }
 
         switch (type_specifier_node->type_specifier) {
-        case TYPE_VOID:     { base_type = VAR_VOID;     break; }
-        case TYPE_CHAR:     { base_type = VAR_CHAR;     break; }
-        case TYPE_SHORT:    { base_type = VAR_SHORT;    break; }
-        case TYPE_INT:      { base_type = VAR_INT;      break; }
-        case TYPE_LONG:     { base_type = VAR_LONG;     break; }
-        case TYPE_FLOAT:    { base_type = VAR_FLOAT;    break; }
-        case TYPE_DOUBLE:   { base_type = VAR_DOUBLE;   break; }
-        case TYPE_STRUCT:   { base_type = VAR_STRUCT;   break; } 
-        default:            {                           break; }
+        case TYPE_VOID:  { base_type = VAR_VOID;   break; }
+        case TYPE_CHAR:  { base_type = VAR_CHAR;   break; }
+        case TYPE_SHORT: { base_type = VAR_SHORT;  break; }
+        case TYPE_INT:   { base_type = VAR_INT;    break; }
+        case TYPE_LONG:  { base_type = VAR_LONG;   break; }
+        case TYPE_FLOAT: { base_type = VAR_FLOAT;  break; }
+        case TYPE_DOUBLE:{ base_type = VAR_DOUBLE; break; }
+        case TYPE_STRUCT: { 
+            base_type = VAR_STRUCT;   
+
+            struct_info = strhashmap_get(struct_map, type_specifier_node->struct_or_union_specifier_node->identifier); 
+            if (struct_info == NULL) {
+                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_or_union_specifier_node->identifier);
+                exit(-1);
+            }
+
+            type_size = struct_info->field_info_map->size * 8;
+
+            break; 
+        } 
+        default: { 
+            break; 
+        }
         }
 
         break;
@@ -1039,10 +1087,10 @@ static void process_declaration(const DeclarationNode* node) {
         LocalVar* lv = malloc(sizeof(LocalVar));
         lv->offset   = current_offset;
 
-        lv->type            = malloc(sizeof(Type));
-        lv->type->base_type = base_type;
-        lv->type->type_size = type_size; // @todo
-        lv->type->ptr_count = 0;
+        lv->type              = malloc(sizeof(Type));
+        lv->type->base_type   = base_type;
+        lv->type->type_size   = type_size; 
+        lv->type->struct_info = struct_info;
 
         const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
@@ -1144,24 +1192,55 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
     }
 
     int size = 0;
+
+    //
+    // declaration
+    // 
     for (int i = 0; i < node->declaration_nodes->size; ++i) {
         const DeclarationNode* declaration_node = (const DeclarationNode*)(node->declaration_nodes->elements[i]);
-        const PtrVector* init_declarator_nodes = declaration_node->init_declarator_nodes;
 
+        int var_size = 0;
+        const PtrVector* decl_specifier_nodes = declaration_node->decl_specifier_nodes;
+        for (int j = 0; j < decl_specifier_nodes->size; ++j) {
+            const DeclSpecifierNode* decl_specifier_node = (const DeclSpecifierNode*)(decl_specifier_nodes->elements[j]);
+            if (decl_specifier_node->type_specifier_node != NULL) {
+                const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
+
+                if (type_specifier_node->type_specifier == TYPE_STRUCT) {
+                    const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;
+                    const char* ident = struct_or_union_specifier_node->identifier;
+                    const StructInfo* struct_info = strhashmap_get(struct_map, ident);
+                    if (struct_info == NULL) {
+                        error("Invalid key=\"%s\"\n", ident);
+                        exit(-1);
+                    }
+                    var_size = struct_info->field_info_map->size * 8; // @todo
+                } else {
+                    var_size = 8; // @todo
+                }
+
+                break;
+            }
+        }
+
+        const PtrVector* init_declarator_nodes = declaration_node->init_declarator_nodes;
         for (int j = 0; j < init_declarator_nodes->size; ++j) {
             const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[j]);
             const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
             const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
 
             if (direct_declarator_node->conditional_expr_node == NULL) {
-                size += 8;
+                size += var_size;
             } else {
                 const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
-                size += (array_size * 8);
+                size += (array_size * var_size);
             }
         }
     }
 
+    //
+    // statement
+    // 
     for (int i = 0; i < node->stmt_nodes->size; ++i) {
         const StmtNode* stmt_node = node->stmt_nodes->elements[i];
         size += calc_localvar_size_in_compound_stmt(stmt_node->compound_stmt_node);
@@ -1312,19 +1391,19 @@ static void process_global_declaration(const DeclarationNode* node) {
                     struct_info = malloc(sizeof(StructInfo));
                     struct_info->field_info_map = create_strhashmap(1024);
 
+                    int offset = 0;
                     for (int j = 0; j < struct_declaration_nodes->size; ++j) {
                         const StructDeclarationNode* struct_declaration_node = struct_declaration_nodes->elements[j];
                         
-                        int offset = 0;
                         const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
-                        for (int i = 0; i < struct_declarator_list_node->declarator_nodes->size; ++i) {
+                        for (int k = 0; k < struct_declarator_list_node->declarator_nodes->size; ++k) {
                             FieldInfo* field_info = malloc(sizeof(FieldInfo));
                             field_info->type      = malloc(sizeof(Type)); // @todo
 
                             field_info->offset = offset;
                             offset += 8;
 
-                            const DeclaratorNode* node = (const DeclaratorNode*)(struct_declarator_list_node->declarator_nodes->elements[i]);
+                            const DeclaratorNode* node = (const DeclaratorNode*)(struct_declarator_list_node->declarator_nodes->elements[k]);
                             const char* field_name = node->direct_declarator_node->identifier;
                                                         
                             strhashmap_put(struct_info->field_info_map, field_name, field_info);

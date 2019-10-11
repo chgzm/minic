@@ -128,6 +128,7 @@ assert_return test_global.c 9
 assert_return test_global_2.c 10
 
 assert_return test_struct.c 6
+assert_return test_struct_2.c 15
 
 assert_output test_printf.c "Hello, World."
 

@@ -36,7 +36,7 @@ static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
         break;
     }
     default: {
-        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -84,7 +84,7 @@ static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index
 
         Token* rparen_token = vec->tokens[*index];
         if (rparen_token->type != TK_RPAREN) {
-            error("Invalid token type=\"%s\"\n", decode_token_type(rparen_token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(rparen_token->type));
             return NULL;
         }
         ++(*index);
@@ -92,7 +92,7 @@ static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index
         break;
     }
     default: {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -142,7 +142,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
 
             token = vec->tokens[*index];
             if (token->type != TK_RSQUARE) {
-                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;    
             }
             ++(*index);

@@ -13,8 +13,7 @@
 
 static char* arg_registers[] = {
     "rdi", "rsi", "rdx", "rcx", "r8", "r9"
-};
-static int label_index;
+}; static int label_index;
 static int string_index;
 static int current_offset;
 static PtrVector*  localvar_list;
@@ -56,16 +55,12 @@ static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* 
 }
 
 static void print_global(const TransUnitNode* node) {
-    // printf(".global");
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         const ExternalDeclNode* external_decl_node = node->external_decl_nodes->elements[i];
         if (external_decl_node->func_def_node != NULL) {
             const FuncDefNode*          func_def_node          = external_decl_node->func_def_node;
             const DeclaratorNode*       declarator_node        = func_def_node->declarator_node;
             const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-            // if (i != 0) {
-            //     printf(",");
-            // }
             printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
         }
         else {
@@ -74,14 +69,10 @@ static void print_global(const TransUnitNode* node) {
                 const InitDeclaratorNode* init_declarator_node = declaration_node->init_declarator_nodes->elements[j];
                 const DeclaratorNode*     declarator_node      = init_declarator_node->declarator_node;
                 const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-                // if (!(i == 0 && j == 0)) {
-                //     printf(",");
-                // }
                 printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
             }
         }
     }
-    // printf("\n\n");
 }
 
 static const char* get_label() {

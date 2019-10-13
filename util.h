@@ -38,15 +38,15 @@ void* mmap_readonly(const char* file_path);
 // Vector for Pointers
 //
 
-typedef struct PtrVector PtrVector;
-struct PtrVector {
+typedef struct Vector Vector;
+struct Vector {
     void** elements;
     int    size;
     int    capacity;
 };
 
-PtrVector* create_ptr_vector();
-void ptr_vector_push_back(PtrVector* vec, void* e);
+Vector* create_ptr_vector();
+void ptr_vector_push_back(Vector* vec, void* e);
 
 //
 // Vector for int
@@ -66,17 +66,17 @@ void int_vector_push_back(IntVector* vec, int e);
 // Stack for Pointers
 //
 
-typedef struct PtrStack PtrStack;
-struct PtrStack {
+typedef struct Stack Stack;
+struct Stack {
     void** elements;
     int    top;
     int    capacity;
 };
 
-PtrStack* create_ptr_stack();
-void ptr_stack_push(PtrStack* stack, void* e);
-void* ptr_stack_top(PtrStack* stack);
-void ptr_stack_pop(PtrStack* stack);
+Stack* create_ptr_stack();
+void ptr_stack_push(Stack* stack, void* e);
+void* ptr_stack_top(Stack* stack);
+void ptr_stack_pop(Stack* stack);
 
 //
 // Hashmap for string => pointer

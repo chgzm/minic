@@ -17,12 +17,12 @@ static char* arg_registers[] = {
 static int label_index;
 static int string_index;
 static int current_offset;
-static PtrVector*  localvar_list;
-static PtrVector*  globalvar_list;
+static Vector* localvar_list;
+static Vector* globalvar_list;
 static StrHashMap* struct_map;  
 static char* ret_label;
-static PtrStack* break_label_stack;
-static PtrStack* continue_label_stack;
+static Stack* break_label_stack;
+static Stack* continue_label_stack;
 
 static LocalVar*  get_localvar(const char* str, int len);
 static GlobalVar* get_globalvar(const char* str, int len);
@@ -1244,7 +1244,7 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
         const DeclarationNode* declaration_node = (const DeclarationNode*)(node->declaration_nodes->elements[i]);
 
         int var_size = 0;
-        const PtrVector* decl_specifier_nodes = declaration_node->decl_specifier_nodes;
+        const Vector* decl_specifier_nodes = declaration_node->decl_specifier_nodes;
         for (int j = 0; j < decl_specifier_nodes->size; ++j) {
             const DeclSpecifierNode* decl_specifier_node = (const DeclSpecifierNode*)(decl_specifier_nodes->elements[j]);
             if (decl_specifier_node->type_specifier_node != NULL) {
@@ -1263,7 +1263,7 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
             }
         }
 
-        const PtrVector* init_declarator_nodes = declaration_node->init_declarator_nodes;
+        const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
         for (int j = 0; j < init_declarator_nodes->size; ++j) {
             const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[j]);
             const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
@@ -1292,7 +1292,7 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
         const ItrStmtNode* itr_stmt_node = stmt_node->itr_stmt_node;
         for (int j = 0; j < itr_stmt_node->declaration_nodes->size; ++j) {
             const DeclarationNode* declaration_node = (const DeclarationNode*)(itr_stmt_node->declaration_nodes->elements[j]);
-            const PtrVector* init_declarator_nodes = declaration_node->init_declarator_nodes;
+            const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
 
             for (int k = 0; k < init_declarator_nodes->size; ++k) {
                 const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[k]);
@@ -1425,7 +1425,7 @@ static void process_global_declaration(const DeclarationNode* node) {
             const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;         
             if (struct_or_union_specifier_node->identifier != NULL) {
                 const char* struct_name = struct_or_union_specifier_node->identifier;
-                const PtrVector* struct_declaration_nodes = struct_or_union_specifier_node->struct_declaration_nodes;
+                const Vector* struct_declaration_nodes = struct_or_union_specifier_node->struct_declaration_nodes;
                 //  struct-or-union identifier { {struct-declaration}+ }
                 if (struct_declaration_nodes->size != 0) {
                     struct_info = malloc(sizeof(StructInfo));

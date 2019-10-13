@@ -87,8 +87,8 @@ void* mmap_readonly(const char* file_path) {
 // Vector for Pointers
 //
 
-PtrVector* create_ptr_vector() {
-    PtrVector* vec = malloc(sizeof(PtrVector));
+Vector* create_ptr_vector() {
+    Vector* vec = malloc(sizeof(Vector));
     vec->elements  = malloc(sizeof(void*) * 16);
     vec->capacity  = 16;
     vec->size      = 0;
@@ -96,7 +96,7 @@ PtrVector* create_ptr_vector() {
     return vec;
 }
 
-void ptr_vector_push_back(PtrVector* vec, void* e) {
+void ptr_vector_push_back(Vector* vec, void* e) {
     if (vec->size == vec->capacity) {
         vec->capacity *= 2;
         vec->elements = realloc(vec->elements, sizeof(void*) * vec->capacity);
@@ -133,8 +133,8 @@ void int_vector_push_back(IntVector* vec, int e) {
 // Stack for Pointers
 //
 
-PtrStack* create_ptr_stack() {
-    PtrStack* stack = malloc(sizeof(PtrStack));
+Stack* create_ptr_stack() {
+    Stack* stack = malloc(sizeof(Stack));
     stack->elements = malloc(sizeof(void*) * 16);
     stack->capacity = 16;
     stack->top      = -1;
@@ -142,7 +142,7 @@ PtrStack* create_ptr_stack() {
     return stack;
 }
 
-void ptr_stack_push(PtrStack* stack, void* e) {
+void ptr_stack_push(Stack* stack, void* e) {
     ++(stack->top);
     if (stack->top == stack->capacity) {
         stack->capacity *= 2;
@@ -152,7 +152,7 @@ void ptr_stack_push(PtrStack* stack, void* e) {
     stack->elements[stack->top] = e;
 }
 
-void* ptr_stack_top(PtrStack* stack) {
+void* ptr_stack_top(Stack* stack) {
     if (stack->top < 0) {
         return NULL;
     }
@@ -160,7 +160,7 @@ void* ptr_stack_top(PtrStack* stack) {
     return stack->elements[stack->top];
 }
 
-void ptr_stack_pop(PtrStack* stack) {
+void ptr_stack_pop(Stack* stack) {
     --(stack->top);
 }
 

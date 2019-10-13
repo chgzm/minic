@@ -181,7 +181,7 @@ typedef struct ItrStmtNode ItrStmtNode;
 typedef struct JumpStmtNode JumpStmtNode;
 
 struct TransUnitNode {
-    PtrVector* external_decl_nodes;
+    Vector* external_decl_nodes;
 };
 
 struct ExternalDeclNode {
@@ -190,7 +190,7 @@ struct ExternalDeclNode {
 };
 
 struct FuncDefNode {
-    PtrVector*        decl_specifier_nodes;
+    Vector*           decl_specifier_nodes;
     DeclaratorNode*   declarator_node;
     CompoundStmtNode* compound_stmt_node;
 };
@@ -216,11 +216,11 @@ struct StructOrUnionSpecifierNode {
     int        struct_or_union;
     int        identifier_len;
     char*      identifier;
-    PtrVector* struct_declaration_nodes; 
+    Vector*    struct_declaration_nodes; 
 };
 
 struct StructDeclarationNode {
-    PtrVector*                specifier_qualifier_nodes;
+    Vector*                   specifier_qualifier_nodes;
     StructDeclaratorListNode* struct_declarator_list_node;    
 };
 
@@ -230,7 +230,7 @@ struct SpecifierQualifierNode {
 };
 
 struct StructDeclaratorListNode {
-    PtrVector* declarator_nodes;
+    Vector* declarator_nodes;
 };
 
 struct DeclaratorNode {
@@ -253,7 +253,7 @@ struct DirectDeclaratorNode {
     DirectDeclaratorNode* direct_declarator_node;  
     ConditionalExprNode*  conditional_expr_node;
     ParamTypeListNode*    param_type_list_node;
-    PtrVector*            identifier_list;
+    Vector*               identifier_list;
 };
 
 struct ConditionalExprNode {
@@ -336,7 +336,7 @@ struct PostfixExprNode {
     PrimaryExprNode* primary_expr_node;
     PostfixExprNode* postfix_expr_node;
     ExprNode*        expr_node;
-    PtrVector*       assign_expr_nodes;
+    Vector*          assign_expr_nodes;
     char*            identifier;
     int              identifier_len;
     int              postfix_expr_type; 
@@ -385,7 +385,7 @@ struct ParamListNode {
 };
 
 struct ParamDeclarationNode {
-    PtrVector*              decl_spec_nodes;
+    Vector*                 decl_spec_nodes;
     DeclaratorNode*         declarator_node;
     AbstractDeclaratorNode* abstract_declarator_node;
 };
@@ -409,8 +409,8 @@ struct TypedefNameNode {
 };
 
 struct DeclarationNode {
-    PtrVector* decl_specifier_nodes;
-    PtrVector* init_declarator_nodes;
+    Vector* decl_specifier_nodes;
+    Vector* init_declarator_nodes;
 };
 
 struct InitDeclaratorNode {
@@ -427,8 +427,8 @@ struct InitializerListNode {
 };
 
 struct CompoundStmtNode {
-    PtrVector* declaration_nodes;
-    PtrVector* stmt_nodes;
+    Vector* declaration_nodes;
+    Vector* stmt_nodes;
 };
 
 struct StmtNode {
@@ -460,7 +460,7 @@ struct ItrStmtNode {
     int        itr_type;
     StmtNode*  stmt_node;
     ExprNode*  expr_node[3];
-    PtrVector* declaration_nodes;
+    Vector*    declaration_nodes;
 };
 
 struct JumpStmtNode {

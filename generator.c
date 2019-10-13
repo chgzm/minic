@@ -474,6 +474,24 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
         break;
     }
     case UN_SIZEOF: {
+        int size = 0;
+        switch (node->sizeof_type) {
+        case SIZEOFTYPE_CHAR:   { size = 1; break; }
+        case SIZEOFTYPE_SHORT:  { size = 2; break; }
+        case SIZEOFTYPE_INT:    { size = 4; break; }
+        case SIZEOFTYPE_LONG:   { size = 8; break; }
+        case SIZEOFTYPE_FLOAT:  { size = 4; break; }
+        case SIZEOFTYPE_DOUBLE: { size = 8; break; } 
+        case SIZEOFTYPE_IDENT:  { 
+            break;                                   
+        }
+        default: {
+            break;
+        }
+        }
+
+        print_code("push %d", size);
+
         break;
     }
     default: {

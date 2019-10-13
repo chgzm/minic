@@ -268,6 +268,40 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
         unary_expr_node->type = UN_SIZEOF;
         ++(*index);
 
+        token = vec->tokens[*index];
+        if (token->type != TK_LPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        token = vec->tokens[*index];
+        switch (token->type) {
+        case TK_CHAR:   { unary_expr_node->sizeof_type = SIZEOFTYPE_CHAR;   break; }
+        case TK_SHORT:  { unary_expr_node->sizeof_type = SIZEOFTYPE_SHORT;  break; }
+        case TK_INT:    { unary_expr_node->sizeof_type = SIZEOFTYPE_INT;    break; }
+        case TK_LONG:   { unary_expr_node->sizeof_type = SIZEOFTYPE_LONG;   break; }
+        case TK_FLOAT:  { unary_expr_node->sizeof_type = SIZEOFTYPE_FLOAT;  break; }
+        case TK_DOUBLE: { unary_expr_node->sizeof_type = SIZEOFTYPE_DOUBLE; break; } 
+        case TK_IDENT:  { 
+            unary_expr_node->sizeof_type = SIZEOFTYPE_IDENT;
+            strncpy(unary_expr_node->sizeof_name, token->str, token->strlen);
+            break; 
+        }
+        default: {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        }
+        ++(*index);
+
+        token = vec->tokens[*index];
+        if (token->type != TK_RPAREN) {
+            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
         break;
     }
     case TK_AMP:   case TK_ASTER:

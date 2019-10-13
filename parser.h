@@ -85,6 +85,16 @@ enum UnaryType {
     UN_SIZEOF, // "sizeof"
 };
 
+enum SizeofType {
+    SIZEOFTYPE_CHAR,
+    SIZEOFTYPE_SHORT,
+    SIZEOFTYPE_INT,
+    SIZEOFTYPE_LONG,
+    SIZEOFTYPE_FLOAT,
+    SIZEOFTYPE_DOUBLE,
+    SIZEOFTYPE_IDENT,
+};
+
 enum PostfixType {
     PS_PRIMARY, // primary-expreesion
     PS_LSQUARE, // postfix-expression [ <expression> ]
@@ -318,6 +328,8 @@ struct UnaryExprNode {
     CastExprNode*    cast_expr_node;
     int              type;
     int              op_type;
+    int              sizeof_type;
+    char*            sizeof_name;
 }; 
 
 struct PostfixExprNode {

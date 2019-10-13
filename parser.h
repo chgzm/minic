@@ -111,6 +111,11 @@ enum IterationType {
     ITR_FOR,
 };
 
+enum LabeledStmtType {
+    LABELED_CASE,
+    LABELED_DEFAULT,
+};
+
 typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
@@ -143,8 +148,6 @@ typedef struct PrimaryExprNode PrimaryExprNode;
 typedef struct ConstantNode ConstantNode;
 typedef struct ExprNode ExprNode;
 typedef struct AssignExprNode AssignExprNode;
-// AssignOperator 
-// UnaryOperator
 typedef struct TypeNameNode TypeNameNode;
 typedef struct ParamTypeListNode ParamTypeListNode;
 typedef struct ParamListNode ParamListNode;
@@ -417,6 +420,7 @@ struct CompoundStmtNode {
 };
 
 struct StmtNode {
+    LabeledStmtNode*   labeled_stmt_node;
     ExprStmtNode*      expr_stmt_node; 
     CompoundStmtNode*  compound_stmt_node;
     SelectionStmtNode* selection_stmt_node;
@@ -425,6 +429,9 @@ struct StmtNode {
 };
 
 struct LabeledStmtNode {
+    int                  labeled_stmt_type;
+    ConditionalExprNode* conditional_expr_node;
+    StmtNode*            stmt_node;
 };
 
 struct ExprStmtNode {
@@ -473,5 +480,6 @@ const char* decode_postfix_type(int type);
 const char* decode_param_list_type(int type);
 const char* decode_selection_stmt_type(int type);
 const char* decode_itr_type(int type);
+const char* decode_labeled_stmt_type(int type);
 
 #endif

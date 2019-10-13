@@ -905,6 +905,14 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         break;
     }
     case SELECT_SWITCH: {
+        const char* label = get_label();
+        ptr_stack_push(break_label_stack, (void*)(label));
+
+        process_expr(node->expr_node);
+        process_stmt(node->stmt_node[0]);
+
+        printf("%s:\n", label);
+
         break;
     }
     default: {
@@ -978,8 +986,38 @@ static void process_itr_stmt(const ItrStmtNode* node) {
     }
 }
 
+static void process_labeled_stmt(const LabeledStmtNode* node) {
+    switch (node->labeled_stmt_type) {
+    case LABELED_CASE: {
+        process_conditional_expr(node->conditional_expr_node);
+
+        const char* label = get_label();
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("push rax");
+        print_code("cmp rax, rdi");
+        print_code("jne %s", label);
+        process_stmt(node->stmt_node);
+        printf("%s:\n", label); 
+
+        break;
+    }
+    case LABELED_DEFAULT: {
+        process_stmt(node->stmt_node);
+
+        break;
+    }
+    default: {
+        break;
+    }
+    } 
+}
+
 static void process_stmt(const StmtNode* node) {
-    if (node->expr_stmt_node != NULL) {
+    if (node->labeled_stmt_node != NULL) {
+        process_labeled_stmt(node->labeled_stmt_node);
+    }
+    else if (node->expr_stmt_node != NULL) {
         process_expr_stmt(node->expr_stmt_node);
     }
     else if (node->itr_stmt_node != NULL) {

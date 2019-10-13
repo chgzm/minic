@@ -784,6 +784,34 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
     }
     case TK_SWITCH: {
         selection_stmt_node->selection_type = SELECT_SWITCH;
+
+        ++(*index);
+        token = vec->tokens[*index];
+        if (token->type != TK_LPAREN) {
+            error("Invalid token[%s]=\"%s\"\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        selection_stmt_node->expr_node = create_expr_node(vec, index);
+        if (selection_stmt_node->expr_node == NULL) {
+            error("Failed to create expression node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        if (token->type != TK_RPAREN) {
+            error("Invalid token[%s]=\"%s\"\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        selection_stmt_node->stmt_node[0] = create_stmt_node(vec, index);
+        if (selection_stmt_node->stmt_node[0] == NULL) {
+            error("Failed to create statement node.\n");
+            return NULL;
+        }
+
         break;
     }
     default: {
@@ -948,9 +976,69 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
     return itr_stmt_node;
 }
 
+static LabeledStmtNode* create_labeled_stmt_node(const TokenVec* vec, int* index) {
+    LabeledStmtNode* labeled_stmt_node = malloc(sizeof(LabeledStmtNode));
+    labeled_stmt_node->conditional_expr_node = NULL;
+
+    const Token* token = vec->tokens[*index];
+    switch (token->type) {
+    case TK_CASE: {
+        ++(*index);
+        labeled_stmt_node->labeled_stmt_type = LABELED_CASE;
+
+        labeled_stmt_node->conditional_expr_node = create_conditional_expr_node(vec, index);
+        if (labeled_stmt_node->conditional_expr_node == NULL) {
+            error("Failed to create conditional-expression node.\n");
+            return NULL;
+        }
+       
+        token = vec->tokens[*index];
+        if (token->type != TK_COLON) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        labeled_stmt_node->stmt_node = create_stmt_node(vec, index);
+        if (labeled_stmt_node->stmt_node == NULL) {
+            error("Failed to create statement-expression node.\n");
+            return NULL;
+        }
+
+        break;
+    }
+    case TK_DEFAULT: {
+        ++(*index);
+        labeled_stmt_node->labeled_stmt_type = LABELED_DEFAULT;
+
+        token = vec->tokens[*index];
+        if (token->type != TK_COLON) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        labeled_stmt_node->stmt_node = create_stmt_node(vec, index);
+        if (labeled_stmt_node->stmt_node == NULL) {
+            error("Failed to create statement-expression node.\n");
+            return NULL;
+        }
+
+        break;
+    }
+    default: {
+        error("Invalid token[%d]=\"%s\"\n", *index, decode_token_type(token->type));
+        return NULL;
+    }
+    }
+
+    return labeled_stmt_node;
+}
+
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
     StmtNode* stmt_node = malloc(sizeof(StmtNode));
 
+    stmt_node->labeled_stmt_node   = NULL;
     stmt_node->jump_stmt_node      = NULL;
     stmt_node->itr_stmt_node       = NULL;
     stmt_node->expr_stmt_node      = NULL;
@@ -959,6 +1047,16 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
+    case TK_CASE:
+    case TK_DEFAULT: {
+        stmt_node->labeled_stmt_node = create_labeled_stmt_node(vec, index);
+        if (stmt_node->labeled_stmt_node == NULL) {
+            error("Failed to create labeled-statement node.\n");
+            return NULL;
+        }
+
+        break;
+    }
     case TK_WHILE: 
     case TK_FOR: {
         stmt_node->itr_stmt_node = create_itr_stmt_node(vec, index);
@@ -1897,3 +1995,10 @@ const char* decode_itr_type(int type) {
     }
 }
 
+const char* decode_labeled_stmt_type(int type) {
+    switch (type) {
+    case LABELED_CASE:    { return "LABELED_CASE";    }
+    case LABELED_DEFAULT: { return "LABELED_DEFAULT"; }
+    default:              { return "INVALID";         }
+    }
+}                   

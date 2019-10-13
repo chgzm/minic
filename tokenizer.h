@@ -28,6 +28,7 @@ enum TokenType {
     TK_WHILE,     // "while"
     TK_SWITCH,    // "switch"
     TK_CASE,      // "case"
+    TK_DEFAULT,   // "default"
     TK_BREAK,     // "break"
     TK_CONTINUE,  // "continue"
     TK_RETURN,    // "return"

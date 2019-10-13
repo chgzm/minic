@@ -690,6 +690,10 @@ static void dump_compound_stmt_node(const CompoundStmtNode* node, int indent) {
 static void dump_stmt_node(const StmtNode* node, int indent) {
     printf_indent(indent, "StmtNode\n");
 
+    if (node->labeled_stmt_node != NULL) {
+        dump_labeled_stmt_node(node->labeled_stmt_node, indent + 2);
+    }
+
     if (node->expr_stmt_node != NULL) {
         dump_expr_stmt_node(node->expr_stmt_node, indent + 2);
     }
@@ -712,7 +716,19 @@ static void dump_stmt_node(const StmtNode* node, int indent) {
 }
 
 static void dump_labeled_stmt_node(const LabeledStmtNode* node, int indent) {
-    printf_indent(indent, "LabeledStmtNode\n");
+    printf_indent(
+        indent,
+        "LabeledStmtNode,LabeledStmtType=\"%s\"\n",
+        decode_labeled_stmt_type(node->labeled_stmt_type)
+    );
+
+    if (node->conditional_expr_node != NULL) {
+        dump_conditional_expr_node(node->conditional_expr_node, indent + 2 );
+    }
+
+    if (node->stmt_node != NULL) {
+        dump_stmt_node(node->stmt_node, indent + 2);
+    }
 }
 
 static void dump_expr_stmt_node(const ExprStmtNode* node, int indent) {

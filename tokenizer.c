@@ -382,13 +382,12 @@ static Token* read_identifier(const char* p, int* pos) {
         break;
     }
     case 'd': {
-        if (len != 6) {
+        if (len != 6 && len != 7) {
             break;
         }
 
-        if (strncmp("double", &p[*pos], 6) == 0) {
-            token->type = TK_DOUBLE;
-        }
+        if      (strncmp("double",  &p[*pos], 6) == 0) { token->type = TK_DOUBLE;  }
+        else if (strncmp("default", &p[*pos], 7) == 0) { token->type = TK_DEFAULT; }
 
         break;
     }

@@ -87,7 +87,7 @@ void* mmap_readonly(const char* file_path) {
 // Vector for Pointers
 //
 
-Vector* create_ptr_vector() {
+Vector* create_vector() {
     Vector* vec = malloc(sizeof(Vector));
     vec->elements  = malloc(sizeof(void*) * 16);
     vec->capacity  = 16;
@@ -133,7 +133,7 @@ void int_vector_push_back(IntVector* vec, int e) {
 // Stack for Pointers
 //
 
-Stack* create_ptr_stack() {
+Stack* create_stack() {
     Stack* stack = malloc(sizeof(Stack));
     stack->elements = malloc(sizeof(void*) * 16);
     stack->capacity = 16;

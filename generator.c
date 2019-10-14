@@ -483,6 +483,18 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
         case SIZEOFTYPE_FLOAT:  { size = 4; break; }
         case SIZEOFTYPE_DOUBLE: { size = 8; break; } 
         case SIZEOFTYPE_IDENT:  { 
+            const LocalVar* lv = get_localvar(node->sizeof_name, node->sizeof_name_len);
+            if (lv != NULL) {
+                size = lv->type->type_size;
+                break;
+            } 
+
+            const GlobalVar* gv = get_globalvar(node->sizeof_name, node->sizeof_name_len);
+            if (gv != NULL) {
+                size = gv->type->type_size;
+                break;
+            } 
+
             break;                                   
         }
         default: {
@@ -1350,7 +1362,7 @@ static void process_func_declarator(const DeclaratorNode* node) {
 }
 
 static void process_func_def(const FuncDefNode* node) {
-    localvar_list = create_ptr_vector();
+    localvar_list = create_vector();
     current_offset = 8;
 
     const DeclaratorNode* declarator_node = node->declarator_node;
@@ -1527,9 +1539,9 @@ void gen(const TransUnitNode* node) {
 
     // init
     label_index = 2;
-    break_label_stack    = create_ptr_stack();
-    continue_label_stack = create_ptr_stack();
-    globalvar_list       = create_ptr_vector();
+    break_label_stack    = create_stack();
+    continue_label_stack = create_stack();
+    globalvar_list       = create_vector();
     struct_map           = create_strhashmap(1024);
 
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {

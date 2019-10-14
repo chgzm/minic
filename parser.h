@@ -329,6 +329,7 @@ struct UnaryExprNode {
     int              type;
     int              op_type;
     int              sizeof_type;
+    int              sizeof_name_len;
     char*            sizeof_name;
 }; 
 

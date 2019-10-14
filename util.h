@@ -45,7 +45,7 @@ struct Vector {
     int    capacity;
 };
 
-Vector* create_ptr_vector();
+Vector* create_vector();
 void ptr_vector_push_back(Vector* vec, void* e);
 
 //
@@ -73,7 +73,7 @@ struct Stack {
     int    capacity;
 };
 
-Stack* create_ptr_stack();
+Stack* create_stack();
 void ptr_stack_push(Stack* stack, void* e);
 void* ptr_stack_top(Stack* stack);
 void ptr_stack_pop(Stack* stack);

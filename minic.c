@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+#include "preprocessor.h"
 #include "parser.h"
 #include "generator.h"
 #include "util.h"
@@ -55,7 +56,7 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    TokenVec* vec = tokenize(addr);
+    const TokenVec* vec = tokenize(addr);
     if (vec == NULL) {
         error("Failed to tokenize.\n");
         return -1;
@@ -65,7 +66,17 @@ int main(int argc, char* argv[]) {
         dump_tokens(vec);
     }
 
-    TransUnitNode* node = parse(vec);
+    const TokenVec* processed_vec = preprocess(vec); 
+    if (processed_vec == NULL) {
+        error("Failed to preprocess.\n");
+        return -1;
+    }
+
+    if (debug_flag) {
+        dump_tokens(processed_vec);
+    }
+
+    const TransUnitNode* node = parse(processed_vec);
     if (node == NULL) {
         error("Failed to parse.\n");
         return -1;

@@ -78,22 +78,24 @@ enum TokenType {
     TK_OR_EQ,     // |=
 };
 
+typedef struct Token Token;
 struct Token {
     int type;
     int num;
     char* str;
     int strlen;
 };
-typedef struct Token Token;
 
+typedef struct TokenVec TokenVec;
 struct TokenVec {
     Token** tokens;     
     int size; 
     int capacity;
 };
-typedef struct TokenVec TokenVec;
 
+TokenVec* tokenvec_create();
 int get_token_type(const TokenVec* vec, int index);
+void tokenvec_push_back(TokenVec* vec, Token* token);
 
 TokenVec* tokenize(void* addr);
 

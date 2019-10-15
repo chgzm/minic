@@ -141,6 +141,10 @@ assert_return test_sizeof.c 27
 
 assert_return test_typedef.c 3
 
+assert_return test_preprocess.c 42
+assert_return test_preprocess_2.c 3
+assert_return test_preprocess_3.c 1
+
 assert_output test_printf.c "Hello, World."
 
 echo -e "\e[36mPassed all tests.\e[0m"

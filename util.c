@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <time.h>
 
 //
@@ -184,7 +183,7 @@ StrHashMap* create_strhashmap(int capacity) {
 static int calc_hash(const char* str) {
     int h = 0, pos = 0;
     while (str[pos] != '\0') {
-        h = h * 31 + str[pos];
+        h += str[pos];
         ++pos;
     }
 

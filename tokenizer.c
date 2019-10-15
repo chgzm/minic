@@ -7,7 +7,7 @@
 
 #include "util.h"
 
-static TokenVec* tokenvec_create() {
+TokenVec* tokenvec_create() {
     TokenVec* vec = malloc(sizeof(TokenVec));
     vec->tokens   = malloc(sizeof(Token*) * 1024);
     vec->capacity = 1024;
@@ -16,7 +16,7 @@ static TokenVec* tokenvec_create() {
     return vec;
 }
 
-static void tokenvec_push_back(TokenVec* vec, Token* token) {
+void tokenvec_push_back(TokenVec* vec, Token* token) {
     if (vec->size == vec->capacity) {
         vec->capacity *= 2;
         vec->tokens = realloc(vec->tokens, sizeof(Token*) * vec->capacity);
@@ -46,6 +46,26 @@ static bool is_symbol(char p) {
         return false;
     }
     }
+}
+
+static Token* read_directive(const char* p, int* pos) {
+    ++(*pos);
+
+    int len = 0;
+    while (p[*pos + len] != ' ' && p[*pos + len] != '\n') {
+        ++len;
+    }
+
+    Token* token  = calloc(1, sizeof(Token));
+    token->type   = TK_HASH;
+    token->strlen = len;
+    token->str    = malloc(sizeof(char) * token->strlen + 1);
+    strncpy(token->str, &p[*pos], token->strlen);
+    token->str[token->strlen] = '\0';
+
+    *pos += len; 
+
+    return token;
 }
 
 static Token* read_character(const char* p, int* pos) {
@@ -325,10 +345,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
         }
     }
-    case '#': {
-        token->type = TK_HASH;
-        return token;
-    }
     case ',': {
         token->type = TK_COMMA;
         return token;
@@ -566,6 +582,14 @@ TokenVec* tokenize(void* addr) {
                 ++pos;
             }
             pos += 2;
+        }
+        else if (p[pos] == '#') {
+            Token* token = read_directive(p, &pos);
+            if (token == NULL) {
+                error("Failed to read directive.\n");
+                return NULL;
+            }
+            tokenvec_push_back(vec, token);
         }
         else if (p[pos] == '\'') {
             Token* token = read_character(p, &pos);

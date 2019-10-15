@@ -28,19 +28,16 @@ translation-unit:
 external-declaration:
     function-definition
     declaration
+    "typedef" "struct" identifier typedef-name
 
 function-definition: 
     {declaration-specifier}* declarator compound-statement
 
 declaration-specifier:
-    storage-class-specifier
     type-specifier
     type-qualifier
-
-storage-class-specifier:
     "static"
-    "typedef"
-
+    
 type-specifier:
     "void"
     "char"

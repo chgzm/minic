@@ -621,10 +621,19 @@ const char* decode_token_type(int type) {
     case TK_NUM:      { return "TK_NUM";      }
     case TK_STR:      { return "TK_STR";      }
     case TK_IDENT:    { return "TK_IDENT";    }
-    case TK_INT:      { return "TK_INT";      }
-    case TK_CHAR:     { return "TK_CHAR";     }
+    case TK_STATIC:   { return "TK_STATIC";   }
+    case TK_TYPEDEF:  { return "TK_TYPEDEF";  }
     case TK_VOID:     { return "TK_VOID";     }
+    case TK_CHAR:     { return "TK_CHAR";     }
+    case TK_SHORT:    { return "TK_SHORT";    }
+    case TK_INT:      { return "TK_INT";      }
+    case TK_LONG:     { return "TK_LONG";     }
+    case TK_FLOAT:    { return "TK_FLOAT";    }
+    case TK_DOUBLE:   { return "TK_DOUBLE";   }
     case TK_STRUCT:   { return "TK_STRUCT";   }
+    case TK_UNION:    { return "TK_UNION";    }
+    case TK_ENUM:     { return "TK_ENUM";     }
+    case TK_CONST:    { return "TK_CONST";    }
     case TK_IF:       { return "TK_IF";       }
     case TK_ELSE:     { return "TK_ELSE";     }
     case TK_FOR:      { return "TK_FOR";      }

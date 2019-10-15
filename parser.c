@@ -1,7 +1,18 @@
 #include "parser.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+//
+// global
+//
+
+static StrHashMap* typedef_map;
+
+//
+// forward declaration
+//
 
 static ExprNode* create_expr_node(const TokenVec* vec, int* index);
 static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index);
@@ -14,7 +25,6 @@ static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
 static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index);
 static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index);
 static bool is_declaration_specifier(const TokenVec* vec, int index);
-static bool is_storage_class_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
 static bool is_type_specifier(const TokenVec* vec, int index);
 
@@ -193,7 +203,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
 
             token = vec->tokens[*index];
             if (token->type != TK_IDENT) {
-                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;    
             }
             
@@ -218,7 +228,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
             break;
         }
         default: {
-            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         }
@@ -270,7 +280,7 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
 
         token = vec->tokens[*index];
         if (token->type != TK_LPAREN) {
-            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -291,7 +301,7 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
             break; 
         }
         default: {
-            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         }
@@ -299,7 +309,7 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
 
         token = vec->tokens[*index];
         if (token->type != TK_RPAREN) {
-            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -689,7 +699,7 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
 
         token = vec->tokens[*index];
         if (token->type != TK_SEMICOL) {
-            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -702,7 +712,7 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
 
         token = vec->tokens[*index];
         if (token->type != TK_SEMICOL) {
-            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -721,7 +731,7 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
             }
 
             if (vec->tokens[*index]->type != TK_SEMICOL) {
-                error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+                error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;
             }
         }
@@ -731,7 +741,7 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
     }
 
     default: {
-        error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -755,7 +765,7 @@ static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
         }
         token = vec->tokens[*index];
         if (token->type != TK_SEMICOL) {
-            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -777,7 +787,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
         ++(*index);
         token = vec->tokens[*index];
         if (token->type != TK_LPAREN) {
-            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -790,7 +800,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
 
         token = vec->tokens[*index];
         if (token->type != TK_RPAREN) {
-            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -824,7 +834,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
         ++(*index);
         token = vec->tokens[*index];
         if (token->type != TK_LPAREN) {
-            error("Invalid token[%s]=\"%s\"\n", *index, decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -837,7 +847,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
 
         token = vec->tokens[*index];
         if (token->type != TK_RPAREN) {
-            error("Invalid token[%s]=\"%s\"\n", *index, decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -851,7 +861,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
         break;
     }
     default: {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -875,7 +885,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         // '('
         token = vec->tokens[*index];
         if (token->type != TK_LPAREN) {
-            error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -1296,7 +1306,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
 
             token = vec->tokens[*index];
             if (token->type != TK_RSQUARE) {
-                error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;
             }
             ++(*index);
@@ -1313,7 +1323,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
 
                 token = vec->tokens[*index];
                 if (token->type != TK_RPAREN) {
-                    error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                    error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                     return NULL;
                 }
                 ++(*index);
@@ -1330,7 +1340,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
                 }
 
                 if (token->type != TK_RPAREN) {
-                    error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+                    error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                     return NULL;
                 }
                 ++(*index);
@@ -1356,7 +1366,7 @@ static PointerNode* create_pointer_node(const TokenVec* vec, int* index) {
     pointer_node->count = 1;
     const Token* token = vec->tokens[*index];
     if (token->type != TK_ASTER) {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     ++(*index);
@@ -1422,7 +1432,7 @@ static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* i
     case TK_CONST:    { type_qualifier_node->type_qualifier = TQ_CONST;    break; }
     case TK_VOLATILE: { type_qualifier_node->type_qualifier = TQ_VOLATILE; break; }
     default: {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -1452,7 +1462,7 @@ static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* v
     }
     else {
         const Token* token = vec->tokens[*index];
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
 
@@ -1509,7 +1519,7 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
 
     const Token* token = vec->tokens[*index];
     if (token->type != TK_SEMICOL) {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     ++(*index);
@@ -1526,7 +1536,7 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
     case TK_STRUCT: { struct_or_union_specifier_node->struct_or_union = SU_STRUCT; break; } 
     case TK_UNION:  { struct_or_union_specifier_node->struct_or_union = SU_UNION;  break; } 
     default: {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -1580,7 +1590,7 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
         break;
     }
     default: {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -1594,7 +1604,7 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     type_specifier_node->type_specifier                 = TYPE_NONE;
     type_specifier_node->struct_or_union_specifier_node = NULL;
     type_specifier_node->enum_specifier_node            = NULL;
-    type_specifier_node->typedef_name_node              = NULL;
+    type_specifier_node->struct_name                    = NULL;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -1614,11 +1624,22 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
         }
         break; 
     } 
-    case TK_UNION:    { break; } // @todo
-    case TK_ENUM:     { break; } // @todo
-    case TK_TYPEDEF:  { break; } // @todo
+    case TK_UNION: { break; } // @todo
+    case TK_ENUM:  { break; } // @todo
+    case TK_IDENT: { 
+        type_specifier_node->type_specifier = TYPE_TYPEDEFNAME;
+        type_specifier_node->struct_name = strhashmap_get(typedef_map, token->str);
+        if (type_specifier_node->struct_name == NULL) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+
+        ++(*index);
+
+        break;
+    }
     default: {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     }
@@ -1626,34 +1647,16 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     return type_specifier_node;
 }
 
-static StorageClassSpecifierNode* create_storage_class_specifier_node(const TokenVec* vec, int* index) {
-    StorageClassSpecifierNode* storage_class_specifier_node = malloc(sizeof(StorageClassSpecifierNode));
-
-    const Token* token = vec->tokens[*index];
-    if      (token->type == TK_STATIC)  { storage_class_specifier_node->storage_class_specifier = SC_STATIC;  }
-    else if (token->type == TK_TYPEDEF) { storage_class_specifier_node->storage_class_specifier = SC_TYPEDEF; }
-    else {
-        error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
-        return NULL;
-    }
-    ++(*index);
-
-    return storage_class_specifier_node;
-}
-
 static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index) {
     DeclSpecifierNode* decl_specifier_node = malloc(sizeof(DeclSpecifierNode));
 
-    decl_specifier_node->storage_class_specifier_node = NULL;
-    decl_specifier_node->type_specifier_node          = NULL;
-    decl_specifier_node->type_qualifier_node          = NULL;
+    decl_specifier_node->type_specifier_node = NULL;
+    decl_specifier_node->type_qualifier_node = NULL;
+    decl_specifier_node->is_static           = false;
 
-    if (is_storage_class_specifier(vec, *index)) {
-        decl_specifier_node->storage_class_specifier_node = create_storage_class_specifier_node(vec, index);
-        if (decl_specifier_node->storage_class_specifier_node == NULL) {
-            error("Failed to create storage-class-specifier node.\n");
-            return NULL;
-        }
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_STATIC) {
+        decl_specifier_node->is_static = true;
     }
     else if (is_type_specifier(vec, *index)) {
         decl_specifier_node->type_specifier_node = create_type_specifier_node(vec, index);
@@ -1706,28 +1709,26 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
     return declaration_node;
 }
 
-static bool is_storage_class_specifier(const TokenVec* vec, int index) {
-    const int type = vec->tokens[index]->type;
-    return (type == TK_STATIC || type == TK_TYPEDEF);
-}
-
 static bool is_type_qualifier(const TokenVec* vec, int index) {
     const int type = vec->tokens[index]->type;
     return (type == TK_CONST || type == TK_VOLATILE);
 }
 
 static bool is_type_specifier(const TokenVec* vec, int index) {
-    const int type = vec->tokens[index]->type;
+    const Token* token = vec->tokens[index];
+    const int type = token->type;
     return (type == TK_VOID   || type == TK_CHAR   || type == TK_SHORT
          || type == TK_INT    || type == TK_LONG   || type == TK_FLOAT
          || type == TK_DOUBLE || type == TK_STRUCT || type == TK_UNION
+         || (token->str != NULL && strhashmap_contains(typedef_map, token->str))
     );
 }
 
 static bool is_declaration_specifier(const TokenVec* vec, int index) {
-    return (is_storage_class_specifier(vec, index)
-         || is_type_specifier(vec, index)
+    const int type = vec->tokens[index]->type;
+    return (is_type_specifier(vec, index)
          || is_type_qualifier(vec, index)
+         || type == TK_STATIC
     );
 }
 
@@ -1741,7 +1742,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
     {
         const Token* token = vec->tokens[*index];
         if (token->type != TK_LBRCKT) {
-            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -1777,7 +1778,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
     {
         const Token* token = vec->tokens[*index];
         if (token->type != TK_RBRCKT) {
-            error("Invalid token type=\"%s\".\n", decode_token_type(token->type));
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
@@ -1838,7 +1839,38 @@ static bool is_func_def(const TokenVec* vec, int index) {
 static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* index) {
     ExternalDeclNode* external_decl_node = malloc(sizeof(ExternalDeclNode));
 
-    if (is_func_def(vec, *index)) {
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_TYPEDEF) {
+        ++(*index);
+
+        token = vec->tokens[*index];
+        if (token->type != TK_STRUCT) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        token = vec->tokens[*index];
+        if (token->type != TK_IDENT) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        char* struct_name = malloc(sizeof(char) * token->strlen);
+        strncpy(struct_name, token->str, token->strlen);
+        ++(*index);
+
+        token = vec->tokens[*index];
+        if (token->type != TK_IDENT) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        char* typedef_name = malloc(sizeof(char) * token->strlen);
+        strncpy(typedef_name, token->str, token->strlen);
+        ++(*index);
+    
+        strhashmap_put(typedef_map, typedef_name, struct_name); 
+    }
+    else if (is_func_def(vec, *index)) {
         external_decl_node->func_def_node = create_func_def_node(vec, index);
         if (external_decl_node->func_def_node == NULL) {
             error("Failed to create function-definition node.\n");
@@ -1865,6 +1897,8 @@ static TransUnitNode* create_trans_unit_node() {
 }
 
 TransUnitNode* parse(const TokenVec* vec) {
+    // init
+    typedef_map = create_strhashmap(1024);
     TransUnitNode* trans_unit_node = create_trans_unit_node();
 
     int index = 0;
@@ -1908,14 +1942,6 @@ const char* decode_type_qualifier(int type_qualifier) {
     case TQ_CONST:    { return "TQ_CONST";    }
     case TQ_VOLATILE: { return "TQ_VOLATILE"; }
     default:          { return "INVALID";     }
-    }
-}
-
-const char* decode_storage_class_specifier(int storage_class_specifier) {
-    switch (storage_class_specifier) {
-    case SC_STATIC:  { return "SC_STATIC";  }
-    case SC_TYPEDEF: { return "SC_TYPEDEF"; }
-    default:         { return "INVALID";    }
     }
 }
 

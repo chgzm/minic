@@ -51,7 +51,6 @@ void dump_tokens(const TokenVec* vec) {
 void dump_nodes(const TransUnitNode* node); static void dump_external_decl_node(const ExternalDeclNode* node, int indent);
 static void dump_func_def_node(const FuncDefNode* node, int indent);
 static void dump_decl_specifier_node(const DeclSpecifierNode* node, int indent);
-static void dump_storage_class_specifier_node(const StorageClassSpecifierNode* node, int indent);
 static void dump_type_specifier_node(const TypeSpecifierNode* node, int indent);
 static void dump_struct_or_union_specifier_node(const StructOrUnionSpecifierNode* node, int indent);
 static void dump_struct_declaration_node(const StructDeclarationNode* node, int indent);
@@ -88,7 +87,6 @@ static void dump_direct_abstract_declarator_node(const DirectAbstractDeclaratorN
 static void dump_enum_specifier_node(const EnumSpecifierNode* node, int indent);
 static void dump_enumerator_list_node(const EnumeratorListNode* node, int indent);
 static void dump_enumerator_node(const EnumeratorNode* node, int indent);
-static void dump_typedef_name_node(const TypedefNameNode* node, int indent);
 static void dump_declaration_node(const DeclarationNode* node, int indent);
 static void dump_init_declarator_node(const InitDeclaratorNode* node, int indent);
 static void dump_initializer_node(const InitializerNode* node, int indent);
@@ -141,30 +139,23 @@ static void dump_func_def_node(const FuncDefNode* node, int indent) {
 }
 
 static void dump_decl_specifier_node(const DeclSpecifierNode* node, int indent) {
-    printf_indent(indent, "DeclSpecifierNode\n");
-
-    if (node->storage_class_specifier_node != NULL) {
-        dump_storage_class_specifier_node(node->storage_class_specifier_node, indent + 2);
-    }
+    printf_indent(
+        indent, 
+        "DeclSpecifierNode,IsStatic=%s\n",
+        (node->is_static ? "true" : "false")
+    );
 
     if (node->type_specifier_node != NULL) {
         dump_type_specifier_node(node->type_specifier_node, indent + 2);
     }
 }
 
-static void dump_storage_class_specifier_node(const StorageClassSpecifierNode* node, int indent) {
-    printf_indent(
-        indent, 
-        "StorageClassSpecifierNode,Specifier=\"%s\"\n",
-        decode_storage_class_specifier(node->storage_class_specifier)
-    );
-}
-
 static void dump_type_specifier_node(const TypeSpecifierNode* node, int indent) {
     printf_indent(
         indent, 
-        "TypeSpecifierNode,Type=\"%s\"\n",
-        decode_type_specifier(node->type_specifier)
+        "TypeSpecifierNode,Type=\"%s\",StructName=\"%s\"\n",
+        decode_type_specifier(node->type_specifier),
+        node->struct_name
     );
 
     if (node->struct_or_union_specifier_node != NULL) {
@@ -173,10 +164,6 @@ static void dump_type_specifier_node(const TypeSpecifierNode* node, int indent) 
 
     if (node->enum_specifier_node != NULL) {
         dump_enum_specifier_node(node->enum_specifier_node, indent + 2);
-    }
-
-    if (node->typedef_name_node != NULL) {
-        dump_typedef_name_node(node->typedef_name_node, indent + 2);
     }
 }
 
@@ -629,10 +616,6 @@ static void dump_enumerator_list_node(const EnumeratorListNode* node, int indent
 
 static void dump_enumerator_node(const EnumeratorNode* node, int indent) {
     printf_indent(indent, "EnumeratorNode\n");
-}
-
-static void dump_typedef_name_node(const TypedefNameNode* node, int indent) {
-    printf_indent(indent, "TypedefNameNode\n");
 }
 
 static void dump_declaration_node(const DeclarationNode* node, int indent) {

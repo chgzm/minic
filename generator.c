@@ -24,6 +24,10 @@ static char* ret_label;
 static Stack* break_label_stack;
 static Stack* continue_label_stack;
 
+//
+// forward declaration
+//
+
 static LocalVar*  get_localvar(const char* str, int len);
 static GlobalVar* get_globalvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
@@ -64,7 +68,7 @@ static void print_global(const TransUnitNode* node) {
             const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
             printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
         }
-        else {
+        else if (external_decl_node->declaration_node != NULL) {
             const DeclarationNode* declaration_node = external_decl_node->declaration_node;
             for (int j = 0; j < declaration_node->init_declarator_nodes->size; ++j) {
                 const InitDeclaratorNode*   init_declarator_node   = declaration_node->init_declarator_nodes->elements[j];
@@ -1132,6 +1136,19 @@ static void process_declaration(const DeclarationNode* node) {
 
             break; 
         } 
+        case TYPE_TYPEDEFNAME: { 
+            base_type = VAR_STRUCT;   
+
+            struct_info = strhashmap_get(struct_map, type_specifier_node->struct_name);
+            if (struct_info == NULL) {
+                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_name);
+                exit(-1);
+            }
+
+            type_size = struct_info->field_info_map->size * 8;
+
+            break; 
+        } 
         default: { 
             break; 
         }
@@ -1266,6 +1283,10 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
                     const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;
                     const char* ident = struct_or_union_specifier_node->identifier;
                     const StructInfo* struct_info = strhashmap_get(struct_map, ident);
+                    var_size = struct_info->field_info_map->size * 8; // @todo
+                } 
+                else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
+                    const StructInfo* struct_info = strhashmap_get(struct_map, type_specifier_node->struct_name);
                     var_size = struct_info->field_info_map->size * 8; // @todo
                 } else {
                     var_size = 8; // @todo

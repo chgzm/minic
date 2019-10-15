@@ -24,11 +24,6 @@ enum TypeQualifier {
     TQ_VOLATILE,
 };
 
-enum StorageClassSpecifier {
-    SC_STATIC,
-    SC_TYPEDEF,
-};
-
 enum StructOrUnion {
     SU_STRUCT,
     SU_UNION,
@@ -130,7 +125,6 @@ typedef struct TransUnitNode TransUnitNode;
 typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
 typedef struct DeclSpecifierNode DeclSpecifierNode;
-typedef struct StorageClassSpecifierNode StorageClassSpecifierNode;
 typedef struct TypeSpecifierNode TypeSpecifierNode;
 typedef struct StructOrUnionSpecifierNode StructOrUnionSpecifierNode;
 typedef struct StructDeclarationNode StructDeclarationNode;
@@ -167,7 +161,6 @@ typedef struct DirectAbstractDeclaratorNode DirectAbstractDeclaratorNode;
 typedef struct EnumSpecifierNode EnumSpecifierNode;
 typedef struct EnumeratorListNode EnumeratorListNode;
 typedef struct EnumeratorNode EnumeratorNode;
-typedef struct TypedefNameNode TypedefNameNode;
 typedef struct DeclarationNode DeclarationNode;
 typedef struct InitDeclaratorNode InitDeclaratorNode;
 typedef struct InitializerNode InitializerNode;
@@ -196,20 +189,16 @@ struct FuncDefNode {
 };
 
 struct DeclSpecifierNode {
-    StorageClassSpecifierNode* storage_class_specifier_node; 
-    TypeSpecifierNode*         type_specifier_node; 
-    TypeQualifierNode*         type_qualifier_node; 
-};
-
-struct StorageClassSpecifierNode {
-    int storage_class_specifier;
+    TypeSpecifierNode* type_specifier_node; 
+    TypeQualifierNode* type_qualifier_node; 
+    bool               is_static;    
 };
 
 struct TypeSpecifierNode {
     int                         type_specifier;
     StructOrUnionSpecifierNode* struct_or_union_specifier_node;
     EnumSpecifierNode*          enum_specifier_node;
-    TypedefNameNode*            typedef_name_node;
+    char*                       struct_name;
 };
 
 struct StructOrUnionSpecifierNode {
@@ -404,9 +393,6 @@ struct EnumeratorListNode {
 };
 
 struct EnumeratorNode {
-};
-
-struct TypedefNameNode {
 };
 
 struct DeclarationNode {

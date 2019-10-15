@@ -139,6 +139,8 @@ assert_return test_switch_3.c 70
 
 assert_return test_sizeof.c 27
 
+assert_return test_typedef.c 3
+
 assert_output test_printf.c "Hello, World."
 
 echo -e "\e[36mPassed all tests.\e[0m"

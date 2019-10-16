@@ -8,7 +8,7 @@
 // global
 //
 
-static StrHashMap* typedef_map;
+static StrPtrMap* typedef_map;
 
 //
 // forward declaration
@@ -179,7 +179,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
                     return NULL;
                 }
 
-                ptr_vector_push_back(p_postfix_expr_node->assign_expr_nodes, assign_expr_node); 
+                vector_push_back(p_postfix_expr_node->assign_expr_nodes, assign_expr_node); 
                 token = vec->tokens[*index];
 
                 if (token->type == TK_COMMA) {
@@ -938,7 +938,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
                     error("Failed to create declaration-node.\n");
                     return NULL;
                 }
-                ptr_vector_push_back(itr_stmt_node->declaration_nodes, declaration_node);
+                vector_push_back(itr_stmt_node->declaration_nodes, declaration_node);
             }
 
             // token = vec->tokens[*index];
@@ -1189,7 +1189,7 @@ static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, 
             return NULL;
         }
 
-        ptr_vector_push_back(param_declaration_node->decl_spec_nodes, decl_spec_node);
+        vector_push_back(param_declaration_node->decl_spec_nodes, decl_spec_node);
     }
 
     if (is_declarator(vec, *index)) {
@@ -1333,7 +1333,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
                 while (token->type == TK_IDENT) {
                     char* identifier = malloc(sizeof(char) * token->strlen);
                     strncpy(identifier, token->str, token->strlen);
-                    ptr_vector_push_back(p_direct_declarator_node->identifier_list, identifier);
+                    vector_push_back(p_direct_declarator_node->identifier_list, identifier);
 
                     ++(*index);
                     token = vec->tokens[*index];
@@ -1478,7 +1478,7 @@ static StructDeclaratorListNode* create_struct_declarator_list_node(const TokenV
         error("Failed to create declarator node.\n");
         return NULL;
     }
-    ptr_vector_push_back(struct_declarator_list_node->declarator_nodes, declarator_node);
+    vector_push_back(struct_declarator_list_node->declarator_nodes, declarator_node);
 
     const Token* token = vec->tokens[*index];
     while (token->type == TK_COMMA) {
@@ -1489,7 +1489,7 @@ static StructDeclaratorListNode* create_struct_declarator_list_node(const TokenV
         }
 
         token = vec->tokens[*index];
-        ptr_vector_push_back(struct_declarator_list_node->declarator_nodes, node);
+        vector_push_back(struct_declarator_list_node->declarator_nodes, node);
     }
 
     return struct_declarator_list_node;
@@ -1507,7 +1507,7 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
                 return NULL;
             }
         
-            ptr_vector_push_back(struct_declaration_node->specifier_qualifier_nodes, specifier_qualifier_node);
+            vector_push_back(struct_declaration_node->specifier_qualifier_nodes, specifier_qualifier_node);
         }
     } 
     
@@ -1561,7 +1561,7 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
                     return NULL;
                 }
 
-                ptr_vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
+                vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
                 token = vec->tokens[*index];
             }
 
@@ -1581,7 +1581,7 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
                return NULL;
             }
 
-            ptr_vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
+            vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
             token = vec->tokens[*index];
         }
 
@@ -1610,7 +1610,7 @@ static EnumeratorListNode* create_enumerator_list_node(const TokenVec* vec, int*
         }
 
         char* identifier = strdup(token->str);
-        ptr_vector_push_back(enumerator_list_node->identifiers, identifier);
+        vector_push_back(enumerator_list_node->identifiers, identifier);
 
         ++(*index);
         token = vec->tokens[*index];
@@ -1701,7 +1701,7 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     } 
     case TK_IDENT: { 
         type_specifier_node->type_specifier = TYPE_TYPEDEFNAME;
-        type_specifier_node->struct_name = strhashmap_get(typedef_map, token->str);
+        type_specifier_node->struct_name = strptrmap_get(typedef_map, token->str);
         if (type_specifier_node->struct_name == NULL) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -1763,7 +1763,7 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
             return NULL;
         }
 
-        ptr_vector_push_back(declaration_node->decl_specifier_nodes, decl_specifier_node);
+        vector_push_back(declaration_node->decl_specifier_nodes, decl_specifier_node);
     }
 
     token = vec->tokens[*index];
@@ -1774,7 +1774,7 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
             return NULL;
         }
 
-        ptr_vector_push_back(declaration_node->init_declarator_nodes, init_declarator_node);
+        vector_push_back(declaration_node->init_declarator_nodes, init_declarator_node);
         token = vec->tokens[*index];
     }
     ++(*index);
@@ -1793,7 +1793,7 @@ static bool is_type_specifier(const TokenVec* vec, int index) {
     return (type == TK_VOID   || type == TK_CHAR   || type == TK_SHORT
          || type == TK_INT    || type == TK_LONG   || type == TK_FLOAT
          || type == TK_DOUBLE || type == TK_STRUCT || type == TK_UNION
-         || (token->str != NULL && strhashmap_contains(typedef_map, token->str))
+         || (token->str != NULL && strptrmap_contains(typedef_map, token->str))
     );
 }
 
@@ -1830,7 +1830,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
                 return NULL;
             }
 
-            ptr_vector_push_back(compound_stmt_node->declaration_nodes, declaration_node);
+            vector_push_back(compound_stmt_node->declaration_nodes, declaration_node);
         }
     }
 
@@ -1843,7 +1843,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
                 return NULL;
             }
 
-            ptr_vector_push_back(compound_stmt_node->stmt_nodes, stmt_node);
+            vector_push_back(compound_stmt_node->stmt_nodes, stmt_node);
         }
     }
 
@@ -1875,7 +1875,7 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
             return NULL;
         }
         
-        ptr_vector_push_back(func_def_node->decl_specifier_nodes, decl_specifier_node);
+        vector_push_back(func_def_node->decl_specifier_nodes, decl_specifier_node);
     }
 
     // <declarator>
@@ -1952,7 +1952,7 @@ static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* ind
         strncpy(typedef_name, token->str, token->strlen);
         ++(*index);
     
-        strhashmap_put(typedef_map, typedef_name, struct_name); 
+        strptrmap_put(typedef_map, typedef_name, struct_name); 
     }
     else if (token->type == TK_ENUM) {
         external_decl_node->enum_specifier_node = create_enum_specifier_node(vec, index); 
@@ -1997,7 +1997,7 @@ static TransUnitNode* create_trans_unit_node() {
 
 TransUnitNode* parse(const TokenVec* vec) {
     // init
-    typedef_map = create_strhashmap(1024);
+    typedef_map = create_strptrmap(1024);
     TransUnitNode* trans_unit_node = create_trans_unit_node();
 
     int index = 0;
@@ -2008,7 +2008,7 @@ TransUnitNode* parse(const TokenVec* vec) {
             return NULL;
         }
 
-        ptr_vector_push_back(trans_unit_node->external_decl_nodes, external_decl_node);
+        vector_push_back(trans_unit_node->external_decl_nodes, external_decl_node);
     }
 
     return trans_unit_node;

@@ -4,13 +4,13 @@
 
 #include "util.h"
 
-static StrHashMap* define_map;
+static StrPtrMap* define_map;
 
 static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
     Token* token = in_vec->tokens[*index];
     if (token->type != TK_HASH) {
-        if (token->type == TK_IDENT && strhashmap_contains(define_map, token->str)) {
-            Token* value = strhashmap_get(define_map, token->str);
+        if (token->type == TK_IDENT && strptrmap_contains(define_map, token->str)) {
+            Token* value = strptrmap_get(define_map, token->str);
 
             if (value != NULL) {
                 tokenvec_push_back(out_vec, value);
@@ -35,17 +35,17 @@ static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
 
             ++(*index);
             if (*index == in_vec->size) {
-                strhashmap_put(define_map, name->str, NULL);
+                strptrmap_put(define_map, name->str, NULL);
                 return STATE_ENABLED;
             }
             Token* value = in_vec->tokens[*index];
 
             if (value->type != TK_NUM && value->type != TK_STR) {
-                strhashmap_put(define_map, name->str, NULL);
+                strptrmap_put(define_map, name->str, NULL);
                 return STATE_ENABLED;
             }
 
-            strhashmap_put(define_map, name->str, value);
+            strptrmap_put(define_map, name->str, value);
             ++(*index);
 
             return STATE_ENABLED;
@@ -112,7 +112,7 @@ static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
             }
             ++(*index);
 
-            if (strhashmap_contains(define_map, token->str)) {
+            if (strptrmap_contains(define_map, token->str)) {
                 return STATE_DISABLED;
             } else {
                 return STATE_ENABLED;
@@ -150,7 +150,7 @@ static int disabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) 
 
 TokenVec* preprocess(const TokenVec* in_vec) {
     TokenVec* out_vec = tokenvec_create();
-    define_map = create_strhashmap(32);
+    define_map = create_strptrmap(32);
 
     int state = STATE_ENABLED;
     int index = 0;

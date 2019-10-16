@@ -95,7 +95,7 @@ Vector* create_vector() {
     return vec;
 }
 
-void ptr_vector_push_back(Vector* vec, void* e) {
+void vector_push_back(Vector* vec, void* e) {
     if (vec->size == vec->capacity) {
         vec->capacity *= 2;
         vec->elements = realloc(vec->elements, sizeof(void*) * vec->capacity);
@@ -141,7 +141,7 @@ Stack* create_stack() {
     return stack;
 }
 
-void ptr_stack_push(Stack* stack, void* e) {
+void stack_push(Stack* stack, void* e) {
     ++(stack->top);
     if (stack->top == stack->capacity) {
         stack->capacity *= 2;
@@ -151,7 +151,7 @@ void ptr_stack_push(Stack* stack, void* e) {
     stack->elements[stack->top] = e;
 }
 
-void* ptr_stack_top(Stack* stack) {
+void* stack_top(Stack* stack) {
     if (stack->top < 0) {
         return NULL;
     }
@@ -159,7 +159,7 @@ void* ptr_stack_top(Stack* stack) {
     return stack->elements[stack->top];
 }
 
-void ptr_stack_pop(Stack* stack) {
+void stack_pop(Stack* stack) {
     --(stack->top);
 }
 
@@ -167,11 +167,11 @@ void ptr_stack_pop(Stack* stack) {
 // Hashmap of char* => int
 //
 
-StrHashMap* create_strhashmap(int capacity) {
-    StrHashMap* map = (StrHashMap*)(malloc(sizeof(StrHashMap)));
+StrPtrMap* create_strptrmap(int capacity) {
+    StrPtrMap* map = (StrPtrMap*)(malloc(sizeof(StrPtrMap)));
     map->size     = 0;
     map->capacity = capacity;
-    map->entries  = (StrHashMapEntry**)(malloc(sizeof(StrHashMapEntry*) * capacity));
+    map->entries  = (StrPtrMapEntry**)(malloc(sizeof(StrPtrMapEntry*) * capacity));
 
     for (int i = 0; i < map->capacity; ++i) {
         map->entries[i] = NULL;
@@ -190,21 +190,21 @@ static int calc_hash(const char* str) {
     return h;
 }
 
-void strhashmap_put(StrHashMap* map, const char* key, void* val) {
+void strptrmap_put(StrPtrMap* map, const char* key, void* val) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
-        map->entries[index] = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
+        map->entries[index] = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
         map->entries[index]->key  = strdup(key);
         map->entries[index]->val  = val;
         map->entries[index]->next = NULL;
     }
     else {
-        StrHashMapEntry* current = map->entries[index];
+        StrPtrMapEntry* current = map->entries[index];
         while (current->next != NULL) {
             current = current->next;
         }
-        current->next       = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
+        current->next       = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
         current->key        = strdup(key);
         current->val        = val;
         current->next->next = NULL;
@@ -213,7 +213,7 @@ void strhashmap_put(StrHashMap* map, const char* key, void* val) {
     ++(map->size);
 }
 
-bool strhashmap_contains(StrHashMap* map, const char* key) {
+bool strptrmap_contains(StrPtrMap* map, const char* key) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
 
@@ -221,7 +221,7 @@ bool strhashmap_contains(StrHashMap* map, const char* key) {
         return false;
     }
     else {
-        StrHashMapEntry* current = map->entries[index];
+        StrPtrMapEntry* current = map->entries[index];
         while (current != NULL) {
             if (strcmp(current->key, key) == 0) {
                 return true;
@@ -233,14 +233,14 @@ bool strhashmap_contains(StrHashMap* map, const char* key) {
     }
 }
 
-void* strhashmap_get(StrHashMap* map, const char* key) {
+void* strptrmap_get(StrPtrMap* map, const char* key) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
         return NULL;
     }
     else {
-        StrHashMapEntry* current = map->entries[index];
+        StrPtrMapEntry* current = map->entries[index];
         while (current != NULL) {
             if (strcmp(current->key, key) == 0) {
                 return current->val;

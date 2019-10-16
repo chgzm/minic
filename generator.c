@@ -19,7 +19,7 @@ static int string_index;
 static int current_offset;
 static Vector* localvar_list;
 static Vector* globalvar_list;
-static StrHashMap* struct_map;  
+static StrPtrMap* struct_map;  
 static StrIntMap*  enum_map;
 static char* ret_label;
 static Stack* break_label_stack;
@@ -249,7 +249,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         const LocalVar* lv = get_localvar(identifier, len);
     
         const StructInfo* struct_info = lv->type->struct_info;
-        const FieldInfo* field_info = strhashmap_get(struct_info->field_info_map, node->identifier);
+        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
         print_code("mov rax, rbp");
         print_code("sub rax, %d", lv->offset + field_info->offset);
@@ -313,7 +313,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         const LocalVar* lv = get_localvar(identifier, len);
     
         const StructInfo* struct_info = lv->type->struct_info;
-        const FieldInfo* field_info = strhashmap_get(struct_info->field_info_map, node->identifier);
+        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
         print_code("mov rax, rbp");
         print_code("sub rax, %d", lv->offset + field_info->offset);
@@ -890,13 +890,13 @@ static void process_expr_stmt(const ExprStmtNode* node) {
 static void process_jump_stmt(const JumpStmtNode* node) {
     switch (node->jump_type) {
     case JMP_CONTINUE: {
-        const char* label = ptr_stack_top(continue_label_stack);
+        const char* label = stack_top(continue_label_stack);
         print_code("jmp %s", label);
 
         break;
     }
     case JMP_BREAK: {
-        const char* label = ptr_stack_top(break_label_stack);
+        const char* label = stack_top(break_label_stack);
         print_code("jmp %s", label);
 
         break;
@@ -951,7 +951,7 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
     }
     case SELECT_SWITCH: {
         const char* label = get_label();
-        ptr_stack_push(break_label_stack, (void*)(label));
+        stack_push(break_label_stack, (void*)(label));
 
         process_expr(node->expr_node);
         process_stmt(node->stmt_node[0]);
@@ -971,8 +971,8 @@ static void process_itr_stmt(const ItrStmtNode* node) {
     case ITR_WHILE: {
         const char* label1 = get_label();
         const char* label2 = get_label();
-        ptr_stack_push(continue_label_stack, (void*)(label1));
-        ptr_stack_push(break_label_stack, (void*)(label2));
+        stack_push(continue_label_stack, (void*)(label1));
+        stack_push(break_label_stack, (void*)(label2));
 
         printf("%s:\n", label1);
         process_expr(node->expr_node[0]);
@@ -983,16 +983,16 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         print_code("jmp %s", label1);
         printf("%s:\n", label2);
 
-        ptr_stack_pop(continue_label_stack);
-        ptr_stack_pop(break_label_stack);
+        stack_pop(continue_label_stack);
+        stack_pop(break_label_stack);
         break;
     }
     case ITR_FOR: {
         const char* label1 = get_label();
         const char* label2 = get_label();
         const char* label3 = get_label();
-        ptr_stack_push(continue_label_stack, (void*)(label2));
-        ptr_stack_push(break_label_stack, (void*)(label3));
+        stack_push(continue_label_stack, (void*)(label2));
+        stack_push(break_label_stack, (void*)(label3));
 
         if (node->declaration_nodes->size != 0) {
             for (int i = 0; i < node->declaration_nodes->size; ++i) {
@@ -1021,8 +1021,8 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         print_code("jmp %s", label1);
         printf("%s:\n", label3);
 
-        ptr_stack_pop(continue_label_stack);
-        ptr_stack_pop(break_label_stack);
+        stack_pop(continue_label_stack);
+        stack_pop(break_label_stack);
         break;
     }
     default: {
@@ -1137,7 +1137,7 @@ static void process_declaration(const DeclarationNode* node) {
         case TYPE_STRUCT: { 
             base_type = VAR_STRUCT;   
 
-            struct_info = strhashmap_get(struct_map, type_specifier_node->struct_or_union_specifier_node->identifier); 
+            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_or_union_specifier_node->identifier); 
             if (struct_info == NULL) {
                 error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_or_union_specifier_node->identifier);
                 exit(-1);
@@ -1150,7 +1150,7 @@ static void process_declaration(const DeclarationNode* node) {
         case TYPE_TYPEDEFNAME: { 
             base_type = VAR_STRUCT;   
 
-            struct_info = strhashmap_get(struct_map, type_specifier_node->struct_name);
+            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
             if (struct_info == NULL) {
                 error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_name);
                 exit(-1);
@@ -1198,7 +1198,7 @@ static void process_declaration(const DeclarationNode* node) {
         lv->name_len = ident_node->identifier_len;
         lv->name     = malloc(sizeof(char) * lv->name_len);
         strncpy(lv->name, ident_node->identifier, lv->name_len);
-        ptr_vector_push_back(localvar_list, lv);
+        vector_push_back(localvar_list, lv);
 
         current_offset += (lv->type->array_size * lv->type->type_size);
 
@@ -1293,11 +1293,11 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
                 if (type_specifier_node->type_specifier == TYPE_STRUCT) {
                     const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;
                     const char* ident = struct_or_union_specifier_node->identifier;
-                    const StructInfo* struct_info = strhashmap_get(struct_map, ident);
+                    const StructInfo* struct_info = strptrmap_get(struct_map, ident);
                     var_size = struct_info->field_info_map->size * 8; // @todo
                 } 
                 else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
-                    const StructInfo* struct_info = strhashmap_get(struct_map, type_specifier_node->struct_name);
+                    const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
                     var_size = struct_info->field_info_map->size * 8; // @todo
                 } else {
                     var_size = 8; // @todo
@@ -1373,7 +1373,7 @@ static void process_args(const ParamListNode* node, int arg_index) {
     localvar->name_len = direct_declarator_node->identifier_len;
     localvar->name     = malloc(sizeof(char) * localvar->name_len);
     strncpy(localvar->name, direct_declarator_node->identifier, localvar->name_len);
-    ptr_vector_push_back(localvar_list, localvar);
+    vector_push_back(localvar_list, localvar);
 
     current_offset += 8;
 
@@ -1473,7 +1473,7 @@ static void process_global_declaration(const DeclarationNode* node) {
                 //  struct-or-union identifier { {struct-declaration}+ }
                 if (struct_declaration_nodes->size != 0) {
                     struct_info = malloc(sizeof(StructInfo));
-                    struct_info->field_info_map = create_strhashmap(1024);
+                    struct_info->field_info_map = create_strptrmap(1024);
 
                     int offset = 0;
                     for (int j = 0; j < struct_declaration_nodes->size; ++j) {
@@ -1490,10 +1490,10 @@ static void process_global_declaration(const DeclarationNode* node) {
                             const DeclaratorNode* node = (const DeclaratorNode*)(struct_declarator_list_node->declarator_nodes->elements[k]);
                             const char* field_name = node->direct_declarator_node->identifier;
                                                         
-                            strhashmap_put(struct_info->field_info_map, field_name, field_info);
+                            strptrmap_put(struct_info->field_info_map, field_name, field_info);
                         }
                     }
-                    strhashmap_put(struct_map, struct_name, struct_info);
+                    strptrmap_put(struct_map, struct_name, struct_info);
                 }
                 // struct-or-union identifier
                 else {
@@ -1542,7 +1542,7 @@ static void process_global_declaration(const DeclarationNode* node) {
         gv->name_len = ident_node->identifier_len;
         gv->name     = malloc(sizeof(char) * gv->name_len);
         strncpy(gv->name, ident_node->identifier, gv->name_len);
-        ptr_vector_push_back(globalvar_list, gv);
+        vector_push_back(globalvar_list, gv);
 
         if (init_declarator_node->initializer_node != NULL) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
@@ -1587,7 +1587,7 @@ void gen(const TransUnitNode* node) {
     break_label_stack    = create_stack();
     continue_label_stack = create_stack();
     globalvar_list       = create_vector();
-    struct_map           = create_strhashmap(1024);
+    struct_map           = create_strptrmap(1024);
     enum_map             = create_strintmap(1024);
 
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {

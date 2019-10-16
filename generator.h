@@ -28,7 +28,7 @@ struct FieldInfo {
 };
 
 struct StructInfo {
-    StrHashMap* field_info_map; // field-name => field-info
+    StrPtrMap* field_info_map; // field-name => field-info
 };
 
 struct Type {

@@ -1598,12 +1598,83 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
     return struct_or_union_specifier_node;
 }
 
+static EnumeratorListNode* create_enumerator_list_node(const TokenVec* vec, int* index) {
+    EnumeratorListNode* enumerator_list_node = malloc(sizeof(EnumeratorListNode));
+    enumerator_list_node->identifiers = create_vector();
+
+    const Token* token = vec->tokens[*index];
+    while (true) {
+        if (token->type != TK_IDENT) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+
+        char* identifier = strdup(token->str);
+        ptr_vector_push_back(enumerator_list_node->identifiers, identifier);
+
+        ++(*index);
+        token = vec->tokens[*index];
+        if (token->type == TK_COMMA) {
+           ++(*index);
+           token = vec->tokens[*index];
+        }
+
+        if (token->type == TK_RBRCKT) {
+            break;
+        }
+    }
+
+    return enumerator_list_node;
+}
+
+static EnumSpecifierNode* create_enum_specifier_node(const TokenVec* vec, int* index) {
+    EnumSpecifierNode* enum_specifier_node = malloc(sizeof(EnumSpecifierNode));
+
+    enum_specifier_node->identifier           = NULL;
+    enum_specifier_node->enumerator_list_node = NULL;
+
+    const Token* token = vec->tokens[*index];
+    if (token->type != TK_ENUM) {
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+        return NULL;
+    }
+    ++(*index);
+
+    token = vec->tokens[*index];
+    if (token->type == TK_IDENT) {
+        enum_specifier_node->identifier = malloc(sizeof(char) * token->strlen);
+        strncpy(enum_specifier_node->identifier, token->str, token->strlen);
+        ++(*index);
+    }
+
+    token = vec->tokens[*index];
+    if (token->type != TK_LBRCKT) {
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+        return NULL;
+    }
+    ++(*index);
+
+    enum_specifier_node->enumerator_list_node = create_enumerator_list_node(vec, index);
+    if (enum_specifier_node->enumerator_list_node == NULL) {
+        error("Failed to create enumerator-list node.\n");
+        return NULL;
+    }
+
+    token = vec->tokens[*index];
+    if (token->type != TK_RBRCKT) {
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+        return NULL;
+    }
+    ++(*index);
+    
+    return enum_specifier_node;
+}
+
 static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index) {
     TypeSpecifierNode* type_specifier_node = malloc(sizeof(TypeSpecifierNode));
 
     type_specifier_node->type_specifier                 = TYPE_NONE;
     type_specifier_node->struct_or_union_specifier_node = NULL;
-    type_specifier_node->enum_specifier_node            = NULL;
     type_specifier_node->struct_name                    = NULL;
 
     const Token* token = vec->tokens[*index];
@@ -1624,8 +1695,10 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
         }
         break; 
     } 
-    case TK_UNION: { break; } // @todo
-    case TK_ENUM:  { break; } // @todo
+    case TK_UNION: {
+        // @todo
+        break; 
+    } 
     case TK_IDENT: { 
         type_specifier_node->type_specifier = TYPE_TYPEDEFNAME;
         type_specifier_node->struct_name = strhashmap_get(typedef_map, token->str);
@@ -1833,7 +1906,18 @@ static bool is_func_def(const TokenVec* vec, int index) {
     ++index;
     token = vec->tokens[index];
 
-    return (token->type == TK_LPAREN);
+    if (token->type != TK_LPAREN) {
+        return false;
+    }
+
+    while (token->type != TK_RPAREN) {
+        ++index;
+        token = vec->tokens[index];
+    }
+    ++index;
+    token = vec->tokens[index];
+
+    return (token->type == TK_LBRCKT);
 }
 
 static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* index) {
@@ -1869,6 +1953,21 @@ static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* ind
         ++(*index);
     
         strhashmap_put(typedef_map, typedef_name, struct_name); 
+    }
+    else if (token->type == TK_ENUM) {
+        external_decl_node->enum_specifier_node = create_enum_specifier_node(vec, index); 
+        if (external_decl_node->enum_specifier_node == NULL) {
+            error("Failed to create enum-specifier node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        if (token->type != TK_SEMICOL) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+
+        ++(*index);
     }
     else if (is_func_def(vec, *index)) {
         external_decl_node->func_def_node = create_func_def_node(vec, index);

@@ -160,7 +160,6 @@ typedef struct AbstractDeclaratorNode AbstractDeclaratorNode;
 typedef struct DirectAbstractDeclaratorNode DirectAbstractDeclaratorNode;
 typedef struct EnumSpecifierNode EnumSpecifierNode;
 typedef struct EnumeratorListNode EnumeratorListNode;
-typedef struct EnumeratorNode EnumeratorNode;
 typedef struct DeclarationNode DeclarationNode;
 typedef struct InitDeclaratorNode InitDeclaratorNode;
 typedef struct InitializerNode InitializerNode;
@@ -178,8 +177,9 @@ struct TransUnitNode {
 };
 
 struct ExternalDeclNode {
-    FuncDefNode*     func_def_node;
-    DeclarationNode* declaration_node;
+    FuncDefNode*       func_def_node;
+    DeclarationNode*   declaration_node;
+    EnumSpecifierNode* enum_specifier_node;
 };
 
 struct FuncDefNode {
@@ -197,7 +197,6 @@ struct DeclSpecifierNode {
 struct TypeSpecifierNode {
     int                         type_specifier;
     StructOrUnionSpecifierNode* struct_or_union_specifier_node;
-    EnumSpecifierNode*          enum_specifier_node;
     char*                       struct_name;
 };
 
@@ -387,12 +386,12 @@ struct DirectAbstractDeclaratorNode {
 };
 
 struct EnumSpecifierNode {
+    char*               identifier;
+    EnumeratorListNode* enumerator_list_node;
 };
 
 struct EnumeratorListNode {
-};
-
-struct EnumeratorNode {
+    Vector* identifiers;
 };
 
 struct DeclarationNode {

@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 //
-// error 
+// error
 //
 
 #define error(fmt, ...) \
@@ -101,5 +101,28 @@ StrHashMap* create_strhashmap(int capacity);
 void strhashmap_put(StrHashMap* map, const char* key, void* val);
 bool strhashmap_contains(StrHashMap* map, const char* key);
 void* strhashmap_get(StrHashMap* map, const char* key);
+
+//
+// Hashmap for string => int
+//
+
+typedef struct StrIntMapEntry StrIntMapEntry;
+struct StrIntMapEntry {
+    char*           key;
+    int             val;
+    StrIntMapEntry* next;
+};
+
+typedef struct StrIntMap StrIntMap;
+struct StrIntMap {
+    StrIntMapEntry** entries;
+    int              size;
+    int              capacity;
+};
+
+StrIntMap* create_strintmap(int capacity);
+void strintmap_put(StrIntMap* map, const char* key, int val);
+bool strintmap_contains(StrIntMap* map, const char* key);
+int strintmap_get(StrIntMap* map, const char* key);
 
 #endif

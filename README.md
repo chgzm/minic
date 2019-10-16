@@ -29,6 +29,7 @@ external-declaration:
     function-definition
     declaration
     "typedef" "struct" identifier typedef-name
+    enum-specifier ';'
 
 function-definition: 
     {declaration-specifier}* declarator compound-statement
@@ -47,7 +48,6 @@ type-specifier:
     "float"
     "double"
     struct-or-union-specifier
-    enum-specifier
     typedef-name
 
 struct-or-union-specifier:
@@ -180,7 +180,8 @@ assignment-expression:
     unary-expression assignment-operator assignment-expression
 
 assignment-operator:
-    "=" "*="
+    "=" 
+    "*="
     "/="
     "%="
     "+="
@@ -223,13 +224,9 @@ direct-abstract-declarator:
 
 enum-specifier: 
     enum {identifier}? '{' enumerator-list '}'
-    enum identifier
 
 enumerator-list:
-    enumerator {, enumerator}*
-
-enumerator:
-    identifier {'=' conditional-expression}?
+    identifier {, identifier}*
 
 typedef-name:
     identifier

@@ -52,7 +52,7 @@ const char* fmt(const char* fmt, ...) {
 
 //
 // mmap
-// 
+//
 
 void* mmap_readonly(const char* file_path) {
     const int fd = open(file_path, O_RDONLY);
@@ -66,7 +66,7 @@ void* mmap_readonly(const char* file_path) {
         error("fstat failed.\n");
         return NULL;
     }
-    int fsize = sb.st_size;  
+    int fsize = sb.st_size;
 
     void* addr = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
     if (addr == MAP_FAILED) {
@@ -175,7 +175,7 @@ StrHashMap* create_strhashmap(int capacity) {
 
     for (int i = 0; i < map->capacity; ++i) {
         map->entries[i] = NULL;
-    } 
+    }
 
     return map;
 }
@@ -231,11 +231,77 @@ void* strhashmap_get(StrHashMap* map, const char* key) {
             if (strcmp(current->key, key) == 0) {
                 return current->val;
             }
-             
+
             current = current->next;
         }
 
         return NULL;
     }
 
+}
+
+//
+// Hashmap of char* => int
+//
+
+StrIntMap* create_strintmap(int capacity) {
+    StrIntMap* map = (StrIntMap*)(malloc(sizeof(StrIntMap)));
+    map->size      = 0;
+    map->capacity  = capacity;
+    map->entries   = (StrIntMapEntry**)(malloc(sizeof(StrIntMapEntry*) * capacity));
+
+    for (int i = 0; i < map->capacity; ++i) {
+        map->entries[i] = NULL;
+    }
+
+    return map;
+}
+
+void strintmap_put(StrIntMap* map, const char* key, int val) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    if (map->entries[index] == NULL) {
+        map->entries[index] = (StrIntMapEntry*)(malloc(sizeof(StrIntMapEntry)));
+        map->entries[index]->key  = strdup(key);
+        map->entries[index]->val  = val;
+        map->entries[index]->next = NULL;
+    }
+    else {
+        StrIntMapEntry* current = map->entries[index];
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = (StrIntMapEntry*)(malloc(sizeof(StrIntMapEntry)));
+        map->entries[index]->key = strdup(key);
+        map->entries[index]->val = val;
+        current->next->next      = NULL;
+    }
+
+    ++(map->size);
+}
+
+bool strintmap_contains(StrIntMap* map, const char* key) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    return (map->entries[index] != NULL);
+}
+
+int strintmap_get(StrIntMap* map, const char* key) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    if (map->entries[index] == NULL) {
+        exit(-1);
+    }
+    else {
+        StrIntMapEntry* current = map->entries[index];
+        while (current != NULL) {
+            if (strcmp(current->key, key) == 0) {
+                return current->val;
+            }
+
+            current = current->next;
+        }
+
+        exit(-1);
+    }
 }

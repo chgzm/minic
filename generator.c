@@ -20,6 +20,7 @@ static int current_offset;
 static Vector* localvar_list;
 static Vector* globalvar_list;
 static StrHashMap* struct_map;  
+static StrIntMap*  enum_map;
 static char* ret_label;
 static Stack* break_label_stack;
 static Stack* continue_label_stack;
@@ -107,13 +108,23 @@ static void process_identifier_left(const char* identifier, int len) {
 }
 
 static void process_identifier_right(const char* identifier, int len) {
+    // enum 
+    if (strintmap_contains(enum_map, identifier)) {
+        print_code("push %d", strintmap_get(enum_map, identifier));
+        return;
+    } 
+
+    // local variable
     const LocalVar* lv = get_localvar(identifier, len);
     if (lv != NULL) {
         print_code("mov rax, rbp");
         print_code("sub rax, %d", lv->offset);
         print_code("mov rax, [rax]");
         print_code("push rax");
-    } else {
+        return;
+    } 
+    // global variable
+    else {
         const GlobalVar* gv = get_globalvar(identifier, len);
         print_code("mov rax, %s[rip]", gv->name);
         print_code("push rax");
@@ -1544,7 +1555,20 @@ static void process_global_declaration(const DeclarationNode* node) {
     }
 }
 
+static void process_enum_specifier(const EnumSpecifierNode* node) {
+    const EnumeratorListNode* enumerator_list_node = node->enumerator_list_node;
+    const Vector* identifiers = enumerator_list_node->identifiers;
+
+    for (int i = 0; i < identifiers->size; ++i) {
+        strintmap_put(enum_map, identifiers->elements[i], i + 1);
+    }
+}
+
 static void process_external_decl(const ExternalDeclNode* node) {
+    if (node->enum_specifier_node != NULL) {
+        process_enum_specifier(node->enum_specifier_node);
+    }
+
     if (node->declaration_node != NULL) {
         process_global_declaration(node->declaration_node);
     }
@@ -1564,6 +1588,7 @@ void gen(const TransUnitNode* node) {
     continue_label_stack = create_stack();
     globalvar_list       = create_vector();
     struct_map           = create_strhashmap(1024);
+    enum_map             = create_strintmap(1024);
 
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         process_external_decl(node->external_decl_nodes->elements[i]);

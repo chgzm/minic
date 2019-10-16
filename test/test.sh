@@ -67,7 +67,7 @@ assert_return test_func_5.c 10
 assert_return test_func_6.c 215
 assert_return test_func_7.c 15
 assert_return test_func_8.c 20
-assert_return test_func_8.c 20
+assert_return test_func_9.c 15
 
 assert_return test_if.c 100
 assert_return test_if_2.c 2
@@ -144,6 +144,8 @@ assert_return test_typedef.c 3
 assert_return test_preprocess.c 42
 assert_return test_preprocess_2.c 3
 assert_return test_preprocess_3.c 1
+
+assert_return test_enum.c 9
 
 assert_output test_printf.c "Hello, World."
 

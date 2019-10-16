@@ -204,10 +204,10 @@ void strhashmap_put(StrHashMap* map, const char* key, void* val) {
         while (current->next != NULL) {
             current = current->next;
         }
-        current->next = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
-        map->entries[index]->key = strdup(key);
-        map->entries[index]->val = val;
-        current->next->next      = NULL;
+        current->next       = (StrHashMapEntry*)(malloc(sizeof(StrHashMapEntry)));
+        current->key        = strdup(key);
+        current->val        = val;
+        current->next->next = NULL;
     }
 
     ++(map->size);
@@ -216,7 +216,21 @@ void strhashmap_put(StrHashMap* map, const char* key, void* val) {
 bool strhashmap_contains(StrHashMap* map, const char* key) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
-    return (map->entries[index] != NULL);
+
+    if (map->entries[index] == NULL) {
+        return false;
+    }
+    else {
+        StrHashMapEntry* current = map->entries[index];
+        while (current != NULL) {
+            if (strcmp(current->key, key) == 0) {
+                return true;
+            }
+            current = current->next;
+        }
+
+        return false;
+    }
 }
 
 void* strhashmap_get(StrHashMap* map, const char* key) {
@@ -237,7 +251,6 @@ void* strhashmap_get(StrHashMap* map, const char* key) {
 
         return NULL;
     }
-
 }
 
 //
@@ -271,10 +284,10 @@ void strintmap_put(StrIntMap* map, const char* key, int val) {
         while (current->next != NULL) {
             current = current->next;
         }
-        current->next = (StrIntMapEntry*)(malloc(sizeof(StrIntMapEntry)));
-        map->entries[index]->key = strdup(key);
-        map->entries[index]->val = val;
-        current->next->next      = NULL;
+        current->next       = (StrIntMapEntry*)(malloc(sizeof(StrIntMapEntry)));
+        current->key        = strdup(key);
+        current->val        = val;
+        current->next->next = NULL;
     }
 
     ++(map->size);
@@ -283,7 +296,20 @@ void strintmap_put(StrIntMap* map, const char* key, int val) {
 bool strintmap_contains(StrIntMap* map, const char* key) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
-    return (map->entries[index] != NULL);
+
+    if (map->entries[index] == NULL) {
+        return false;
+    }
+    else {
+        StrIntMapEntry* current = map->entries[index];
+        while (current != NULL) {
+            if (strcmp(current->key, key) == 0) {
+                return true;
+            }
+            current = current->next;
+        }
+        return false;
+    }
 }
 
 int strintmap_get(StrIntMap* map, const char* key) {

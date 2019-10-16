@@ -1413,7 +1413,9 @@ static void process_func_def(const FuncDefNode* node) {
     process_compound_stmt(node->compound_stmt_node);
 
     // epilogue
-    printf("%s:\n", ret_label);
+    if (ret_label != NULL) {
+        printf("%s:\n", ret_label);
+    }
     print_code("mov rsp, rbp");
     print_code("pop rbp");
     print_code("ret");

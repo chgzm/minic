@@ -68,6 +68,7 @@ assert_return test_func_6.c 215
 assert_return test_func_7.c 15
 assert_return test_func_8.c 20
 assert_return test_func_9.c 15
+assert_return test_func_10.c 150
 
 assert_return test_if.c 100
 assert_return test_if_2.c 2

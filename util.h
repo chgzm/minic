@@ -50,20 +50,6 @@ Vector* create_vector();
 void vector_push_back(Vector* vec, void* e);
 
 //
-// Vector for int
-//
-
-typedef struct IntVector IntVector;
-struct IntVector {
-    int* elements;
-    int  size;
-    int  capacity;
-};
-
-IntVector* create_int_vector();
-void int_vector_push_back(IntVector* vec, int e);
-
-//
 // Stack for Pointers
 //
 

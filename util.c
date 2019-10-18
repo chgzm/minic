@@ -106,29 +106,6 @@ void vector_push_back(Vector* vec, void* e) {
 }
 
 //
-// Vector for int
-//
-
-IntVector* create_int_vector() {
-    IntVector* vec = malloc(sizeof(IntVector));
-    vec->elements  = malloc(sizeof(int) * 16);
-    vec->capacity  = 16;
-    vec->size      = 0;
-
-    return vec;
-}
-
-void int_vector_push_back(IntVector* vec, int e) {
-    if (vec->size == vec->capacity) {
-        vec->capacity *= 2;
-        vec->elements = realloc(vec->elements, sizeof(int) * vec->capacity);
-    }
-
-    vec->elements[vec->size] = e;
-    ++(vec->size);
-}
-
-//
 // Stack for Pointers
 //
 

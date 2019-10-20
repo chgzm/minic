@@ -152,6 +152,11 @@ static Token* read_symbol(const char* p, int* pos) {
             ++(*pos);
             return token;
         }
+        case '>': {
+            token->type = TK_ARROW;
+            ++(*pos);
+            return token;
+        }
         default: {
             token->type = TK_MINUS;
             return token;

@@ -148,6 +148,8 @@ assert_return test_preprocess_3.c 1
 
 assert_return test_enum.c 9
 
+assert_return test_arrow.c 7
+
 assert_output test_printf.c "Hello, World."
 
 echo -e "\e[36mPassed all tests.\e[0m"

@@ -257,6 +257,23 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         break;        
     }
+    // postfix-expression -> identifier
+    case PS_ARROW: {
+        process_postfix_expr_left(node->postfix_expr_node);
+
+        const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
+        const int len = node->postfix_expr_node->primary_expr_node->identifier_len;
+        const LocalVar* lv = get_localvar(identifier, len);
+    
+        const StructInfo* struct_info = lv->type->struct_info;
+        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+
+        print_code("pop rax");
+        print_code("sub rax, %d", field_info->offset);
+        print_code("push rax");
+
+        break;        
+    }
     default: {
         // @todo
         break;

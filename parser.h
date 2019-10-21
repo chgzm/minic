@@ -14,7 +14,6 @@ enum TypeSpecifier {
     TYPE_FLOAT,
     TYPE_DOUBLE,
     TYPE_STRUCT,
-    TYPE_UNION,
     TYPE_ENUM,
     TYPE_TYPEDEFNAME
 };
@@ -22,11 +21,6 @@ enum TypeSpecifier {
 enum TypeQualifier {
     TQ_CONST,
     TQ_VOLATILE,
-};
-
-enum StructOrUnion {
-    SU_STRUCT,
-    SU_UNION,
 };
 
 enum OperatorType {
@@ -126,7 +120,7 @@ typedef struct ExternalDeclNode ExternalDeclNode;
 typedef struct FuncDefNode FuncDefNode;
 typedef struct DeclSpecifierNode DeclSpecifierNode;
 typedef struct TypeSpecifierNode TypeSpecifierNode;
-typedef struct StructOrUnionSpecifierNode StructOrUnionSpecifierNode;
+typedef struct StructSpecifierNode StructSpecifierNode;
 typedef struct StructDeclarationNode StructDeclarationNode;
 typedef struct StructDeclaratorListNode StructDeclaratorListNode;
 typedef struct SpecifierQualifierNode SpecifierQualifierNode;
@@ -195,13 +189,12 @@ struct DeclSpecifierNode {
 };
 
 struct TypeSpecifierNode {
-    int                         type_specifier;
-    StructOrUnionSpecifierNode* struct_or_union_specifier_node;
-    char*                       struct_name;
+    int                  type_specifier;
+    StructSpecifierNode* struct_specifier_node;
+    char*                struct_name;
 };
 
-struct StructOrUnionSpecifierNode {
-    int        struct_or_union;
+struct StructSpecifierNode {
     int        identifier_len;
     char*      identifier;
     Vector*    struct_declaration_nodes; 

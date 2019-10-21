@@ -47,16 +47,12 @@ type-specifier:
     "long"
     "float"
     "double"
-    struct-or-union-specifier
+    struct-specifier
     typedef-name
 
-struct-or-union-specifier:
-    struct-or-union {identifier}? '{' {struct-declaration}+ '}'
-    struct-or-union identifier
-
-struct-or-union:
-    struct
-    union
+struct-specifier:
+    "struct" {identifier}? '{' {struct-declaration}+ '}'
+    "struct" identifier
 
 struct-declaration:
     {specifier-qualifier}* 

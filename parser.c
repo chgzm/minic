@@ -1583,18 +1583,14 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
     return struct_declaration_node;
 }
 
-static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const TokenVec* vec, int* index) {
-    StructOrUnionSpecifierNode* struct_or_union_specifier_node = malloc(sizeof(StructOrUnionSpecifierNode));
-    struct_or_union_specifier_node->struct_declaration_nodes = create_vector();
+static StructSpecifierNode* create_struct_specifier_node(const TokenVec* vec, int* index) {
+    StructSpecifierNode* struct_specifier_node = malloc(sizeof(StructSpecifierNode));
+    struct_specifier_node->struct_declaration_nodes = create_vector();
 
     const Token* token = vec->tokens[*index];
-    switch (token->type) {
-    case TK_STRUCT: { struct_or_union_specifier_node->struct_or_union = SU_STRUCT; break; } 
-    case TK_UNION:  { struct_or_union_specifier_node->struct_or_union = SU_UNION;  break; } 
-    default: {
+    if (token->type != TK_STRUCT) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
-    }
     }
     ++(*index);
     
@@ -1602,9 +1598,9 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
     switch (token->type) {
     case TK_IDENT: {
         ++(*index);
-        struct_or_union_specifier_node->identifier_len = token->strlen;
-        struct_or_union_specifier_node->identifier     = malloc(sizeof(char) * token->strlen);
-        strncpy(struct_or_union_specifier_node->identifier, token->str, token->strlen);
+        struct_specifier_node->identifier_len = token->strlen;
+        struct_specifier_node->identifier     = malloc(sizeof(char) * token->strlen);
+        strncpy(struct_specifier_node->identifier, token->str, token->strlen);
 
         token = vec->tokens[*index];
         if (token->type == TK_LBRCKT) {
@@ -1617,7 +1613,7 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
                     return NULL;
                 }
 
-                vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
+                vector_push_back(struct_specifier_node->struct_declaration_nodes, struct_declaration_node);
                 token = vec->tokens[*index];
             }
 
@@ -1637,7 +1633,7 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
                return NULL;
             }
 
-            vector_push_back(struct_or_union_specifier_node->struct_declaration_nodes, struct_declaration_node);
+            vector_push_back(struct_specifier_node->struct_declaration_nodes, struct_declaration_node);
             token = vec->tokens[*index];
         }
 
@@ -1651,7 +1647,7 @@ static StructOrUnionSpecifierNode* create_struct_or_union_specifier_node(const T
     }
     }
 
-    return struct_or_union_specifier_node;
+    return struct_specifier_node;
 }
 
 static EnumeratorListNode* create_enumerator_list_node(const TokenVec* vec, int* index) {
@@ -1730,7 +1726,7 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     TypeSpecifierNode* type_specifier_node = malloc(sizeof(TypeSpecifierNode));
 
     type_specifier_node->type_specifier                 = TYPE_NONE;
-    type_specifier_node->struct_or_union_specifier_node = NULL;
+    type_specifier_node->struct_specifier_node = NULL;
     type_specifier_node->struct_name                    = NULL;
 
     const Token* token = vec->tokens[*index];
@@ -1744,15 +1740,11 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE; ++(*index); break; }
     case TK_STRUCT: {
         type_specifier_node->type_specifier = TYPE_STRUCT;
-        type_specifier_node->struct_or_union_specifier_node = create_struct_or_union_specifier_node(vec, index);
-        if (type_specifier_node->struct_or_union_specifier_node == NULL) {
+        type_specifier_node->struct_specifier_node = create_struct_specifier_node(vec, index);
+        if (type_specifier_node->struct_specifier_node == NULL) {
             error("Failed to create struct-or-union-specifier node.\n");
             return NULL;
         }
-        break; 
-    } 
-    case TK_UNION: {
-        // @todo
         break; 
     } 
     case TK_IDENT: { 
@@ -1853,7 +1845,7 @@ static bool is_type_specifier(const TokenVec* vec, int index) {
     const int type = token->type;
     return (type == TK_VOID   || type == TK_CHAR   || type == TK_SHORT
          || type == TK_INT    || type == TK_LONG   || type == TK_FLOAT
-         || type == TK_DOUBLE || type == TK_STRUCT || type == TK_UNION
+         || type == TK_DOUBLE || type == TK_STRUCT
          || (token->str != NULL && strptrmap_contains(typedef_map, token->str))
     );
 }
@@ -2090,7 +2082,6 @@ const char* decode_type_specifier(int type_specifier) {
     case TYPE_FLOAT:       { return "TYPE_FLOAT";       }
     case TYPE_DOUBLE:      { return "TYPE_DOUBLE";      }
     case TYPE_STRUCT:      { return "TYPE_STRUCT";      }
-    case TYPE_UNION:       { return "TYPE_UNION";       }
     case TYPE_ENUM:        { return "TYPE_ENUM";        }
     case TYPE_TYPEDEFNAME: { return "TYPE_TYPEDEFNAME"; }
     default:               { return "INVALID";          }
@@ -2102,14 +2093,6 @@ const char* decode_type_qualifier(int type_qualifier) {
     case TQ_CONST:    { return "TQ_CONST";    }
     case TQ_VOLATILE: { return "TQ_VOLATILE"; }
     default:          { return "INVALID";     }
-    }
-}
-
-const char* decode_struct_or_union(int struct_or_union) {
-    switch (struct_or_union) {
-    case SU_STRUCT: { return "SU_STRUCT"; }
-    case SU_UNION:  { return "SU_UNION";  }
-    default:        { return "INVALID";   }
     }
 }
 

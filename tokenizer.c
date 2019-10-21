@@ -502,17 +502,6 @@ static Token* read_identifier(const char* p, int* pos) {
 
         break;
     }
-    case 'u': {
-        if (len != 5) {
-            break;
-        }
-
-        if (strncmp("union", &p[*pos], 5) == 0) { 
-            token->type = TK_UNION;    
-        }
-
-        break;
-    }
     case 'v': {
         if (len != 4 && len != 8) {
             break;
@@ -674,7 +663,6 @@ const char* decode_token_type(int type) {
     case TK_FLOAT:    { return "TK_FLOAT";    }
     case TK_DOUBLE:   { return "TK_DOUBLE";   }
     case TK_STRUCT:   { return "TK_STRUCT";   }
-    case TK_UNION:    { return "TK_UNION";    }
     case TK_ENUM:     { return "TK_ENUM";     }
     case TK_CONST:    { return "TK_CONST";    }
     case TK_IF:       { return "TK_IF";       }

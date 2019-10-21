@@ -1190,9 +1190,9 @@ static void process_declaration(const DeclarationNode* node) {
         case TYPE_STRUCT: { 
             base_type = VAR_STRUCT;   
 
-            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_or_union_specifier_node->identifier); 
+            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_specifier_node->identifier); 
             if (struct_info == NULL) {
-                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_or_union_specifier_node->identifier);
+                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_specifier_node->identifier);
                 exit(-1);
             }
 
@@ -1348,8 +1348,8 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
                 const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
 
                 if (type_specifier_node->type_specifier == TYPE_STRUCT) {
-                    const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;
-                    const char* ident = struct_or_union_specifier_node->identifier;
+                    const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
+                    const char* ident = struct_specifier_node->identifier;
                     const StructInfo* struct_info = strptrmap_get(struct_map, ident);
                     var_size = struct_info->field_info_map->size * 8; // @todo
                 } 
@@ -1449,9 +1449,9 @@ static void process_args(const ParamListNode* node, int arg_index) {
         case TYPE_STRUCT: { 
             base_type = VAR_STRUCT;   
 
-            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_or_union_specifier_node->identifier); 
+            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_specifier_node->identifier); 
             if (struct_info == NULL) {
-                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_or_union_specifier_node->identifier);
+                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_specifier_node->identifier);
                 exit(-1);
             }
 
@@ -1590,11 +1590,11 @@ static void process_global_declaration(const DeclarationNode* node) {
         case TYPE_DOUBLE:   { base_type = VAR_DOUBLE;   break; }
         case TYPE_STRUCT:   { 
             base_type = VAR_STRUCT;   
-            const StructOrUnionSpecifierNode* struct_or_union_specifier_node = type_specifier_node->struct_or_union_specifier_node;         
-            if (struct_or_union_specifier_node->identifier != NULL) {
-                const char* struct_name = struct_or_union_specifier_node->identifier;
-                const Vector* struct_declaration_nodes = struct_or_union_specifier_node->struct_declaration_nodes;
-                //  struct-or-union identifier { {struct-declaration}+ }
+            const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;         
+            if (struct_specifier_node->identifier != NULL) {
+                const char* struct_name = struct_specifier_node->identifier;
+                const Vector* struct_declaration_nodes = struct_specifier_node->struct_declaration_nodes;
+                //  "struct" identifier { {struct-declaration}+ }
                 if (struct_declaration_nodes->size != 0) {
                     struct_info = malloc(sizeof(StructInfo));
                     struct_info->field_info_map = create_strptrmap(1024);
@@ -1620,12 +1620,12 @@ static void process_global_declaration(const DeclarationNode* node) {
                     }
                     strptrmap_put(struct_map, struct_name, struct_info);
                 }
-                // struct-or-union identifier
+                // "struct" identifier
                 else {
                     // @todo
                 }
             }
-            // struct-or-union { {struct-declaration}+ }
+            // "struct" { {struct-declaration}+ }
             else {
                 // @todo
             }

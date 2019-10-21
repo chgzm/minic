@@ -52,7 +52,7 @@ void dump_nodes(const TransUnitNode* node); static void dump_external_decl_node(
 static void dump_func_def_node(const FuncDefNode* node, int indent);
 static void dump_decl_specifier_node(const DeclSpecifierNode* node, int indent);
 static void dump_type_specifier_node(const TypeSpecifierNode* node, int indent);
-static void dump_struct_or_union_specifier_node(const StructOrUnionSpecifierNode* node, int indent);
+static void dump_struct_specifier_node(const StructSpecifierNode* node, int indent);
 static void dump_struct_declaration_node(const StructDeclarationNode* node, int indent);
 static void dump_struct_declarator_list_node(const StructDeclaratorListNode* node, int indent);
 static void dump_declarator_node(const DeclaratorNode* node, int indent);
@@ -161,16 +161,15 @@ static void dump_type_specifier_node(const TypeSpecifierNode* node, int indent) 
         node->struct_name
     );
 
-    if (node->struct_or_union_specifier_node != NULL) {
-        dump_struct_or_union_specifier_node(node->struct_or_union_specifier_node, indent + 2);
+    if (node->struct_specifier_node != NULL) {
+        dump_struct_specifier_node(node->struct_specifier_node, indent + 2);
     }
 }
 
-static void dump_struct_or_union_specifier_node(const StructOrUnionSpecifierNode* node, int indent) {
+static void dump_struct_specifier_node(const StructSpecifierNode* node, int indent) {
     printf_indent(
         indent,
-        "StructOrUnionSpecifierNode,StructOrUnion=\"%s\",Identifer=\"%s\"\n",
-        decode_struct_or_union(node->struct_or_union),
+        "StructSpecifierNode,Identifer=\"%s\"\n",
         node->identifier
     );
 

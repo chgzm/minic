@@ -18,7 +18,6 @@ enum TokenType {
     TK_FLOAT,     // "float"
     TK_DOUBLE,    // "double"
     TK_STRUCT,    // "struct"
-    TK_UNION,     // "union"
     TK_ENUM,      // "enum"
     TK_CONST,     // "const"
     TK_VOLATILE,  // "volatile"

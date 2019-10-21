@@ -93,12 +93,20 @@ static Token* read_character(const char* p, int* pos) {
 
 static Token* read_string(const char* p, int* pos) {
     ++(*pos);
-    int len = 0, cur = 0;  
-    while (p[*pos + cur] != '"') {
-        if (p[*pos + cur] != '\\') { 
+    int len = 0;
+    bool escape = false;
+    while (true) {
+        if (!escape && p[*pos + len] == '"') {
+            break;
+        }
+
+        if (p[*pos + len] == '\\') { 
+            escape = true;
+        }
+        else {
+            escape = false;
             ++len;
         }
-        ++cur;
     }
 
     Token* token  = calloc(1, sizeof(Token));
@@ -108,7 +116,7 @@ static Token* read_string(const char* p, int* pos) {
     strncpy(token->str, &p[*pos], token->strlen);
     token->str[token->strlen] = '\0';
 
-    *pos += (cur + 1);
+    *pos += (len + 1);
 
 
     return token;

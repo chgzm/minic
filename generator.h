@@ -29,6 +29,7 @@ struct FieldInfo {
 
 struct StructInfo {
     StrPtrMap* field_info_map; // field-name => field-info
+    int        size;
 };
 
 struct Type {

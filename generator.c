@@ -1598,6 +1598,7 @@ static void process_global_declaration(const DeclarationNode* node) {
                 if (struct_declaration_nodes->size != 0) {
                     struct_info = malloc(sizeof(StructInfo));
                     struct_info->field_info_map = create_strptrmap(1024);
+                    struct_info->size           = 0;
 
                     int offset = 0;
                     for (int j = 0; j < struct_declaration_nodes->size; ++j) {

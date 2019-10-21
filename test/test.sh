@@ -153,6 +153,8 @@ assert_return test_arrow_2.c 7
 
 assert_return test_or.c 28
 
+assert_return test_and.c 16
+
 assert_output test_printf.c "Hello, World."
 
 echo -e "\e[36mPassed all tests.\e[0m"

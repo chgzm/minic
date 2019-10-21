@@ -120,6 +120,8 @@ assert_return test_subeq.c 0
 
 assert_return test_array.c 100
 assert_return test_array_2.c 10
+assert_return test_array_3.c 3
+assert_return test_array_4.c 100
 
 assert_return test_ptr.c 5
 assert_return test_ptr_2.c 100

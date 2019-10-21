@@ -102,6 +102,7 @@ static Token* read_string(const char* p, int* pos) {
 
         if (p[*pos + len] == '\\') { 
             escape = true;
+            ++len;
         }
         else {
             escape = false;

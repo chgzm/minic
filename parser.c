@@ -1831,7 +1831,12 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
         }
 
         vector_push_back(declaration_node->init_declarator_nodes, init_declarator_node);
+
         token = vec->tokens[*index];
+        if (token->type == TK_COMMA) {
+            ++(*index);
+            token = vec->tokens[*index];
+        } 
     }
     ++(*index);
 

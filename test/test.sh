@@ -58,6 +58,7 @@ assert_return test_localvar_2.c 7
 assert_return test_localvar_3.c 17
 assert_return test_localvar_4.c 7
 assert_return test_localvar_5.c 34
+assert_return test_localvar_6.c 34
 
 assert_return test_func.c 42
 assert_return test_func_2.c 5
@@ -154,6 +155,8 @@ assert_return test_arrow_2.c 7
 assert_return test_or.c 28
 
 assert_return test_and.c 16
+
+assert_return test_char.c 99
 
 assert_output test_printf.c "Hello, World."
 

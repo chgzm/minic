@@ -232,7 +232,7 @@ typedef-name:
     identifier
 
 declaration:
-    {declaration-specifier}+ {init-declarator}* ';'
+    {declaration-specifier}+ {init-declarator {','}?}* ';'
 
 init-declarator:
     declarator {'=' initializer}?

@@ -344,6 +344,11 @@ static Token* read_symbol(const char* p, int* pos) {
             ++(*pos);
             return token;
         }
+        case '|': {
+            token->type = TK_LOGOR;
+            ++(*pos);
+            return token;
+        }
         default: {
             token->type = TK_PIPE;
             return token;

@@ -609,7 +609,25 @@ static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* 
         return NULL;
     }
 
-    return logical_or_expr_node;
+    const Token* token = vec->tokens[*index];
+    LogicalOrExprNode* current = logical_or_expr_node;
+    while (token->type == TK_LOGOR) {
+        ++(*index);
+
+        LogicalOrExprNode* p_logical_or_expr_node = malloc(sizeof(LogicalOrExprNode));
+
+        p_logical_or_expr_node->logical_or_expr_node  = current;
+        p_logical_or_expr_node->logical_and_expr_node = create_logical_and_expr_node(vec, index);
+        if (p_logical_or_expr_node->logical_and_expr_node == NULL) {
+            error("Failed to create logical-and-expression node.\n");
+            return NULL;
+        }
+        
+        token = vec->tokens[*index];
+        current = p_logical_or_expr_node;
+    }
+
+    return current;
 }
 
 static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, int* index) {

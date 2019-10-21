@@ -814,7 +814,13 @@ static void process_logical_or_expr(const LogicalOrExprNode* node) {
     }
     // <logical-or-expression> || <logical-and-expression>
     else {
-        // @todo
+        process_logical_or_expr(node->logical_or_expr_node);
+        process_logical_and_expr(node->logical_and_expr_node);  
+
+        print_code("pop rdi");
+        print_code("pop rax");
+        print_code("or rax, rdi");
+        print_code("push rax");
     }
 }
 

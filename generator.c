@@ -136,6 +136,7 @@ static void process_identifier_addr(const char* identifier, int len) {
     if (lv != NULL) {
         print_code("mov rax, rbp");
         print_code("sub rax, %d", lv->offset);
+        // print_code("lea rax, [rax]");
         print_code("push rax");
     }
 }
@@ -264,11 +265,12 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
         const int len = node->postfix_expr_node->primary_expr_node->identifier_len;
         const LocalVar* lv = get_localvar(identifier, len);
-    
+
         const StructInfo* struct_info = lv->type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
         print_code("pop rax");
+        print_code("mov rax, [rax]");
         print_code("sub rax, %d", field_info->offset);
         print_code("push rax");
 
@@ -334,6 +336,24 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         print_code("mov rax, rbp");
         print_code("sub rax, %d", lv->offset + field_info->offset);
+        print_code("push [rax]");
+
+        break;        
+    }
+    // postfix-expression -> identifier
+    case PS_ARROW: {
+        process_postfix_expr_left(node->postfix_expr_node);
+
+        const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
+        const int len = node->postfix_expr_node->primary_expr_node->identifier_len;
+        const LocalVar* lv = get_localvar(identifier, len);
+
+        const StructInfo* struct_info = lv->type->struct_info;
+        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+
+        print_code("pop rax");
+        print_code("mov rax, [rax]");
+        print_code("sub rax, %d", field_info->offset);
         print_code("push [rax]");
 
         break;        
@@ -1384,18 +1404,78 @@ static void process_args(const ParamListNode* node, int arg_index) {
         return;
     }
 
-    const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-    LocalVar* localvar = malloc(sizeof(LocalVar));
-    localvar->offset   = current_offset;
-    localvar->name_len = direct_declarator_node->identifier_len;
-    localvar->name     = malloc(sizeof(char) * localvar->name_len);
-    strncpy(localvar->name, direct_declarator_node->identifier, localvar->name_len);
-    vector_push_back(localvar_list, localvar);
+    //
+    // decide base type
+    // 
+    int base_type = 0;
+    int type_size = 8; 
+    StructInfo* struct_info = NULL; 
 
-    current_offset += 8;
+    for (int i = 0; i < param_declaration_node->decl_spec_nodes->size; ++i) {
+        const DeclSpecifierNode* decl_specifier_node = param_declaration_node->decl_spec_nodes->elements[i];
+        const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
+        if (type_specifier_node == NULL) {
+            continue;
+        }
+
+        switch (type_specifier_node->type_specifier) {
+        case TYPE_VOID:  { base_type = VAR_VOID;   break; }
+        case TYPE_CHAR:  { base_type = VAR_CHAR;   break; }
+        case TYPE_SHORT: { base_type = VAR_SHORT;  break; }
+        case TYPE_INT:   { base_type = VAR_INT;    break; }
+        case TYPE_LONG:  { base_type = VAR_LONG;   break; }
+        case TYPE_FLOAT: { base_type = VAR_FLOAT;  break; }
+        case TYPE_DOUBLE:{ base_type = VAR_DOUBLE; break; }
+        case TYPE_STRUCT: { 
+            base_type = VAR_STRUCT;   
+
+            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_or_union_specifier_node->identifier); 
+            if (struct_info == NULL) {
+                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_or_union_specifier_node->identifier);
+                exit(-1);
+            }
+
+            type_size = struct_info->field_info_map->size * 8;
+
+            break; 
+        } 
+        case TYPE_TYPEDEFNAME: { 
+            base_type = VAR_STRUCT;   
+
+            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
+            if (struct_info == NULL) {
+                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_name);
+                exit(-1);
+            }
+
+            type_size = struct_info->field_info_map->size * 8;
+
+            break; 
+        } 
+        default: { 
+            break; 
+        }
+        }
+
+        break;
+    }
+
+    const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
+    LocalVar* lv = malloc(sizeof(LocalVar));
+    lv->offset   = current_offset;
+    lv->name_len = direct_declarator_node->identifier_len;
+    lv->name     = malloc(sizeof(char) * lv->name_len);
+    strncpy(lv->name, direct_declarator_node->identifier, lv->name_len);
+    vector_push_back(localvar_list, lv);
+    lv->type              = malloc(sizeof(Type));
+    lv->type->base_type   = base_type;
+    lv->type->type_size   = type_size; 
+    lv->type->struct_info = struct_info;
+
+    current_offset += lv->type->type_size;
 
     print_code("mov rax, rbp");
-    print_code("sub rax, %d", localvar->offset);
+    print_code("sub rax, %d", lv->offset);
     print_code("mov [rax], %s", arg_registers[arg_index]);
 }
 

@@ -37,6 +37,7 @@ static void process_conditional_expr(const ConditionalExprNode* node);
 static void process_compound_stmt(const CompoundStmtNode* node);
 static void process_cast_expr(const CastExprNode* node);
 static void process_declaration(const DeclarationNode* node);
+static Type* process_type_specifier_in_local(const TypeSpecifierNode* node);
 static int get_array_size_from_constant_expr(const ConditionalExprNode* node);
 
 static void print_code(const char* fmt, ...) {
@@ -91,6 +92,14 @@ static const char* get_string_label() {
      const char* label = fmt(".LC%d", string_index);
     ++string_index;
     return label;
+}
+
+static int align_offset(int offset) {
+    if (offset % 8 != 0) {
+        offset += (8 - offset % 8);
+    }
+
+    return offset;
 }
 
 static void process_identifier_left(const char* identifier, int len) {
@@ -237,8 +246,9 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         const LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
 
         print_code("pop rdi");
-        print_code("imul rdi, %d", lv->type->type_size);
         print_code("pop rax");
+        // print_code("imul rdi, %d", lv->type->type_size);
+        print_code("imul rdi, 8");
         if (lv->type->ptr_count != 0) { 
             print_code("mov rax, [rax]");
         } 
@@ -315,14 +325,15 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     }
     // postfix-expression [ expression ]
     case PS_LSQUARE: {
-        const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
-        LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
+        // const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
+        // LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
 
         process_postfix_expr_right(node->postfix_expr_node);
         process_expr(node->expr_node);
         print_code("pop rdi");
-        print_code("imul rdi, %d", lv->type->type_size);
         print_code("pop rax");
+        // print_code("imul rdi, %d", lv->type->type_size);
+        print_code("imul rdi, 8");
         print_code("sub rax, rdi");
         print_code("mov rax, [rax]");
         print_code("push rax");
@@ -1165,13 +1176,7 @@ static const DirectDeclaratorNode* get_identifier_direct_declarator(const Direct
 }
 
 static void process_declaration(const DeclarationNode* node) {
-    //
-    // decide base type
-    // 
-    int base_type = 0;
-    int type_size = 8; 
-    StructInfo* struct_info = NULL; 
-
+    Type* type = NULL;
     for (int i = 0; i < node->decl_specifier_nodes->size; ++i) {
         const DeclSpecifierNode* decl_specifier_node = node->decl_specifier_nodes->elements[i];
         const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
@@ -1179,45 +1184,7 @@ static void process_declaration(const DeclarationNode* node) {
             continue;
         }
 
-        switch (type_specifier_node->type_specifier) {
-        case TYPE_VOID:  { base_type = VAR_VOID;   break; }
-        case TYPE_CHAR:  { base_type = VAR_CHAR;   break; }
-        case TYPE_SHORT: { base_type = VAR_SHORT;  break; }
-        case TYPE_INT:   { base_type = VAR_INT;    break; }
-        case TYPE_LONG:  { base_type = VAR_LONG;   break; }
-        case TYPE_FLOAT: { base_type = VAR_FLOAT;  break; }
-        case TYPE_DOUBLE:{ base_type = VAR_DOUBLE; break; }
-        case TYPE_STRUCT: { 
-            base_type = VAR_STRUCT;   
-
-            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_specifier_node->identifier); 
-            if (struct_info == NULL) {
-                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_specifier_node->identifier);
-                exit(-1);
-            }
-
-            type_size = struct_info->field_info_map->size * 8;
-
-            break; 
-        } 
-        case TYPE_TYPEDEFNAME: { 
-            base_type = VAR_STRUCT;   
-
-            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-            if (struct_info == NULL) {
-                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_name);
-                exit(-1);
-            }
-
-            type_size = struct_info->field_info_map->size * 8;
-
-            break; 
-        } 
-        default: { 
-            break; 
-        }
-        }
-
+        type = process_type_specifier_in_local(type_specifier_node);
         break;
     }
 
@@ -1225,11 +1192,7 @@ static void process_declaration(const DeclarationNode* node) {
     for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
         LocalVar* lv = malloc(sizeof(LocalVar));
         lv->offset   = current_offset;
-
-        lv->type              = malloc(sizeof(Type));
-        lv->type->base_type   = base_type;
-        lv->type->type_size   = type_size; 
-        lv->type->struct_info = struct_info;
+        lv->type     = type;
 
         const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
@@ -1255,8 +1218,9 @@ static void process_declaration(const DeclarationNode* node) {
 
         if (lv->type->array_size == 0) {
              current_offset += lv->type->type_size;
+             current_offset = align_offset(current_offset);
         } else { 
-            current_offset += (lv->type->array_size * lv->type->type_size);
+            current_offset += (lv->type->array_size * 8);
         }
 
         if (init_declarator_node->initializer_node != NULL) {
@@ -1351,11 +1315,11 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
                     const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
                     const char* ident = struct_specifier_node->identifier;
                     const StructInfo* struct_info = strptrmap_get(struct_map, ident);
-                    var_size = struct_info->field_info_map->size * 8; // @todo
+                    var_size = struct_info->field_info_map->size * 8;
                 } 
                 else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
                     const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-                    var_size = struct_info->field_info_map->size * 8; // @todo
+                    var_size = struct_info->field_info_map->size * 8;
                 } else {
                     var_size = 8; // @todo
                 }
@@ -1413,6 +1377,78 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
     return size;
 }
 
+static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
+    Type* type = malloc(sizeof(Type));
+    type->array_size  = 0;
+    type->ptr_count   = 0;
+    type->struct_info = NULL;
+
+    switch (node->type_specifier) {
+    case TYPE_VOID: { 
+        type->base_type = VAR_VOID;
+        type->type_size = 0;
+        return type;
+    }
+    case TYPE_CHAR: { 
+        type->base_type = VAR_CHAR;
+        type->type_size = 1;
+        return type;
+    }
+    case TYPE_SHORT: { 
+        type->base_type = VAR_SHORT;
+        type->type_size = 2;
+        return type;
+    }
+    case TYPE_INT: {
+        type->base_type = VAR_INT;
+        type->type_size = 4;
+        return type;
+    }
+    case TYPE_LONG: { 
+        type->base_type = VAR_LONG;
+        type->type_size = 8;
+        return type;
+    }
+    case TYPE_FLOAT: {
+        type->base_type = VAR_FLOAT;
+        type->type_size = 4;
+        return type;
+    }
+    case TYPE_DOUBLE: { 
+        type->base_type = VAR_DOUBLE;
+        type->type_size = 8;
+        return type;
+    }
+    case TYPE_STRUCT: { 
+        type->base_type = VAR_STRUCT;   
+
+        type->struct_info = strptrmap_get(struct_map, node->struct_specifier_node->identifier); 
+        if (type->struct_info == NULL) {
+            error("Invalid sturct name=\"%s\"\n", node->struct_specifier_node->identifier);
+            exit(-1);
+        }
+
+        type->type_size = type->struct_info->size;
+        return type;
+    } 
+    case TYPE_TYPEDEFNAME: { 
+        type->base_type = VAR_STRUCT;   
+
+        type->struct_info = strptrmap_get(struct_map, node->struct_name);
+        if (type->struct_info == NULL) {
+            error("Invalid sturct name=\"%s\"\n", node->struct_name);
+            exit(-1);
+        }
+
+        type->type_size = type->struct_info->size;
+        return type;
+    } 
+    default: { 
+        return NULL;
+    }
+    }
+}
+
 static void process_args(const ParamListNode* node, int arg_index) {
     if (node->param_list_node != NULL) {
         process_args(node->param_list_node, arg_index + 1);
@@ -1424,13 +1460,8 @@ static void process_args(const ParamListNode* node, int arg_index) {
         return;
     }
 
-    //
-    // decide base type
-    // 
-    int base_type = 0;
-    int type_size = 8; 
-    StructInfo* struct_info = NULL; 
-
+    // create type
+    Type* type = NULL;
     for (int i = 0; i < param_declaration_node->decl_spec_nodes->size; ++i) {
         const DeclSpecifierNode* decl_specifier_node = param_declaration_node->decl_spec_nodes->elements[i];
         const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
@@ -1438,66 +1469,25 @@ static void process_args(const ParamListNode* node, int arg_index) {
             continue;
         }
 
-        switch (type_specifier_node->type_specifier) {
-        case TYPE_VOID:  { base_type = VAR_VOID;   break; }
-        case TYPE_CHAR:  { base_type = VAR_CHAR;   break; }
-        case TYPE_SHORT: { base_type = VAR_SHORT;  break; }
-        case TYPE_INT:   { base_type = VAR_INT;    break; }
-        case TYPE_LONG:  { base_type = VAR_LONG;   break; }
-        case TYPE_FLOAT: { base_type = VAR_FLOAT;  break; }
-        case TYPE_DOUBLE:{ base_type = VAR_DOUBLE; break; }
-        case TYPE_STRUCT: { 
-            base_type = VAR_STRUCT;   
-
-            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_specifier_node->identifier); 
-            if (struct_info == NULL) {
-                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_specifier_node->identifier);
-                exit(-1);
-            }
-
-            type_size = struct_info->field_info_map->size * 8;
-
-            break; 
-        } 
-        case TYPE_TYPEDEFNAME: { 
-            base_type = VAR_STRUCT;   
-
-            struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-            if (struct_info == NULL) {
-                error("Invalid sturct name=\"%s\"\n", type_specifier_node->struct_name);
-                exit(-1);
-            }
-
-            type_size = struct_info->field_info_map->size * 8;
-
-            break; 
-        } 
-        default: { 
-            break; 
-        }
-        }
-
+        type = process_type_specifier_in_local(type_specifier_node);
         break;
     }
 
     const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
     LocalVar* lv = malloc(sizeof(LocalVar));
+    lv->type     = type;
     lv->offset   = current_offset;
     lv->name_len = direct_declarator_node->identifier_len;
     lv->name     = malloc(sizeof(char) * lv->name_len);
     strncpy(lv->name, direct_declarator_node->identifier, lv->name_len);
     vector_push_back(localvar_list, lv);
-    lv->type              = malloc(sizeof(Type));
-    lv->type->base_type   = base_type;
-    lv->type->type_size   = type_size; 
-    lv->type->struct_info = struct_info;
 
     const PointerNode* pointer_node = declarator_node->pointer_node;
     if (pointer_node != NULL) {
         lv->type->ptr_count = pointer_node->count;
     }
 
-    current_offset += lv->type->type_size;
+    current_offset += 8;
 
     print_code("mov rax, rbp");
     print_code("sub rax, %d", lv->offset);
@@ -1569,7 +1559,7 @@ static int get_int_constant(const InitializerNode* node) {
                ->integer_constant;
 }
 
-static Type* process_type_specifier_in_declaration(const TypeSpecifierNode* node) {
+static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     Type* type = malloc(sizeof(Type));
     type->array_size  = 0;
     type->ptr_count   = 0;
@@ -1636,7 +1626,7 @@ static Type* process_type_specifier_in_declaration(const TypeSpecifierNode* node
                     for (int j = 0; j < specifier_qualifier_nodes->size; ++j) {
                         const SpecifierQualifierNode* specifier_qualifier_node = specifier_qualifier_nodes->elements[j];
                         const TypeSpecifierNode*      type_specifier_node      = specifier_qualifier_node->type_specifier_node;
-                        field_type = process_type_specifier_in_declaration(type_specifier_node);
+                        field_type = process_type_specifier_in_global(type_specifier_node);
                     }
 
                     const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
@@ -1659,6 +1649,7 @@ static Type* process_type_specifier_in_declaration(const TypeSpecifierNode* node
                         strptrmap_put(type->struct_info->field_info_map, field_name, field_info);
                     }
                 }
+                type->struct_info->size = type->struct_info->field_info_map->size * 8;
                 strptrmap_put(struct_map, struct_name, type->struct_info);
             }
             //
@@ -1683,7 +1674,6 @@ static Type* process_type_specifier_in_declaration(const TypeSpecifierNode* node
     }
 }
 
-
 static void process_global_declaration(const DeclarationNode* node) {
     // create type
     Type* type = NULL;
@@ -1694,7 +1684,7 @@ static void process_global_declaration(const DeclarationNode* node) {
             continue;
         }
 
-        type = process_type_specifier_in_declaration(type_specifier_node);
+        type = process_type_specifier_in_global(type_specifier_node);
         break;
     }
 

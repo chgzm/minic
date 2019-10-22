@@ -105,8 +105,7 @@ static int align_offset(int offset) {
 static void process_identifier_left(const char* identifier, int len) {
     const LocalVar* lv = get_localvar(identifier, len);
     if (lv != NULL) {
-        print_code("mov rax, rbp");
-        print_code("sub rax, %d", lv->offset);
+        print_code("lea rax, [rbp-%d]", lv->offset);
         print_code("push rax");
     } 
     else {
@@ -145,8 +144,7 @@ static void process_identifier_right(const char* identifier, int len) {
 static void process_identifier_addr(const char* identifier, int len) {
     const LocalVar* lv = get_localvar(identifier, len);
     if (lv != NULL) {
-        print_code("mov rax, rbp");
-        print_code("sub rax, %d", lv->offset);
+        print_code("lea rax, [rbp-%d]", lv->offset);
         print_code("push rax");
     }
 }
@@ -247,7 +245,6 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         print_code("pop rdi");
         print_code("pop rax");
-        // print_code("imul rdi, %d", lv->type->type_size);
         print_code("imul rdi, 8");
         if (lv->type->ptr_count != 0) { 
             print_code("mov rax, [rax]");
@@ -266,8 +263,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         const StructInfo* struct_info = lv->type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
-        print_code("mov rax, rbp");
-        print_code("sub rax, %d", lv->offset + field_info->offset);
+        print_code("lea rax, [rbp-%d-%d]", lv->offset, field_info->offset);
         print_code("push rax");
 
         break;        
@@ -325,14 +321,11 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     }
     // postfix-expression [ expression ]
     case PS_LSQUARE: {
-        // const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
-        // LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
-
         process_postfix_expr_right(node->postfix_expr_node);
         process_expr(node->expr_node);
+
         print_code("pop rdi");
         print_code("pop rax");
-        // print_code("imul rdi, %d", lv->type->type_size);
         print_code("imul rdi, 8");
         print_code("sub rax, rdi");
         print_code("mov rax, [rax]");
@@ -349,9 +342,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         const StructInfo* struct_info = lv->type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
-        print_code("mov rax, rbp");
-        print_code("sub rax, %d", lv->offset + field_info->offset);
-        print_code("push [rax]");
+        print_code("push [rbp-%d-%d]", lv->offset, field_info->offset);
 
         break;        
     }
@@ -1225,8 +1216,7 @@ static void process_declaration(const DeclarationNode* node) {
 
         if (init_declarator_node->initializer_node != NULL) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
-            print_code("mov rax, rbp");
-            print_code("sub rax, %d", lv->offset);
+            print_code("lea rax, [rbp-%d]", lv->offset);
             print_code("push rax");
 
             if (initializer_node->assign_expr_node != NULL) {
@@ -1489,9 +1479,7 @@ static void process_args(const ParamListNode* node, int arg_index) {
 
     current_offset += 8;
 
-    print_code("mov rax, rbp");
-    print_code("sub rax, %d", lv->offset);
-    print_code("mov [rax], %s", arg_registers[arg_index]);
+    print_code("mov [rbp-%d], %s", lv->offset, arg_registers[arg_index]);
 }
 
 static void process_func_declarator(const DeclaratorNode* node) {

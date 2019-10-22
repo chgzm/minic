@@ -55,8 +55,7 @@ struct-specifier:
     "struct" identifier
 
 struct-declaration:
-    {specifier-qualifier}* 
-    struct-declarator-list
+    {specifier-qualifier}* struct-declarator-list ';'
 
 specifier-qualifier:
     type-specifier

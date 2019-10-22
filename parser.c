@@ -308,10 +308,7 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
         token = vec->tokens[*index];
         switch (token->type) {
         case TK_CHAR:   { unary_expr_node->sizeof_type = SIZEOFTYPE_CHAR;   break; }
-        case TK_SHORT:  { unary_expr_node->sizeof_type = SIZEOFTYPE_SHORT;  break; }
         case TK_INT:    { unary_expr_node->sizeof_type = SIZEOFTYPE_INT;    break; }
-        case TK_LONG:   { unary_expr_node->sizeof_type = SIZEOFTYPE_LONG;   break; }
-        case TK_FLOAT:  { unary_expr_node->sizeof_type = SIZEOFTYPE_FLOAT;  break; }
         case TK_DOUBLE: { unary_expr_node->sizeof_type = SIZEOFTYPE_DOUBLE; break; } 
         case TK_IDENT:  { 
             unary_expr_node->sizeof_type     = SIZEOFTYPE_IDENT;
@@ -1733,10 +1730,7 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     switch (token->type) {
     case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;   ++(*index); break; }
     case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;   ++(*index); break; }
-    case TK_SHORT:    { type_specifier_node->type_specifier = TYPE_SHORT;  ++(*index); break; }
     case TK_INT:      { type_specifier_node->type_specifier = TYPE_INT;    ++(*index); break; }
-    case TK_LONG:     { type_specifier_node->type_specifier = TYPE_LONG;   ++(*index); break; }
-    case TK_FLOAT:    { type_specifier_node->type_specifier = TYPE_FLOAT;  ++(*index); break; }
     case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE; ++(*index); break; }
     case TK_STRUCT: {
         type_specifier_node->type_specifier = TYPE_STRUCT;
@@ -1843,8 +1837,7 @@ static bool is_type_qualifier(const TokenVec* vec, int index) {
 static bool is_type_specifier(const TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
     const int type = token->type;
-    return (type == TK_VOID   || type == TK_CHAR   || type == TK_SHORT
-         || type == TK_INT    || type == TK_LONG   || type == TK_FLOAT
+    return (type == TK_VOID   || type == TK_CHAR || type == TK_INT
          || type == TK_DOUBLE || type == TK_STRUCT
          || (token->str != NULL && strptrmap_contains(typedef_map, token->str))
     );
@@ -2076,10 +2069,7 @@ const char* decode_type_specifier(int type_specifier) {
     case TYPE_NONE:        { return "TYPE_NONE";        }
     case TYPE_VOID:        { return "TYPE_VOID";        }
     case TYPE_CHAR:        { return "TYPE_CHAR";        }
-    case TYPE_SHORT:       { return "TYPE_SHORT";       }
     case TYPE_INT:         { return "TYPE_INT";         }
-    case TYPE_LONG:        { return "TYPE_LONG";        }
-    case TYPE_FLOAT:       { return "TYPE_FLOAT";       }
     case TYPE_DOUBLE:      { return "TYPE_DOUBLE";      }
     case TYPE_STRUCT:      { return "TYPE_STRUCT";      }
     case TYPE_ENUM:        { return "TYPE_ENUM";        }

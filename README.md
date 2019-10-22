@@ -42,10 +42,7 @@ declaration-specifier:
 type-specifier:
     "void"
     "char"
-    "short"
     "int"
-    "long"
-    "float"
     "double"
     struct-specifier
     typedef-name

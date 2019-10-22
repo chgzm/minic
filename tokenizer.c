@@ -437,12 +437,13 @@ static Token* read_identifier(const char* p, int* pos) {
         break;
     }
     case 'f': {
-        if (len != 3 && len != 5) {
+        if (len != 3) {
             break;
         }
 
-        if      (strncmp("for",   &p[*pos], 3) == 0) { token->type = TK_FOR;   }
-        else if (strncmp("float", &p[*pos], 5) == 0) { token->type = TK_FLOAT; }
+        if (strncmp("for",&p[*pos], 3) == 0) { 
+            token->type = TK_FOR;   
+        }
 
         break;
     }
@@ -453,17 +454,6 @@ static Token* read_identifier(const char* p, int* pos) {
 
         if      (strncmp("if",  &p[*pos], 2) == 0) { token->type = TK_IF;  }
         else if (strncmp("int", &p[*pos], 3) == 0) { token->type = TK_INT; }
-
-        break;
-    }
-    case 'l': {
-        if (len != 4) {
-            break;
-        }
-
-        if (strncmp("long", &p[*pos], 4) == 0) {
-            token->type = TK_LONG;
-        }
 
         break;
     }
@@ -479,12 +469,11 @@ static Token* read_identifier(const char* p, int* pos) {
         break;
     }
     case 's': {
-        if (len != 5 && len != 6) {
+        if (len != 6) {
             break;
         }
 
-        if      (strncmp("short",  &p[*pos], 5) == 0) { token->type = TK_SHORT;  }
-        else if (strncmp("struct", &p[*pos], 6) == 0) { token->type = TK_STRUCT; }
+        if      (strncmp("struct", &p[*pos], 6) == 0) { token->type = TK_STRUCT; }
         else if (strncmp("switch", &p[*pos], 6) == 0) { token->type = TK_SWITCH; }
         else if (strncmp("static", &p[*pos], 6) == 0) { token->type = TK_STATIC; }
         else if (strncmp("sizeof", &p[*pos], 6) == 0) { token->type = TK_SIZEOF; }
@@ -657,10 +646,7 @@ const char* decode_token_type(int type) {
     case TK_TYPEDEF:  { return "TK_TYPEDEF";  }
     case TK_VOID:     { return "TK_VOID";     }
     case TK_CHAR:     { return "TK_CHAR";     }
-    case TK_SHORT:    { return "TK_SHORT";    }
     case TK_INT:      { return "TK_INT";      }
-    case TK_LONG:     { return "TK_LONG";     }
-    case TK_FLOAT:    { return "TK_FLOAT";    }
     case TK_DOUBLE:   { return "TK_DOUBLE";   }
     case TK_STRUCT:   { return "TK_STRUCT";   }
     case TK_ENUM:     { return "TK_ENUM";     }

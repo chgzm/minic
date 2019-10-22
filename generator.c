@@ -64,9 +64,7 @@ static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* 
 static void print_global(const TransUnitNode* node) {
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         const ExternalDeclNode* external_decl_node = node->external_decl_nodes->elements[i];
-        if (external_decl_node->func_def_node != NULL) {
-            const FuncDefNode*          func_def_node          = external_decl_node->func_def_node;
-            const DeclaratorNode*       declarator_node        = func_def_node->declarator_node;
+        if (external_decl_node->func_def_node != NULL) { const FuncDefNode*          func_def_node          = external_decl_node->func_def_node; const DeclaratorNode*       declarator_node        = func_def_node->declarator_node;
             const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
             printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
         }
@@ -535,10 +533,7 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
         int size = 0;
         switch (node->sizeof_type) {
         case SIZEOFTYPE_CHAR:   { size = 1; break; }
-        case SIZEOFTYPE_SHORT:  { size = 2; break; }
-        case SIZEOFTYPE_INT:    { size = 4; break; }
-        case SIZEOFTYPE_LONG:   { size = 8; break; }
-        case SIZEOFTYPE_FLOAT:  { size = 4; break; }
+        case SIZEOFTYPE_INT:    { size = 8; break; }
         case SIZEOFTYPE_DOUBLE: { size = 8; break; } 
         case SIZEOFTYPE_IDENT:  { 
             const LocalVar* lv = get_localvar(node->sizeof_name, node->sizeof_name_len);
@@ -1384,23 +1379,8 @@ static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
         type->type_size = 1;
         return type;
     }
-    case TYPE_SHORT: { 
-        type->base_type = VAR_SHORT;
-        type->type_size = 2;
-        return type;
-    }
     case TYPE_INT: {
         type->base_type = VAR_INT;
-        type->type_size = 4;
-        return type;
-    }
-    case TYPE_LONG: { 
-        type->base_type = VAR_LONG;
-        type->type_size = 8;
-        return type;
-    }
-    case TYPE_FLOAT: {
-        type->base_type = VAR_FLOAT;
         type->type_size = 4;
         return type;
     }
@@ -1564,23 +1544,8 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
         type->type_size = 1;
         return type;
     }
-    case TYPE_SHORT: { 
-        type->base_type = VAR_SHORT;
-        type->type_size = 2;
-        return type;
-    }
     case TYPE_INT: {
         type->base_type = VAR_INT;
-        type->type_size = 4;
-        return type;
-    }
-    case TYPE_LONG: { 
-        type->base_type = VAR_LONG;
-        type->type_size = 8;
-        return type;
-    }
-    case TYPE_FLOAT: {
-        type->base_type = VAR_FLOAT;
         type->type_size = 4;
         return type;
     }

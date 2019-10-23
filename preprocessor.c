@@ -47,8 +47,7 @@ static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
 
             strptrmap_put(define_map, name->str, value);
             ++(*index);
-
-            return STATE_ENABLED;
+return STATE_ENABLED;
         }
         //
         // #include
@@ -119,6 +118,13 @@ static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
             }
         }
         //
+        // #else
+        //
+        else if (strncmp("else", token->str, 4) == 0) {
+            ++(*index);
+            return STATE_DISABLED; 
+        }
+        //
         // #endif
         //
         else if (strncmp("endif", token->str, 5) == 0) {
@@ -140,12 +146,14 @@ static int disabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) 
     if (token->type != TK_HASH) {
         return STATE_DISABLED;
     }
-
-    if (strncmp("endif", token->str, 5) != 0) {
+    else if (strncmp("else", token->str, 4) == 0) {
+        return STATE_ENABLED; 
+    }
+    else if (strncmp("endif", token->str, 5) == 0) {
+        return STATE_ENABLED;
+    } else {
         return STATE_DISABLED;
     }
-
-    return STATE_ENABLED;
 }
 
 TokenVec* preprocess(const TokenVec* in_vec) {

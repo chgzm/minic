@@ -163,6 +163,8 @@ assert_return test_and.c 16
 
 assert_return test_char.c 99
 
+assert_return test_conditional_op.c 9
+
 assert_output test_printf.c "Hello, World."
 
 echo -e "\e[36mPassed all tests.\e[0m"

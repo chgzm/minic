@@ -655,6 +655,30 @@ static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, in
         return NULL;
     }
 
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_QUESTION) {
+        ++(*index);
+
+        conditional_expr_node->expr_node = create_expr_node(vec, index);
+        if (conditional_expr_node->expr_node == NULL) {
+            error("Failed to create expression node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        if (token->type != TK_COLON) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index);
+
+        conditional_expr_node->conditional_expr_node = create_conditional_expr_node(vec, index);
+        if (conditional_expr_node->conditional_expr_node == NULL) {
+            error("Failed to create conditional-expression node.\n");
+            return NULL;
+        }
+    }
+
     return conditional_expr_node;
 }
 

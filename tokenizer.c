@@ -36,10 +36,10 @@ static bool is_symbol(char p) {
     case '{': case '}':
     case '[': case ']':
     case '<': case '>':
-    case '!': case '&':
-    case '^': case '|':
-    case '#': case ',':
-    case '.': {
+    case '!': case '?': 
+    case '&': case '^': 
+    case '|': case '#': 
+    case ',': case '.': {
         return true;
     }
     default: {
@@ -311,6 +311,10 @@ static Token* read_symbol(const char* p, int* pos) {
             return token;
         }
         }
+    }
+    case '?': {
+        token->type = TK_QUESTION;
+        return token;
     }
     case '&': {
         const char s = p[*pos];

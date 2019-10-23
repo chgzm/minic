@@ -45,6 +45,7 @@ enum TokenType {
     TK_LANGLE,    // <
     TK_RANGLE,    // >
     TK_EXCLA,     // !
+    TK_QUESTION,  // ?
     TK_AMP,       // &
     TK_HAT,       // ^
     TK_TILDE,     // ~

@@ -838,7 +838,18 @@ static void process_conditional_expr(const ConditionalExprNode* node) {
     }
     // <logical-or-expression> ? <expression> : <conditional-expression>
     else {
-        // @todo
+        const char* label1 = get_label();
+        const char* label2 = get_label();
+ 
+        process_logical_or_expr(node->logical_or_expr_node);
+        print_code("pop rax");
+        print_code("cmp rax, 0");
+        print_code("je %s", label1);
+        process_expr(node->expr_node);
+        print_code("jmp %s", label2);
+        printf("%s:\n", label1);
+        process_conditional_expr(node->conditional_expr_node);
+        printf("%s:\n", label2);
     }
 }
 

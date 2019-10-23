@@ -1,9 +1,9 @@
-CFLAGS=-static -Wall
+CFLAGS=-static -Wall -DMINIC_DEV
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 minic: $(OBJS)
-	gcc -D MINIC_DEV -o $@ $(OBJS) $(CFLAGS)
+	gcc -o $@ $(OBJS) $(CFLAGS)
 
 test: minic
 	./test/test.sh

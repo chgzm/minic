@@ -61,25 +61,6 @@ static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* 
     return current->identifier;
 }
 
-static void print_global(const TransUnitNode* node) {
-    for (int i = 0; i < node->external_decl_nodes->size; ++i) {
-        const ExternalDeclNode* external_decl_node = node->external_decl_nodes->elements[i];
-        if (external_decl_node->func_def_node != NULL) { const FuncDefNode*          func_def_node          = external_decl_node->func_def_node; const DeclaratorNode*       declarator_node        = func_def_node->declarator_node;
-            const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-            printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
-        }
-        else if (external_decl_node->declaration_node != NULL) {
-            const DeclarationNode* declaration_node = external_decl_node->declaration_node;
-            for (int j = 0; j < declaration_node->init_declarator_nodes->size; ++j) {
-                const InitDeclaratorNode*   init_declarator_node   = declaration_node->init_declarator_nodes->elements[j];
-                const DeclaratorNode*       declarator_node        = init_declarator_node->declarator_node;
-                const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-                printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
-            }
-        }
-    }
-}
-
 static const char* get_label() {
     const char* label = fmt(".L%d", label_index);
     ++label_index;
@@ -1490,7 +1471,8 @@ static void process_func_def(const FuncDefNode* node) {
 
     const DeclaratorNode* declarator_node = node->declarator_node;
     const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-    printf("%s:\n", direct_declarator_node->direct_declarator_node->identifier); // @todo
+    printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
+    printf("%s:\n", get_ident_from_direct_declarator(direct_declarator_node));
 
     const int localvar_size = calc_localvar_size_in_compound_stmt(node->compound_stmt_node);
     const int arg_size      = calc_arg_size(node);
@@ -1674,6 +1656,8 @@ static void process_global_declaration(const DeclarationNode* node) {
         }
 
         const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
+        printf(".global %s\n", ident_node->identifier);
+
         gv->name_len = ident_node->identifier_len;
         gv->name     = malloc(sizeof(char) * gv->name_len);
         strncpy(gv->name, ident_node->identifier, gv->name_len);
@@ -1725,16 +1709,16 @@ static void process_external_decl(const ExternalDeclNode* node) {
 
 void gen(const TransUnitNode* node) {
     print_header();
-    print_global(node);
 
     // init
-    label_index = 2;
+    label_index          = 2;
     break_label_stack    = create_stack();
     continue_label_stack = create_stack();
     globalvar_list       = create_vector();
     struct_map           = create_strptrmap(1024);
     enum_map             = create_strintmap(1024);
 
+    // gen
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {
         process_external_decl(node->external_decl_nodes->elements[i]);
     }

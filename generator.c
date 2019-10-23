@@ -1381,7 +1381,7 @@ static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
     }
     case TYPE_INT: {
         type->base_type = VAR_INT;
-        type->type_size = 4;
+        type->type_size = 8;
         return type;
     }
     case TYPE_DOUBLE: { 
@@ -1546,7 +1546,7 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     }
     case TYPE_INT: {
         type->base_type = VAR_INT;
-        type->type_size = 4;
+        type->type_size = 8;
         return type;
     }
     case TYPE_DOUBLE: { 

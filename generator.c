@@ -1537,61 +1537,54 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
         type->type_size = 0;
 
         const StructSpecifierNode* struct_specifier_node = node->struct_specifier_node;         
-        if (struct_specifier_node->identifier != NULL) {
-            const char* struct_name = struct_specifier_node->identifier;
-            const Vector* struct_declaration_nodes = struct_specifier_node->struct_declaration_nodes;
-            //
-            //  "struct" identifier { {struct-declaration}+ }
-            //  
-            if (struct_declaration_nodes->size != 0) {
-                type->struct_info = malloc(sizeof(StructInfo));
-                type->struct_info->field_info_map = create_strptrmap(1024);
-                type->struct_info->size           = 0;
 
-                int offset = 0;
-                for (int i = 0; i < struct_declaration_nodes->size; ++i) {
-                    const StructDeclarationNode* struct_declaration_node  = struct_declaration_nodes->elements[i];
-                    const Vector* specifier_qualifier_nodes = struct_declaration_node->specifier_qualifier_nodes;
+        const char* struct_name = struct_specifier_node->identifier;
+        const Vector* struct_declaration_nodes = struct_specifier_node->struct_declaration_nodes;
+        //
+        //  "struct" identifier { {struct-declaration}+ }
+        //  
+        if (struct_declaration_nodes->size != 0) {
+            type->struct_info = malloc(sizeof(StructInfo));
+            type->struct_info->field_info_map = create_strptrmap(1024);
+            type->struct_info->size           = 0;
 
-                    Type* field_type = NULL;
-                    for (int j = 0; j < specifier_qualifier_nodes->size; ++j) {
-                        const SpecifierQualifierNode* specifier_qualifier_node = specifier_qualifier_nodes->elements[j];
-                        const TypeSpecifierNode*      type_specifier_node      = specifier_qualifier_node->type_specifier_node;
-                        field_type = process_type_specifier_in_global(type_specifier_node);
-                    }
+            int offset = 0;
+            for (int i = 0; i < struct_declaration_nodes->size; ++i) {
+                const StructDeclarationNode* struct_declaration_node  = struct_declaration_nodes->elements[i];
+                const Vector* specifier_qualifier_nodes = struct_declaration_node->specifier_qualifier_nodes;
 
-                    const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
-                    for (int j = 0; j < struct_declarator_list_node->declarator_nodes->size; ++j) {
-                        const DeclaratorNode* node = struct_declarator_list_node->declarator_nodes->elements[j];
-
-                        const PointerNode* pointer_node = node->pointer_node;
-                        if (pointer_node != NULL) {
-                            field_type->ptr_count = pointer_node->count;
-                        } 
-
-                        const char* field_name = node->direct_declarator_node->identifier;
- 
-                        FieldInfo* field_info = malloc(sizeof(FieldInfo));
-                        field_info->type      = field_type;
-
-                        field_info->offset = offset;
-                        offset += 8;
-
-                        strptrmap_put(type->struct_info->field_info_map, field_name, field_info);
-                    }
+                Type* field_type = NULL;
+                for (int j = 0; j < specifier_qualifier_nodes->size; ++j) {
+                    const SpecifierQualifierNode* specifier_qualifier_node = specifier_qualifier_nodes->elements[j];
+                    const TypeSpecifierNode*      type_specifier_node      = specifier_qualifier_node->type_specifier_node;
+                    field_type = process_type_specifier_in_global(type_specifier_node);
                 }
-                type->struct_info->size = type->struct_info->field_info_map->size * 8;
-                strptrmap_put(struct_map, struct_name, type->struct_info);
+
+                const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
+                for (int j = 0; j < struct_declarator_list_node->declarator_nodes->size; ++j) {
+                    const DeclaratorNode* node = struct_declarator_list_node->declarator_nodes->elements[j];
+
+                    const PointerNode* pointer_node = node->pointer_node;
+                    if (pointer_node != NULL) {
+                        field_type->ptr_count = pointer_node->count;
+                    } 
+
+                    const char* field_name = node->direct_declarator_node->identifier;
+ 
+                    FieldInfo* field_info = malloc(sizeof(FieldInfo));
+                    field_info->type      = field_type;
+
+                    field_info->offset = offset;
+                    offset += 8;
+
+                    strptrmap_put(type->struct_info->field_info_map, field_name, field_info);
+                }
             }
-            //
-            // "struct" identifier
-            //
-            else {
-                // @todo
-            }
+            type->struct_info->size = type->struct_info->field_info_map->size * 8;
+            strptrmap_put(struct_map, struct_name, type->struct_info);
         }
         //
-        // "struct" { {struct-declaration}+ }
+        // "struct" identifier
         //
         else {
             // @todo

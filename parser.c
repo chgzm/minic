@@ -1664,44 +1664,27 @@ static StructSpecifierNode* create_struct_specifier_node(const TokenVec* vec, in
         return NULL;
     }
     ++(*index);
-    
+
     token = vec->tokens[*index];
-    switch (token->type) {
-    case TK_IDENT: {
-        ++(*index);
-        struct_specifier_node->identifier_len = token->strlen;
-        struct_specifier_node->identifier     = malloc(sizeof(char) * token->strlen);
-        strncpy(struct_specifier_node->identifier, token->str, token->strlen);
-
-        token = vec->tokens[*index];
-        if (token->type == TK_LBRCKT) {
-            ++(*index);
-            token = vec->tokens[*index];
-            while (token->type != TK_RBRCKT) {
-                StructDeclarationNode* struct_declaration_node = create_struct_declaration_node(vec, index);
-                if (struct_declaration_node == NULL) {
-                    error("Failed to create struct-declaration node.\n");
-                    return NULL;
-                }
-
-                vector_push_back(struct_specifier_node->struct_declaration_nodes, struct_declaration_node);
-                token = vec->tokens[*index];
-            }
-
-            ++(*index); 
-        }
-
-        break;
+    if (token->type != TK_IDENT) {
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+        return NULL;
     }
-    case TK_LBRCKT: {
+    ++(*index);
+
+    struct_specifier_node->identifier_len = token->strlen;
+    struct_specifier_node->identifier     = malloc(sizeof(char) * token->strlen);
+    strncpy(struct_specifier_node->identifier, token->str, token->strlen);
+
+    token = vec->tokens[*index];
+    if (token->type == TK_LBRCKT) {
         ++(*index);
-        
         token = vec->tokens[*index];
         while (token->type != TK_RBRCKT) {
             StructDeclarationNode* struct_declaration_node = create_struct_declaration_node(vec, index);
             if (struct_declaration_node == NULL) {
-               error("Failed to create struct-declaration node.\n");
-               return NULL;
+                error("Failed to create struct-declaration node.\n");
+                return NULL;
             }
 
             vector_push_back(struct_specifier_node->struct_declaration_nodes, struct_declaration_node);
@@ -1709,13 +1692,6 @@ static StructSpecifierNode* create_struct_specifier_node(const TokenVec* vec, in
         }
 
         ++(*index); 
-
-        break;
-    }
-    default: {
-        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
-        return NULL;
-    }
     }
 
     return struct_specifier_node;

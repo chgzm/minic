@@ -48,7 +48,7 @@ type-specifier:
     typedef-name
 
 struct-specifier:
-    "struct" {identifier}? '{' {struct-declaration}+ '}'
+    "struct" identifier '{' {struct-declaration}+ '}'
     "struct" identifier
 
 struct-declaration:

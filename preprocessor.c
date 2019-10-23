@@ -47,7 +47,7 @@ static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
 
             strptrmap_put(define_map, name->str, value);
             ++(*index);
-return STATE_ENABLED;
+            return STATE_ENABLED;
         }
         //
         // #include

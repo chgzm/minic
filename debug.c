@@ -57,7 +57,6 @@ static void dump_struct_declaration_node(const StructDeclarationNode* node, int 
 static void dump_struct_declarator_list_node(const StructDeclaratorListNode* node, int indent);
 static void dump_declarator_node(const DeclaratorNode* node, int indent);
 static void dump_pointer_node(const PointerNode* node, int indent);
-static void dump_type_qualifier_node(const TypeQualifierNode* node, int indent);
 static void dump_specifier_qualifier_node(const SpecifierQualifierNode* node, int indent);
 static void dump_direct_declarator_node(const DirectDeclaratorNode* node, int indent);
 static void dump_conditional_expr_node(const ConditionalExprNode* node, int indent);
@@ -217,23 +216,11 @@ static void dump_pointer_node(const PointerNode* node, int indent) {
     );
 }
 
-static void dump_type_qualifier_node(const TypeQualifierNode* node, int indent) {
-    printf_indent(
-        indent, 
-        "TypeQualifierNode,TypeQualifierNode=\"%s\"\n",
-        decode_type_qualifier(node->type_qualifier)
-    );
-}
-
 static void dump_specifier_qualifier_node(const SpecifierQualifierNode* node, int indent) {
     printf_indent(indent, "SpecifierQualifierNode\n");
 
     if (node->type_specifier_node != NULL) {
         dump_type_specifier_node(node->type_specifier_node, indent + 2);
-    }
-
-    if (node->type_qualifier_node != NULL) {
-        dump_type_qualifier_node(node->type_qualifier_node, indent + 2);
     }
 }
 

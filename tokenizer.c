@@ -492,12 +492,13 @@ static Token* read_identifier(const char* p, int* pos) {
         break;
     }
     case 'v': {
-        if (len != 4 && len != 8) {
+        if (len != 4) {
             break;
         }
 
-        if      (strncmp("void",     &p[*pos], 4) == 0) { token->type = TK_VOID;     }
-        else if (strncmp("volatile", &p[*pos], 8) == 0) { token->type = TK_VOLATILE; }
+        if (strncmp("void", &p[*pos], 4) == 0) { 
+            token->type = TK_VOID;
+        }
 
         break;
     }

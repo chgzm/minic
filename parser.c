@@ -22,11 +22,9 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
 static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
-static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index);
 static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index);
 static InitializerNode* create_initializer_node(const TokenVec* vec, int* index);
 static bool is_declaration_specifier(const TokenVec* vec, int index);
-static bool is_type_qualifier(const TokenVec* vec, int index);
 static bool is_type_specifier(const TokenVec* vec, int index);
 
 static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
@@ -1570,28 +1568,12 @@ static InitDeclaratorNode* create_init_declarator_node(const TokenVec* vec, int*
     return init_declarator_node;
 }
 
-static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index) {
-    TypeQualifierNode* type_qualifier_node = malloc(sizeof(TypeQualifierNode));
-
-    const Token* token = vec->tokens[*index];
-    switch (token->type) {
-    case TK_CONST:    { type_qualifier_node->type_qualifier = TQ_CONST;    break; }
-    case TK_VOLATILE: { type_qualifier_node->type_qualifier = TQ_VOLATILE; break; }
-    default: {
-        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
-        return NULL;
-    }
-    }
-    ++(*index);
-
-    return type_qualifier_node;
-}
-
 static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* vec, int* index) {
     SpecifierQualifierNode* specifier_qualifier_node = malloc(sizeof(SpecifierQualifierNode));
     specifier_qualifier_node->type_specifier_node = NULL;
-    specifier_qualifier_node->type_qualifier_node = NULL;
+    specifier_qualifier_node->is_const            = false;
 
+    const Token* token = vec->tokens[*index];
     if (is_type_specifier(vec, *index)) {
         specifier_qualifier_node->type_specifier_node = create_type_specifier_node(vec, index);
         if (specifier_qualifier_node->type_specifier_node == NULL) {
@@ -1599,15 +1581,11 @@ static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* v
             return NULL;
         }
     } 
-    else if (is_type_qualifier(vec, *index)) {
-        specifier_qualifier_node->type_qualifier_node = create_type_qualifier_node(vec, index);
-        if (specifier_qualifier_node->type_qualifier_node == NULL) {
-            error("Failed to create type-qualifier node.\n");
-            return NULL;
-        }
+    else if (token->type == TK_CONST) {
+        ++(*index);
+        specifier_qualifier_node->is_const = true;
     }
     else {
-        const Token* token = vec->tokens[*index];
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
@@ -1645,8 +1623,9 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
     StructDeclarationNode* struct_declaration_node = malloc(sizeof(StructDeclarationNode));  
     struct_declaration_node->specifier_qualifier_nodes = create_vector();
     
-    if (is_type_specifier(vec, *index) || is_type_qualifier(vec, *index)) {
-        while (is_type_specifier(vec, *index) || is_type_qualifier(vec, *index)) {
+    const Token* token = vec->tokens[*index];
+    if (is_type_specifier(vec, *index) || token->type == TK_CONST) {
+        while (is_type_specifier(vec, *index) || token->type == TK_CONST) {
             SpecifierQualifierNode* specifier_qualifier_node = create_specifier_qualifier_node(vec, index);
             if (specifier_qualifier_node == NULL) {
                 error("Failed to create specifier-qualifier node.\n");
@@ -1654,6 +1633,8 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
             }
         
             vector_push_back(struct_declaration_node->specifier_qualifier_nodes, specifier_qualifier_node);
+
+            token = vec->tokens[*index];
         }
     } 
     
@@ -1663,7 +1644,7 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    token = vec->tokens[*index];
     if (token->type != TK_SEMICOL) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
@@ -1859,24 +1840,22 @@ static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* i
     DeclSpecifierNode* decl_specifier_node = malloc(sizeof(DeclSpecifierNode));
 
     decl_specifier_node->type_specifier_node = NULL;
-    decl_specifier_node->type_qualifier_node = NULL;
+    decl_specifier_node->is_const            = false;
     decl_specifier_node->is_static           = false;
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_STATIC) {
         decl_specifier_node->is_static = true;
+        ++(*index);
+    }
+    else if (token->type == TK_CONST) {
+        decl_specifier_node->is_const = true;
+        ++(*index);
     }
     else if (is_type_specifier(vec, *index)) {
         decl_specifier_node->type_specifier_node = create_type_specifier_node(vec, index);
         if (decl_specifier_node->type_specifier_node == NULL) {
             error("Failed to create type-specifier node.\n");
-            return NULL;
-        }
-    }
-    else if (is_type_qualifier(vec, *index)) {
-        decl_specifier_node->type_qualifier_node = create_type_qualifier_node(vec, index);
-        if (decl_specifier_node->type_qualifier_node == NULL) {
-            error("Failed to create type-qualifier node.\n");
             return NULL;
         }
     }
@@ -1922,11 +1901,6 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
     return declaration_node;
 }
 
-static bool is_type_qualifier(const TokenVec* vec, int index) {
-    const int type = vec->tokens[index]->type;
-    return (type == TK_CONST || type == TK_VOLATILE);
-}
-
 static bool is_type_specifier(const TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
     const int type = token->type;
@@ -1939,7 +1913,7 @@ static bool is_type_specifier(const TokenVec* vec, int index) {
 static bool is_declaration_specifier(const TokenVec* vec, int index) {
     const int type = vec->tokens[index]->type;
     return (is_type_specifier(vec, index)
-         || is_type_qualifier(vec, index)
+         || type == TK_CONST
          || type == TK_STATIC
     );
 }
@@ -2168,14 +2142,6 @@ const char* decode_type_specifier(int type_specifier) {
     case TYPE_ENUM:        { return "TYPE_ENUM";        }
     case TYPE_TYPEDEFNAME: { return "TYPE_TYPEDEFNAME"; }
     default:               { return "INVALID";          }
-    }
-}
-
-const char* decode_type_qualifier(int type_qualifier) {
-    switch (type_qualifier) {
-    case TQ_CONST:    { return "TQ_CONST";    }
-    case TQ_VOLATILE: { return "TQ_VOLATILE"; }
-    default:          { return "INVALID";     }
     }
 }
 

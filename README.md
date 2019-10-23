@@ -36,7 +36,7 @@ function-definition:
 
 declaration-specifier:
     type-specifier
-    type-qualifier
+    "const"
     "static"
     
 type-specifier:
@@ -56,7 +56,7 @@ struct-declaration:
 
 specifier-qualifier:
     type-specifier
-    type-qualifier
+    "const"
 
 struct-declarator-list:
     declarator {',' declarator}*
@@ -69,7 +69,6 @@ pointer:
 
 type-qualifier:
     const
-    volatile
 
 direct-declarator:
     identifier

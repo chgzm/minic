@@ -17,7 +17,6 @@ enum TokenType {
     TK_STRUCT,    // "struct"
     TK_ENUM,      // "enum"
     TK_CONST,     // "const"
-    TK_VOLATILE,  // "volatile"
     TK_IF,        // "if"
     TK_ELSE,      // "else"
     TK_FOR,       // "for"

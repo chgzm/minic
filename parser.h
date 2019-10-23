@@ -18,11 +18,6 @@ enum TypeSpecifier {
     TYPE_TYPEDEFNAME
 };
 
-enum TypeQualifier {
-    TQ_CONST,
-    TQ_VOLATILE,
-};
-
 enum OperatorType {
     OP_NONE,   // None
     OP_ASSIGN, // =
@@ -126,7 +121,6 @@ typedef struct StructDeclaratorListNode StructDeclaratorListNode;
 typedef struct SpecifierQualifierNode SpecifierQualifierNode;
 typedef struct DeclaratorNode DeclaratorNode;
 typedef struct PointerNode PointerNode;
-typedef struct TypeQualifierNode TypeQualifierNode;
 typedef struct DirectDeclaratorNode DirectDeclaratorNode;
 typedef struct ConditionalExprNode ConditionalExprNode;
 typedef struct LogicalOrExprNode LogicalOrExprNode;
@@ -184,7 +178,7 @@ struct FuncDefNode {
 
 struct DeclSpecifierNode {
     TypeSpecifierNode* type_specifier_node; 
-    TypeQualifierNode* type_qualifier_node; 
+    bool               is_const;
     bool               is_static;    
 };
 
@@ -207,7 +201,7 @@ struct StructDeclarationNode {
 
 struct SpecifierQualifierNode {
     TypeSpecifierNode* type_specifier_node;
-    TypeQualifierNode* type_qualifier_node;
+    bool               is_const;
 };
 
 struct StructDeclaratorListNode {
@@ -221,10 +215,6 @@ struct DeclaratorNode {
 
 struct PointerNode {
     int count;
-};
-
-struct TypeQualifierNode {
-    int type_qualifier;
 };
 
 struct DirectDeclaratorNode {

@@ -150,6 +150,7 @@ assert_return test_preprocess.c 42
 assert_return test_preprocess_2.c 3
 assert_return test_preprocess_3.c 1
 assert_return test_preprocess_4.c 9
+assert_return test_preprocess_5.c 6
 
 assert_return test_enum.c 9
 

@@ -99,6 +99,25 @@ return STATE_ENABLED;
             return STATE_ENABLED;
         } 
         //
+        // #ifdef
+        //
+        else if (strncmp("ifdef", token->str, 5) == 0) {
+            ++(*index);
+
+            token = in_vec->tokens[*index];
+            if (token->type != TK_IDENT) {
+                error("Invalid token[%d]=\"%s\".\n", index, decode_token_type(in_vec->tokens[*index]->type));
+                return STATE_INVALID;
+            }
+            ++(*index);
+
+            if (strptrmap_contains(define_map, token->str)) {
+                return STATE_ENABLED;
+            } else {
+                return STATE_DISABLED;
+            }
+        }
+        //
         // #ifndef
         //
         else if (strncmp("ifndef", token->str, 6) == 0) {

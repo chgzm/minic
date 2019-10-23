@@ -14,6 +14,7 @@
 // error
 //
 
+#ifdef MINIC_DEV
 #define error(fmt, ...) \
     _error_print_tmsp(); \
     fprintf(stderr, "%s:%d %s] ", __FILE__, __LINE__, __func__); \
@@ -22,6 +23,12 @@
 
 void _error_print_tmsp();
 void _error(const char* fmt, ...);
+
+#else
+
+void error(const char* fmt, ...);
+
+#endif
 
 //
 // fmt

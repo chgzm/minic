@@ -7,6 +7,7 @@
 // debug
 //
 
+#ifdef MINIC_DEV
 void _debug_print_tmsp() {
     struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts);
 
@@ -33,6 +34,13 @@ void _debug(const char *fmt, ...) {
     va_start(ap, fmt);
     vfprintf(stdout, fmt, ap);
 }
+#else
+void debug(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stdout, fmt, ap);
+}
+#endif
 
 //
 // token
@@ -143,8 +151,7 @@ static void dump_func_def_node(const FuncDefNode* node, int indent) {
 static void dump_decl_specifier_node(const DeclSpecifierNode* node, int indent) {
     printf_indent(
         indent, 
-        "DeclSpecifierNode,IsStatic=%s\n",
-        (node->is_static ? "true" : "false")
+        "DeclSpecifierNode\n"
     );
 
     if (node->type_specifier_node != NULL) {

@@ -9,6 +9,7 @@
 // error
 //
 
+#ifdef MINIC_DEV
 void _error_print_tmsp() {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -36,6 +37,13 @@ void _error(const char *fmt, ...) {
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
 }
+#else
+void error(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stdout, fmt, ap);
+}
+#endif
 
 //
 // fmt

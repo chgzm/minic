@@ -1397,10 +1397,6 @@ static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
 }
 
 static void process_args(const ParamListNode* node, int arg_index) {
-    if (node->param_list_node != NULL) {
-        process_args(node->param_list_node, arg_index + 1);
-    }
-
     const ParamDeclarationNode* param_declaration_node = node->param_declaration_node;
     const DeclaratorNode* declarator_node = param_declaration_node->declarator_node;
     if (declarator_node == NULL) {
@@ -1437,6 +1433,10 @@ static void process_args(const ParamListNode* node, int arg_index) {
     current_offset += 8;
 
     print_code("mov [rbp-%d], %s", lv->offset, arg_registers[arg_index]);
+
+    if (node->param_list_node != NULL) {
+        process_args(node->param_list_node, arg_index + 1);
+    }
 }
 
 static void process_func_declarator(const DeclaratorNode* node) {
@@ -1457,7 +1457,7 @@ static void process_func_def(const FuncDefNode* node) {
     const DeclaratorNode* declarator_node = node->declarator_node;
     const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
     printf(".global %s\n", get_ident_from_direct_declarator(direct_declarator_node));
-    printf("%s:\n", get_ident_from_direct_declarator(direct_declarator_node));
+    printf("%s:\n",        get_ident_from_direct_declarator(direct_declarator_node));
 
     const int localvar_size = calc_localvar_size_in_compound_stmt(node->compound_stmt_node);
     const int arg_size      = calc_arg_size(node);
@@ -1484,7 +1484,7 @@ static void process_func_def(const FuncDefNode* node) {
     current_offset = 8;
 }
 
-static int get_int_constant(const InitializerNode* node) {
+static int get_int_constant_from_initializer(const InitializerNode* node) {
     return node->assign_expr_node
                ->conditional_expr_node
                ->logical_or_expr_node
@@ -1512,11 +1512,6 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     type->struct_info = NULL;
 
     switch (node->type_specifier) {
-    case TYPE_VOID: { 
-        type->base_type = VAR_VOID;
-        type->type_size = 0;
-        return type;
-    }
     case TYPE_CHAR: { 
         type->base_type = VAR_CHAR;
         type->type_size = 1;
@@ -1544,7 +1539,7 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
         //  "struct" identifier { {struct-declaration}+ }
         //  
         if (struct_declaration_nodes->size != 0) {
-            type->struct_info = malloc(sizeof(StructInfo));
+            type->struct_info                 = malloc(sizeof(StructInfo));
             type->struct_info->field_info_map = create_strptrmap(1024);
             type->struct_info->size           = 0;
 
@@ -1648,13 +1643,13 @@ static void process_global_declaration(const DeclarationNode* node) {
             printf("%s:\n", gv->name);
 
             if (initializer_node->assign_expr_node != NULL) {
-                const int int_constant = get_int_constant(initializer_node);
+                const int int_constant = get_int_constant_from_initializer(initializer_node);
                 print_code(".quad %d", int_constant); 
             } 
             else {
                 InitializerListNode* initializer_list_node = initializer_node->initializer_list_node;
                 for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
-                    const int int_constant = get_int_constant(initializer_list_node->initializer_nodes->elements[j]);
+                    const int int_constant = get_int_constant_from_initializer(initializer_list_node->initializer_nodes->elements[j]);
                     print_code(".quad %d", int_constant); 
                 }
             }

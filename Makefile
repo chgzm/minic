@@ -3,12 +3,15 @@ SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 minic: $(OBJS)
-	gcc -o $@ $(OBJS) $(CFLAGS)
+	gcc -D MINIC_DEV -o $@ $(OBJS) $(CFLAGS)
 
 test: minic
 	./test/test.sh
 
-clean:
-	rm -f minic *.o *~ ./test/tmp*
+self: minic
+	./self/self-compile.sh
 
-.PHONY: test clean
+clean:
+	rm -f minic *.o *~ ./test/tmp* ./self/self.s ./self/all.c
+
+.PHONY: self test clean

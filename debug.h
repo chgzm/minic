@@ -8,7 +8,7 @@
 //
 // debug
 //
-
+#ifdef MINIC_DEV
 #define debug(fmt, ...) \
     _debug_print_tmsp(); \
     fprintf(stdout, "%s:%d %s] ", __FILE__, __LINE__, __func__); \
@@ -17,6 +17,9 @@
 
 void _debug_print_tmsp();
 void _debug(const char* fmt, ...);
+#else
+void debug(const char* fmt, ...);
+#endif
 
 //
 // token

@@ -8,10 +8,7 @@ enum TypeSpecifier {
     TYPE_NONE,
     TYPE_VOID,
     TYPE_CHAR,
-    TYPE_SHORT,
     TYPE_INT,
-    TYPE_LONG,
-    TYPE_FLOAT,
     TYPE_DOUBLE,
     TYPE_STRUCT,
     TYPE_ENUM,
@@ -71,10 +68,7 @@ enum UnaryType {
 
 enum SizeofType {
     SIZEOFTYPE_CHAR,
-    SIZEOFTYPE_SHORT,
     SIZEOFTYPE_INT,
-    SIZEOFTYPE_LONG,
-    SIZEOFTYPE_FLOAT,
     SIZEOFTYPE_DOUBLE,
     SIZEOFTYPE_IDENT,
 };

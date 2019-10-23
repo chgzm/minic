@@ -17,11 +17,11 @@ static char* arg_registers[6] = {
 static int label_index;
 static int string_index;
 static int current_offset;
+static char* ret_label;
 static Vector* localvar_list;
 static Vector* globalvar_list;
 static StrPtrMap* struct_map;  
-static StrIntMap*  enum_map;
-static char* ret_label;
+static StrIntMap* enum_map;
 static Stack* break_label_stack;
 static Stack* continue_label_stack;
 
@@ -29,8 +29,6 @@ static Stack* continue_label_stack;
 // forward declaration
 //
 
-static LocalVar*  get_localvar(const char* str, int len);
-static GlobalVar* get_globalvar(const char* str, int len);
 static void process_expr(const ExprNode* node);
 static void process_stmt(const StmtNode* node);
 static void process_conditional_expr(const ConditionalExprNode* node);
@@ -48,10 +46,6 @@ static void print_code(const char* fmt, ...) {
     printf("\n");
 }
 
-static void print_header() {
-    printf(".intel_syntax noprefix\n");
-}
-
 static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* node) {
     const DirectDeclaratorNode* current = node;
     while (current->direct_declarator_node != NULL) {
@@ -62,15 +56,11 @@ static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* 
 }
 
 static const char* get_label() {
-    const char* label = fmt(".L%d", label_index);
-    ++label_index;
-    return label;
+    return fmt(".L%d", label_index++);
 }
 
 static const char* get_string_label() {
-     const char* label = fmt(".LC%d", string_index);
-    ++string_index;
-    return label;
+    return fmt(".LC%d", string_index++);
 }
 
 static int align_offset(int offset) {
@@ -79,6 +69,28 @@ static int align_offset(int offset) {
     }
 
     return offset;
+}
+
+static LocalVar* get_localvar(const char* str, int len) {
+    for (int i = 0; i < localvar_list->size; ++i) {
+        LocalVar* localvar = localvar_list->elements[i];
+        if (strncmp(localvar->name, str, len) == 0) {
+            return localvar;
+        }
+    }
+
+    return NULL;
+}
+
+static GlobalVar* get_globalvar(const char* str, int len) {
+    for (int i = 0; i < globalvar_list->size; ++i) {
+        GlobalVar* gv = globalvar_list->elements[i];
+        if (strncmp(gv->name, str, len) == 0) {
+            return gv;
+        }
+    }
+
+    return NULL;
 }
 
 static void process_identifier_left(const char* identifier, int len) {
@@ -112,16 +124,14 @@ static void process_identifier_right(const char* identifier, int len) {
         print_code("push rax");
         return;
     } 
-    // global variable
-    else {
-        const GlobalVar* gv = get_globalvar(identifier, len);
-        print_code("lea rax, %s[rip]", gv->name);
-        if (gv->type->array_size == 0) {
-            print_code("mov rax, [rax]");
-        }
-        print_code("push rax");
 
+    // global variable
+    const GlobalVar* gv = get_globalvar(identifier, len);
+    print_code("lea rax, %s[rip]", gv->name);
+    if (gv->type->array_size == 0) {
+        print_code("mov rax, [rax]");
     }
+    print_code("push rax");
 }
 
 static void process_identifier_addr(const char* identifier, int len) {
@@ -354,7 +364,6 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         break;        
     }
-
     default: {
         // @todo
         break;
@@ -444,7 +453,6 @@ static void process_unary_expr_addr(const UnaryExprNode* node) {
     }
     }
 }
-
 
 static void process_cast_expr_addr(const CastExprNode* node) {
     // unary-expression
@@ -1121,29 +1129,6 @@ static void process_stmt(const StmtNode* node) {
     }
 }
 
-static LocalVar* get_localvar(const char* str, int len) {
-    for (int i = 0; i < localvar_list->size; ++i) {
-        LocalVar* localvar = localvar_list->elements[i];
-        if (strncmp(localvar->name, str, len) == 0) {
-            return localvar;
-        }
-    }
-
-    return NULL;
-}
-
-static GlobalVar* get_globalvar(const char* str, int len) {
-    for (int i = 0; i < globalvar_list->size; ++i) {
-        GlobalVar* gv = globalvar_list->elements[i];
-        if (strncmp(gv->name, str, len) == 0) {
-            return gv;
-        }
-    }
-
-    return NULL;
-}
-
-
 static const DirectDeclaratorNode* get_identifier_direct_declarator(const DirectDeclaratorNode* node) {
     const DirectDeclaratorNode* current = node;
     while (current->direct_declarator_node != NULL) {
@@ -1708,7 +1693,7 @@ static void process_external_decl(const ExternalDeclNode* node) {
 }
 
 void gen(const TransUnitNode* node) {
-    print_header();
+    printf(".intel_syntax noprefix\n");
 
     // init
     label_index          = 2;

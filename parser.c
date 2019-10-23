@@ -24,6 +24,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
 static TypeQualifierNode* create_type_qualifier_node(const TokenVec* vec, int* index);
 static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index);
+static InitializerNode* create_initializer_node(const TokenVec* vec, int* index);
 static bool is_declaration_specifier(const TokenVec* vec, int index);
 static bool is_type_qualifier(const TokenVec* vec, int index);
 static bool is_type_specifier(const TokenVec* vec, int index);
@@ -1210,14 +1211,64 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
     return stmt_node;
 }
 
+static InitializerListNode* create_initializer_list_node(const TokenVec* vec, int* index) {
+    InitializerListNode* initializer_list_node = malloc(sizeof(InitializerListNode));
+
+    initializer_list_node->initializer_nodes = create_vector();
+
+    InitializerNode* initializer_node = create_initializer_node(vec, index);
+    if (initializer_node == NULL) {
+       error("Failed to create initializer node.\n");
+       return NULL;
+    }
+    vector_push_back(initializer_list_node->initializer_nodes, initializer_node);
+
+    const Token* token = vec->tokens[*index];
+    while (token->type == TK_COMMA) {
+        ++(*index);
+
+        InitializerNode* node = create_initializer_node(vec, index);
+        if (initializer_node == NULL) {
+            error("Failed to create initializer node.\n");
+            return NULL;
+        }
+        vector_push_back(initializer_list_node->initializer_nodes, node);
+
+        token = vec->tokens[*index];
+    }
+
+    return initializer_list_node;
+}
+
 static InitializerNode* create_initializer_node(const TokenVec* vec, int* index) {
     InitializerNode* initializer_node = malloc(sizeof(InitializerNode));
 
-    initializer_node->initializer_list_node = NULL; // @todo
-    initializer_node->assign_expr_node      = create_assign_expr_node(vec, index);
-    if (initializer_node->assign_expr_node == NULL) {
-        error("Failed to create assignment-expression node.\n");
-        return NULL;
+    initializer_node->initializer_list_node = NULL;
+    initializer_node->assign_expr_node      = NULL;
+
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_LBRCKT) {
+        ++(*index); 
+
+        initializer_node->initializer_list_node = create_initializer_list_node(vec, index);
+        if (initializer_node->initializer_list_node == NULL) {
+            error("Failed to create initializer-list node.\n");
+            return NULL;
+        }
+
+        token = vec->tokens[*index];
+        if (token->type != TK_RBRCKT) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+        ++(*index); 
+    }
+    else {
+        initializer_node->assign_expr_node = create_assign_expr_node(vec, index);
+        if (initializer_node->assign_expr_node == NULL) {
+            error("Failed to create assignment-expression node.\n");
+            return NULL;
+        }
     }
 
     return initializer_node;
@@ -1325,6 +1376,47 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
         break;
     }
     default: {
+#if 0
+        direct_declarator_node->direct_declarator_node = create_direct_declarator_node(vec, index);
+        if (direct_declarator_node->direct_declarator_node == NULL) {
+            error("Failed to create direct-declarator node.\n");
+            return NULL;
+        }
+        
+        token = vec->tokens[*index];
+        switch (token->type) {
+        case TK_LSQUARE: {
+            ++(*index);
+
+            token = vec->tokens[*index];
+            if (token->type == TK_RSQUARE) {
+                ++(*index);
+                break;
+            }
+
+            direct_declarator_node->conditional_expr_node = create_conditional_expr_node(vec, index);
+            if (direct_declarator_node->conditional_expr_node == NULL) {
+                error("Failed to create conditional-expr node.\n");
+                return NULL;
+            }
+
+            token = vec->tokens[*index];
+            if (token->type != TK_RSQUARE) {
+                error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+                return NULL;
+            }
+            break;
+        }
+        case TK_LPAREN: {
+            // @todo
+            break;
+        }
+        default: {
+            break;
+        }
+        }
+#endif
+
         break;
     }
     }
@@ -1348,6 +1440,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
         case TK_LSQUARE: {
             token = vec->tokens[*index];
             if (token->type == TK_RSQUARE) {
+                ++(*index);
                 break;
             }
 

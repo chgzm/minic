@@ -232,7 +232,6 @@ init-declarator:
 initializer:
     assignment-expression
     '{' initializer-list '}'
-    '{' initializer-list ',' '}'
 
 initializer-list:
     initializer {, initializer}*

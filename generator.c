@@ -11,7 +11,7 @@
 // global
 //
 
-static char* arg_registers[] = {
+static char* arg_registers[6] = {
     "rdi", "rsi", "rdx", "rcx", "r8", "r9"
 }; 
 static int label_index;
@@ -134,8 +134,12 @@ static void process_identifier_right(const char* identifier, int len) {
     // global variable
     else {
         const GlobalVar* gv = get_globalvar(identifier, len);
-        print_code("mov rax, %s[rip]", gv->name);
+        print_code("lea rax, %s[rip]", gv->name);
+        if (gv->type->array_size == 0) {
+            print_code("mov rax, [rax]");
+        }
         print_code("push rax");
+
     }
 }
 
@@ -322,10 +326,17 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         process_postfix_expr_right(node->postfix_expr_node);
         process_expr(node->expr_node);
 
+        const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
+        const LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
+
         print_code("pop rdi");
         print_code("pop rax");
         print_code("imul rdi, 8");
-        print_code("sub rax, rdi");
+        if (lv == NULL) {
+            print_code("add rax, rdi");
+        } else {
+            print_code("sub rax, rdi");
+        }
         print_code("mov rax, [rax]");
         print_code("push rax");
 
@@ -1655,7 +1666,7 @@ static void process_global_declaration(const DeclarationNode* node) {
         }
 
         const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
-        const ConditionalExprNode*     conditional_expr_node     = direct_declarator_node->conditional_expr_node;
+        const ConditionalExprNode*  conditional_expr_node  = direct_declarator_node->conditional_expr_node;
         if (conditional_expr_node == NULL) {
             gv->type->array_size = 0;
         } else {
@@ -1670,11 +1681,21 @@ static void process_global_declaration(const DeclarationNode* node) {
 
         if (init_declarator_node->initializer_node != NULL) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
-            const int int_constant = get_int_constant(initializer_node);
 
             printf(".data\n");
             printf("%s:\n", gv->name);
-            print_code(".long %d", int_constant); 
+
+            if (initializer_node->assign_expr_node != NULL) {
+                const int int_constant = get_int_constant(initializer_node);
+                print_code(".quad %d", int_constant); 
+            } 
+            else {
+                InitializerListNode* initializer_list_node = initializer_node->initializer_list_node;
+                for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
+                    const int int_constant = get_int_constant(initializer_list_node->initializer_nodes->elements[j]);
+                    print_code(".quad %d", int_constant); 
+                }
+            }
         }
     }
 }

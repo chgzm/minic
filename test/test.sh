@@ -122,6 +122,7 @@ assert_return test_array.c 100
 assert_return test_array_2.c 10
 assert_return test_array_3.c 3
 assert_return test_array_4.c 100
+assert_return test_array_5.c 15
 
 assert_return test_ptr.c 5
 assert_return test_ptr_2.c 100

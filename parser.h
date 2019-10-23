@@ -403,6 +403,7 @@ struct InitializerNode {
 };
 
 struct InitializerListNode {
+    Vector* initializer_nodes;        
 };
 
 struct CompoundStmtNode {

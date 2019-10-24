@@ -83,11 +83,6 @@ enum PostfixType {
     PS_DEC,     // postfix-expression --
 };
 
-enum ParamListType {
-    PL_NONE, // 
-    PL_DOT,  // , ...
-};
-
 enum SelectionStmtType {
     SELECT_IF,
     SELECT_IF_ELSE,
@@ -341,7 +336,7 @@ struct TypeNameNode {
 };
 
 struct ParamTypeListNode {
-    int            type;
+    bool           has_ellipsis;
     ParamListNode* param_list_node; 
 };
 

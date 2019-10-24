@@ -32,6 +32,7 @@ enum TokenType {
     TK_MINUS,     // -
     TK_ASTER,     // *
     TK_SLASH,     // /
+    TK_BS,        // '\'
     TK_PER,       // %
     TK_ASSIGN,    // =
     TK_SEMICOL,   // ;
@@ -72,6 +73,7 @@ enum TokenType {
     TK_AND_EQ,    // &=
     TK_XOR_EQ,    // ^=
     TK_OR_EQ,     // |=
+    TK_ELLIPSIS   // ...
 };
 
 typedef struct Token Token;

@@ -39,7 +39,8 @@ static bool is_symbol(char p) {
     case '!': case '?': 
     case '&': case '^': 
     case '|': case '#': 
-    case ',': case '.': {
+    case ',': case '.': 
+    case '\\': {
         return true;
     }
     default: {
@@ -373,7 +374,18 @@ static Token* read_symbol(const char* p, int* pos) {
         return token;
     }
     case '.': {
-        token->type = TK_DOT;
+        const char s = p[*pos];
+        const char t = p[*pos + 1];
+        if (s == '.' && t == '.') {
+            token->type = TK_ELLIPSIS;
+            *pos += 2;
+        } else {
+            token->type = TK_DOT;
+        }
+        return token;
+    }
+    case '\\': {
+        token->type = TK_BS;
         return token;
     }
     default: {
@@ -669,6 +681,7 @@ const char* decode_token_type(int type) {
     case TK_MINUS:    { return "TK_MINUS";    }
     case TK_ASTER:    { return "TK_ASTER";    }
     case TK_SLASH:    { return "TK_SLASH";    }
+    case TK_BS:       { return "TK_BS";       }
     case TK_PER:      { return "TK_PER";      }
     case TK_ASSIGN:   { return "TK_ASSIGN";   }
     case TK_SEMICOL:  { return "TK_SEMICOL";  }
@@ -706,6 +719,7 @@ const char* decode_token_type(int type) {
     case TK_AND_EQ:   { return "TK_AND_EQ";   }
     case TK_XOR_EQ:   { return "TK_XOR_EQ";   }
     case TK_OR_EQ:    { return "TK_OR_EQ";    }
+    case TK_ELLIPSIS: { return "TK_ELLIPSIS"; }
     default:          { return "INVALID";     }
     }
 }

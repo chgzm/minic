@@ -1337,6 +1337,10 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
     ParamListNode* current = param_list_node;
     const Token* token = vec->tokens[*index];
     while (token->type == TK_COMMA) {
+        if (vec->tokens[*index + 1]->type == TK_ELLIPSIS) {
+            break;
+        }
+
         ++(*index);
 
         ParamListNode* p_param_list_node = malloc(sizeof(ParamListNode));
@@ -1357,7 +1361,8 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
 
 static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* index) {
     ParamTypeListNode* param_type_list_node = malloc(sizeof(ParamTypeListNode));
-
+    
+    param_type_list_node->has_ellipsis    = false;
     param_type_list_node->param_list_node = create_param_list_node(vec, index);
     if (param_type_list_node->param_list_node == NULL) {
         error("Failed to create parameter-type-list node.\n");
@@ -1366,7 +1371,15 @@ static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* 
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_COMMA) {
-        // @todo
+        ++(*index);
+
+        token = vec->tokens[*index];
+        if (token->type != TK_ELLIPSIS) {
+            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+            return NULL;
+        }
+
+        ++(*index);
     }
 
     return param_type_list_node;
@@ -2221,14 +2234,6 @@ const char* decode_postfix_type(int type) {
     case PS_INC:     { return "PS_INC";     }
     case PS_DEC:     { return "PS_DEC";     }
     default:         { return "INVALID";    }
-    }
-}
-
-const char* decode_param_list_type(int type) {
-    switch (type) {
-    case PL_NONE: { return "PL_NONE"; }
-    case PL_DOT:  { return "PL_DOT";  }
-    default:      { return "INVALID"; }
     }
 }
 

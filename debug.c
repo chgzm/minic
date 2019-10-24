@@ -553,8 +553,7 @@ static void dump_type_name_node(const TypeNameNode* node, int indent) {
 static void dump_param_type_list_node(const ParamTypeListNode* node, int indent) {
     printf_indent(
         indent,
-        "ParamTypeListNode,ParamType=\"%s\"\n",
-        decode_param_list_type(node->type)
+        "ParamTypeListNode\n"
     );
 
     if (node->param_list_node != NULL) {

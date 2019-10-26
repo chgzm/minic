@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
         arg_index = 2;
     } 
 
-    void* addr = mmap_readonly(argv[arg_index]);
+    char* addr = read_file(argv[arg_index]);
     if (addr == NULL) {
         error("Failed to load file.\n"); 
         return -1;

@@ -67,7 +67,7 @@ static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
                 return STATE_ENABLED; 
             } 
             else if (token->type == TK_STR) {
-                void* addr = mmap_readonly(token->str);
+                char* addr = read_file(token->str);
                 if (addr == NULL) {
                     error("Failed to load file:\"%s\".\n", token->str); 
                     return STATE_INVALID;

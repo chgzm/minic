@@ -577,7 +577,7 @@ static bool is_block_comment_end(const char* p, int pos) {
     return (strncmp(&p[pos], "*/", 2) == 0);
 }
 
-TokenVec* tokenize(void* addr) {
+TokenVec* tokenize(char* addr) {
     TokenVec* vec = tokenvec_create();
 
     int pos = 0;
@@ -646,7 +646,7 @@ TokenVec* tokenize(void* addr) {
             tokenvec_push_back(vec, token);
         }
         else {
-            error("Invalid character='%c'\n", p[pos]);
+            error("Invalid character[%d]='%c'\n", pos, p[pos]);
             return NULL;
         }
     }

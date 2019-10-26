@@ -25,8 +25,21 @@ void _error_print_tmsp();
 void _error(const char* fmt, ...);
 
 #else
-
 void error(const char* fmt, ...);
+
+#define NULL  0
+#define bool  int
+#define false 0
+#define true  1
+#define O_RDONLY 0
+
+typedef struct __va_list va_list;
+struct __va_list {
+  int   gp_offset;
+  int   fp_offset;
+  void* overflow_arg_area;
+  void* reg_save_area;
+};
 
 #endif
 
@@ -37,10 +50,11 @@ void error(const char* fmt, ...);
 const char* fmt(const char* fmt, ...);
 
 //
-// mmap
+// read file
 //
 
-void* mmap_readonly(const char* file_path);
+char* read_file(const char* file_path);
+// void* mmap_readonly(const char* file_path);
 
 //
 // Vector for Pointers

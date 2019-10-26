@@ -38,11 +38,21 @@ void _error(const char *fmt, ...) {
     vfprintf(stderr, fmt, ap);
 }
 #else
+
+typedef struct __va_list va_list;
+struct __va_list {
+  int   gp_offset;
+  int   fp_offset;
+  void* overflow_arg_area;
+  void* reg_save_area;
+};
+
 void error(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stdout, fmt, ap);
+    vfprintf(stderr, fmt, ap);
 }
+
 #endif
 
 //
@@ -59,9 +69,27 @@ const char* fmt(const char* fmt, ...) {
 }
 
 //
-// mmap
+// read file
 //
 
+char* read_file(const char* file_path) {
+    FILE* fp = fopen(file_path, "r");
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    int fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    char* addr = calloc(fsize, sizeof(char) + 1);
+    fread(addr, sizeof(char), fsize, fp); 
+    fclose(fp);
+
+    return addr;
+}
+
+/*
 void* mmap_readonly(const char* file_path) {
     const int fd = open(file_path, O_RDONLY);
     if (fd < 0) {
@@ -89,6 +117,7 @@ void* mmap_readonly(const char* file_path) {
 
     return addr;
 }
+*/
 
 //
 // Vector for Pointers

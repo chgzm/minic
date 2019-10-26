@@ -1327,6 +1327,8 @@ static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, 
 
 static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
     ParamListNode* param_list_node = malloc(sizeof(ParamListNode));
+
+    param_list_node->param_list_node = NULL;
     
     param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
     if (param_list_node->param_declaration_node == NULL) {
@@ -1344,6 +1346,8 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
         ++(*index);
 
         ParamListNode* p_param_list_node = malloc(sizeof(ParamListNode));
+
+        p_param_list_node->param_list_node = NULL;
 
         p_param_list_node->param_list_node        = current;
         p_param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
@@ -2048,6 +2052,9 @@ static bool is_func_def(const TokenVec* vec, int index) {
 
 static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* index) {
     ExternalDeclNode* external_decl_node = malloc(sizeof(ExternalDeclNode));
+    external_decl_node->enum_specifier_node = NULL;
+    external_decl_node->declaration_node    = NULL;
+    external_decl_node->func_def_node       = NULL;
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_TYPEDEF) {

@@ -95,7 +95,7 @@ TokenVec* tokenvec_create();
 int get_token_type(const TokenVec* vec, int index);
 void tokenvec_push_back(TokenVec* vec, Token* token);
 
-TokenVec* tokenize(void* addr);
+TokenVec* tokenize(char* addr);
 
 //
 // debug

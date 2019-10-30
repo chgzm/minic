@@ -966,7 +966,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         }
         ++(*index);
 
-        // <expression>
+        // expression
         itr_stmt_node->expr_node[0] = create_expr_node(vec, index);
         if (itr_stmt_node->expr_node == NULL) {
             error("Failed to create expression-node.\n");
@@ -981,7 +981,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         }
         ++(*index);
 
-        // <statement>
+        // statement
         itr_stmt_node->stmt_node = create_stmt_node(vec, index); 
         if (itr_stmt_node->stmt_node == NULL) {
             error("Failed to create statement-node.\n");
@@ -1006,7 +1006,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         if (token->type == TK_SEMICOL) {
             ++(*index);
         } 
-        // <declaration>* ;
+        // {declaration}* ;
         else if (is_declaration_specifier(vec, *index)) {
             while (is_declaration_specifier(vec, *index)) {
                 DeclarationNode* declaration_node = create_declaration_node(vec, index);
@@ -1024,7 +1024,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             // }
             // ++(*index);
         } 
-        // {<expression>}? ;
+        // {expression}? ;
         else {
             itr_stmt_node->expr_node[0] = create_expr_node(vec, index);
             if (itr_stmt_node->expr_node == NULL) {
@@ -1041,7 +1041,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             ++(*index);
         }
 
-        // {<expression>}? ;
+        // {expression}? ;
         token = vec->tokens[*index];
         if (token->type == TK_SEMICOL) {
             ++(*index);
@@ -1061,7 +1061,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             ++(*index);
         }
 
-        // {<expression>}? )
+        // {expression}? )
         token = vec->tokens[*index];
         if (token->type == TK_RPAREN) {
             ++(*index);
@@ -1081,7 +1081,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             ++(*index);
         }
 
-        // <statement>
+        // statement
         itr_stmt_node->stmt_node = create_stmt_node(vec, index); 
         if (itr_stmt_node->stmt_node == NULL) {
             error("Failed to create statement-node.\n");
@@ -1951,7 +1951,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
         ++(*index);
     }
 
-    // <declaration>*
+    // declaration*
     {
         while (is_declaration_specifier(vec, *index)) {
             DeclarationNode* declaration_node = create_declaration_node(vec, index);
@@ -1964,7 +1964,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
         }
     }
 
-    // <statement>*
+    // statement*
     {
         while (vec->tokens[*index]->type != TK_RBRCKT) {
             StmtNode* stmt_node = create_stmt_node(vec, index);
@@ -1997,7 +1997,7 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
     func_def_node->declarator_node      = NULL;
     func_def_node->compound_stmt_node   = NULL;
 
-    // {<declaration-specifier>}*
+    // {declaration-specifier}*
     while (is_declaration_specifier(vec, *index)) {
         DeclSpecifierNode* decl_specifier_node = create_decl_specifier_node(vec, index);
         if (decl_specifier_node == NULL) {
@@ -2008,16 +2008,14 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
         vector_push_back(func_def_node->decl_specifier_nodes, decl_specifier_node);
     }
 
-    // <declarator>
+    // declarator
     func_def_node->declarator_node = create_declarator_node(vec, index);
     if (func_def_node->declarator_node == NULL) {
         error("Failed to create declarator node.\n");
         return NULL;
     }
-    // {<declaration>}*
-    // @todo
 
-    // <compound-statement>
+    // compound-statement
     func_def_node->compound_stmt_node = create_compound_stmt_node(vec, index);
     if (func_def_node->compound_stmt_node == NULL) {
         error("Failed to create compound-statement node\n");

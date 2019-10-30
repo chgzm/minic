@@ -63,7 +63,11 @@ static const char* get_string_label() {
     return fmt(".LC%d", string_index++);
 }
 
-static int align_offset(int offset) {
+static int align_offset(int offset, int size) {
+    if (size == 1) {
+        return offset;
+    }
+
     if (offset % 8 != 0) {
         offset += (8 - offset % 8);
     }
@@ -238,7 +242,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         print_code("pop rdi");
         print_code("pop rax");
-        print_code("imul rdi, 8");
+        print_code("imul rdi, %d", lv->type->type_size);
         if (lv->type->ptr_count != 0) { 
             print_code("mov rax, [rax]");
         } 
@@ -322,11 +326,13 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         print_code("pop rdi");
         print_code("pop rax");
-        print_code("imul rdi, 8");
-        if (lv == NULL) {
-            print_code("add rax, rdi");
-        } else {
+        if (lv != NULL) {
+            print_code("imul rdi, %d", lv->type->type_size);
             print_code("sub rax, rdi");
+        } else {
+            const GlobalVar* gv = get_globalvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
+            print_code("imul rdi, %d", gv->type->type_size);
+            print_code("add rax, rdi");
         }
         print_code("mov rax, [rax]");
         print_code("push rax");
@@ -1165,8 +1171,8 @@ static void process_declaration(const DeclarationNode* node) {
     // add local-variable to list
     for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
         LocalVar* lv = malloc(sizeof(LocalVar));
-        lv->offset   = current_offset;
         lv->type     = type;
+        lv->offset   = align_offset(current_offset, lv->type->type_size);
 
         const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
@@ -1192,9 +1198,8 @@ static void process_declaration(const DeclarationNode* node) {
 
         if (lv->type->array_size == 0) {
              current_offset += lv->type->type_size;
-             current_offset = align_offset(current_offset);
         } else { 
-            current_offset += (lv->type->array_size * 8);
+            current_offset += (lv->type->array_size * lv->type->type_size);
         }
 
         if (init_declarator_node->initializer_node != NULL) {
@@ -1581,7 +1586,7 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
                     field_info->type      = field_type;
 
                     field_info->offset = offset;
-                    offset += 8;
+                    offset += field_info->type->type_size;
 
                     strptrmap_put(type->struct_info->field_info_map, field_name, field_info);
                 }

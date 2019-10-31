@@ -289,10 +289,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
             print_code("mov rax, [rax]");
         } 
 
-        // print_code("add rax, rdi");
-        // print_code("sub rax, %d", lv->type->type_size * lv->type->array_size);
-
-        print_code("sub rax, rdi");
+        print_code("add rax, rdi");
         print_code("push rax");
         // intstack_push(size_stack, 8);
 
@@ -307,7 +304,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         const StructInfo* struct_info = lv->type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
-        print_code("lea rax, [rbp-%d-%d]", lv->offset, field_info->offset);
+        print_code("lea rax, [rbp-%d+%d]", lv->offset, field_info->offset);
         print_code("push rax");
         // intstack_push(size_stack, 8);
 
@@ -326,7 +323,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         print_code("pop rax");
         print_code("mov rax, [rax]");
-        print_code("sub rax, %d", field_info->offset);
+        print_code("add rax, %d", field_info->offset);
         print_code("push rax");
         // intstack_push(size_stack, 8);
 
@@ -377,8 +374,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         print_code("pop rax");
         if (lv != NULL) {
             print_code("imul rdi, %d", lv->type->type_size);
-            print_code("sub rax, rdi");
-            // print_code("add rax, rdi");
+            print_code("add rax, rdi");
             // print_code("sub rax, %d", lv->type->type_size * lv->type->array_size);
         } else {
             const GlobalVar* gv = get_globalvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
@@ -407,7 +403,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         const StructInfo* struct_info = lv->type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
-        print_code("push [rbp-%d-%d]", lv->offset, field_info->offset);
+        print_code("push [rbp-%d+%d]", lv->offset, field_info->offset);
 
         break;        
     }
@@ -424,7 +420,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         print_code("pop rax");
         print_code("mov rax, [rax]");
-        print_code("sub rax, %d", field_info->offset);
+        print_code("add rax, %d", field_info->offset);
         print_code("push [rax]");
 
         break;        
@@ -1234,7 +1230,7 @@ static void process_declaration(const DeclarationNode* node) {
     for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
         LocalVar* lv = malloc(sizeof(LocalVar));
         lv->type     = type;
-        lv->offset   = align_offset(current_offset, lv->type->type_size);
+
 
         const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
@@ -1248,21 +1244,18 @@ static void process_declaration(const DeclarationNode* node) {
         const ConditionalExprNode*  conditional_expr_node  = direct_declarator_node->conditional_expr_node;
         if (conditional_expr_node == NULL) {
             lv->type->array_size = 0;
+            current_offset += lv->type->type_size;
         } else {
             lv->type->array_size = get_array_size_from_constant_expr(conditional_expr_node);
+            current_offset += (lv->type->array_size * lv->type->type_size);
         }
+        lv->offset = align_offset(current_offset, lv->type->type_size);
 
         const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
         lv->name_len = ident_node->identifier_len;
         lv->name     = malloc(sizeof(char) * lv->name_len);
         strncpy(lv->name, ident_node->identifier, lv->name_len);
         vector_push_back(localvar_list, lv);
-
-        if (lv->type->array_size == 0) {
-             current_offset += lv->type->type_size;
-        } else { 
-            current_offset += (lv->type->array_size * lv->type->type_size);
-        }
 
         if (init_declarator_node->initializer_node != NULL) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
@@ -1495,6 +1488,8 @@ static void process_args(const ParamListNode* node, int arg_index) {
         break;
     }
 
+    current_offset += 8;
+
     const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
     LocalVar* lv = malloc(sizeof(LocalVar));
     lv->type     = type;
@@ -1508,8 +1503,6 @@ static void process_args(const ParamListNode* node, int arg_index) {
     if (pointer_node != NULL) {
         lv->type->ptr_count = pointer_node->count;
     }
-
-    current_offset += 8;
 
     print_code("mov [rbp-%d], %s", lv->offset, arg_registers[arg_index]);
 
@@ -1531,7 +1524,7 @@ static void process_func_declarator(const DeclaratorNode* node) {
 
 static void process_func_def(const FuncDefNode* node) {
     localvar_list = create_vector();
-    current_offset = 8;
+    current_offset = 0;
 
     const DeclaratorNode* declarator_node = node->declarator_node;
     const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
@@ -1560,7 +1553,7 @@ static void process_func_def(const FuncDefNode* node) {
     free(localvar_list);
     free(ret_label);
     ret_label = NULL;
-    current_offset = 8;
+    current_offset = 0;
 }
 
 static int get_int_constant_from_initializer(const InitializerNode* node) {

@@ -75,8 +75,18 @@ static Token* read_character(const char* p, int* pos) {
     char c = p[*pos];
     ++(*pos);
     if (c == '\\') {
-        c = p[*pos];
+        const char s = p[*pos];
         ++(*pos);
+
+        switch (s) {
+        case '0': {
+            c = '\0';
+            break; 
+        }
+        default: {
+            break;
+        }
+        }        
     }
 
     if (p[*pos] != '\'') {

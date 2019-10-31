@@ -24,6 +24,7 @@ static StrPtrMap* struct_map;
 static StrIntMap* enum_map;
 static Stack* break_label_stack;
 static Stack* continue_label_stack;
+static IntStack* size_stack;
 
 //
 // forward declaration
@@ -75,6 +76,35 @@ static int align_offset(int offset, int size) {
     return offset;
 }
 
+static const char* get_reg(const char* base, int size) {
+    switch (size) {
+    case 1: {
+        if      (strcmp("ax", base) == 0) { return "al";  }
+        else if (strcmp("di", base) == 0) { return "dil"; }
+        else if (strcmp("si", base) == 0) { return "sil"; }
+        else if (strcmp("dx", base) == 0) { return "dl";  }
+        else if (strcmp("cx", base) == 0) { return "cl";  }
+        else if (strcmp("r8", base) == 0) { return "r8b"; }
+        else if (strcmp("r9", base) == 0) { return "r9b"; }
+        else                              { return NULL;  }
+    }
+    case 8: {
+        if      (strcmp("ax", base) == 0) { return "rax"; }
+        else if (strcmp("di", base) == 0) { return "rdi"; }
+        else if (strcmp("si", base) == 0) { return "rsi"; }
+        else if (strcmp("dx", base) == 0) { return "rdx"; }
+        else if (strcmp("cx", base) == 0) { return "rcx"; }
+        else if (strcmp("r8", base) == 0) { return "r8";  }
+        else if (strcmp("r9", base) == 0) { return "r9";  }
+        else                              { return NULL;  }
+    }
+    default: {
+        error("Invalid size=%d\n", size);
+        return NULL;
+    }    
+    }
+}
+
 static LocalVar* get_localvar(const char* str, int len) {
     for (int i = 0; i < localvar_list->size; ++i) {
         LocalVar* localvar = localvar_list->elements[i];
@@ -108,6 +138,7 @@ static void process_identifier_left(const char* identifier, int len) {
         print_code("lea rax, %s[rip]", gv->name);
         print_code("push rax");
     }
+    // intstack_push(size_stack, 8);
 }
 
 static void process_identifier_right(const char* identifier, int len) {
@@ -126,6 +157,8 @@ static void process_identifier_right(const char* identifier, int len) {
             print_code("mov rax, [rax]");
         } 
         print_code("push rax");
+        intstack_push(size_stack, lv->type->type_size);
+
         return;
     } 
 
@@ -136,6 +169,7 @@ static void process_identifier_right(const char* identifier, int len) {
         print_code("mov rax, [rax]");
     }
     print_code("push rax");
+    intstack_push(size_stack, gv->type->type_size);
 }
 
 static void process_identifier_addr(const char* identifier, int len) {
@@ -143,13 +177,20 @@ static void process_identifier_addr(const char* identifier, int len) {
     if (lv != NULL) {
         print_code("lea rax, [rbp-%d]", lv->offset);
         print_code("push rax");
+        // intstack_push(size_stack, 8);
     }
 }
 
 static void process_constant_node(const ConstantNode* node) {
     switch (node->const_type) {
+    case CONST_BYTE: {
+        print_code("push %d", node->integer_constant);
+        intstack_push(size_stack, 1);
+        break;
+    }
     case CONST_INT: {
         print_code("push %d", node->integer_constant);
+        intstack_push(size_stack, 8);
         break;
     }
     case CONST_STR: {
@@ -160,6 +201,7 @@ static void process_constant_node(const ConstantNode* node) {
         print_code(".text\n");
         print_code("lea rax, %s[rip]", label);
         print_code("push rax");
+        // intstack_push(size_stack, 8);
         break;
     }
     case CONST_FLOAT: {
@@ -228,12 +270,12 @@ static void process_primary_expr_addr(const PrimaryExprNode* node) {
 
 static void process_postfix_expr_left(const PostfixExprNode* node) {
     switch (node->postfix_expr_type) {
-    // <primary-expression>
+    // primary-expression
     case PS_PRIMARY: {
         process_primary_expr_left(node->primary_expr_node);
         break;
     }
-    // <postfix-expression> [ <expression> ]
+    // postfix-expression [ expression ]
     case PS_LSQUARE: {
         process_postfix_expr_left(node->postfix_expr_node);
         process_expr(node->expr_node);
@@ -246,8 +288,13 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         if (lv->type->ptr_count != 0) { 
             print_code("mov rax, [rax]");
         } 
+
+        // print_code("add rax, rdi");
+        // print_code("sub rax, %d", lv->type->type_size * lv->type->array_size);
+
         print_code("sub rax, rdi");
         print_code("push rax");
+        // intstack_push(size_stack, 8);
 
         break;
     }
@@ -262,6 +309,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         print_code("lea rax, [rbp-%d-%d]", lv->offset, field_info->offset);
         print_code("push rax");
+        // intstack_push(size_stack, 8);
 
         break;        
     }
@@ -280,6 +328,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         print_code("mov rax, [rax]");
         print_code("sub rax, %d", field_info->offset);
         print_code("push rax");
+        // intstack_push(size_stack, 8);
 
         break;        
     }
@@ -329,12 +378,22 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         if (lv != NULL) {
             print_code("imul rdi, %d", lv->type->type_size);
             print_code("sub rax, rdi");
+            // print_code("add rax, rdi");
+            // print_code("sub rax, %d", lv->type->type_size * lv->type->array_size);
         } else {
             const GlobalVar* gv = get_globalvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
             print_code("imul rdi, %d", gv->type->type_size);
             print_code("add rax, rdi");
         }
-        print_code("mov rax, [rax]");
+
+        const int size = intstack_top(size_stack); 
+        intstack_pop(size_stack);
+
+        if (size == 1) {
+            print_code("movzx eax, BYTE PTR [rax]");
+        } else {
+            print_code("mov rax, [rax]");
+        }
         print_code("push rax");
 
         break;
@@ -873,7 +932,10 @@ static void process_assign_expr(const AssignExprNode* node) {
         case OP_ASSIGN: {
             print_code("pop rdi");
             print_code("pop rax");
-            print_code("mov [rax], rdi");
+
+            const int size = intstack_top(size_stack); 
+            intstack_pop(size_stack);
+            print_code("mov [rax], %s", get_reg("di", size));
 
             break;
         }
@@ -1206,6 +1268,7 @@ static void process_declaration(const DeclarationNode* node) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
             print_code("lea rax, [rbp-%d]", lv->offset);
             print_code("push rax");
+            // intstack_push(size_stack, 8);
 
             if (initializer_node->assign_expr_node != NULL) {
                 process_assign_expr(initializer_node->assign_expr_node);
@@ -1703,6 +1766,7 @@ void gen(const TransUnitNode* node) {
     label_index          = 2;
     break_label_stack    = create_stack();
     continue_label_stack = create_stack();
+    size_stack           = create_intstack();
     globalvar_list       = create_vector();
     struct_map           = create_strptrmap(1024);
     enum_map             = create_strintmap(1024);

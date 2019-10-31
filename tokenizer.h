@@ -6,6 +6,7 @@
 
 enum TokenType {
     TK_NUM,       // number literal
+    TK_BYTE,      // char literal
     TK_STR,       // string literal
     TK_IDENT,     // identifier
     TK_STATIC,    // "static"

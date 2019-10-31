@@ -86,7 +86,7 @@ static Token* read_character(const char* p, int* pos) {
     ++(*pos);
 
     Token* token = calloc(1, sizeof(Token));
-    token->type = TK_NUM;
+    token->type = TK_BYTE;
     token->num  = c;
 
     return token;

@@ -162,6 +162,7 @@ assert_return test_or.c 28
 assert_return test_and.c 16
 
 assert_return test_char.c 99
+assert_return test_char_2.c 195
 
 assert_return test_conditional_op.c 9
 

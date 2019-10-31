@@ -48,6 +48,7 @@ enum ComparisonOperatorType {
 
 enum ConstType {
     CONST_INT,
+    CONST_BYTE,
     CONST_STR,
     CONST_FLOAT,
 };

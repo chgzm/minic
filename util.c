@@ -83,7 +83,7 @@ char* read_file(const char* file_path) {
     fseek(fp, 0, SEEK_SET);
 
     char* addr = calloc(fsize, sizeof(char) + 1);
-    fread(addr, sizeof(char), fsize, fp); 
+    fread(addr, sizeof(char), fsize, fp);
     fclose(fp);
 
     return addr;
@@ -174,6 +174,41 @@ void* stack_top(Stack* stack) {
 }
 
 void stack_pop(Stack* stack) {
+    --(stack->top);
+}
+
+//
+// Stack for Integer
+//
+
+IntStack* create_intstack() {
+    IntStack* stack = malloc(sizeof(Stack));
+    stack->elements = malloc(sizeof(int) * 16);
+    stack->capacity = 16;
+    stack->top      = -1;
+
+    return stack;
+}
+
+void intstack_push(IntStack* stack, int e) {
+    ++(stack->top);
+    if (stack->top == stack->capacity) {
+        stack->capacity *= 2;
+        stack->elements = realloc(stack->elements, sizeof(int) * stack->capacity);
+    }
+
+    stack->elements[stack->top] = e;
+}
+
+int intstack_top(IntStack* stack) {
+    if (stack->top < 0) {
+        exit(-1);
+    }
+
+    return stack->elements[stack->top];
+}
+
+void intstack_pop(IntStack* stack) {
     --(stack->top);
 }
 

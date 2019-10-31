@@ -38,6 +38,11 @@ static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
         constant_node->integer_constant = token->num;
         break;
     }
+    case TK_BYTE: {
+        constant_node->const_type       = CONST_BYTE;
+        constant_node->integer_constant = token->num;
+        break;
+    }
     case TK_STR: {
         constant_node->const_type = CONST_STR;
         constant_node->character_constant = malloc(sizeof(char) * token->strlen);
@@ -74,6 +79,7 @@ static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index
         break;
     }
     case TK_NUM:
+    case TK_BYTE:
     case TK_STR: {
         primary_expr_node->constant_node = create_constant_node(vec, index);
         if (primary_expr_node->constant_node == NULL) {

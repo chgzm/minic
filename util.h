@@ -87,6 +87,22 @@ void* stack_top(Stack* stack);
 void stack_pop(Stack* stack);
 
 //
+// Stack for Integer
+//
+
+typedef struct IntStack IntStack;
+struct IntStack {
+    int* elements;
+    int  top;
+    int  capacity;
+};
+
+IntStack* create_intstack();
+void intstack_push(IntStack* stack, int e);
+int intstack_top(IntStack* stack);
+void intstack_pop(IntStack* stack);
+
+//
 // Hashmap for string => pointer
 //
 

@@ -28,8 +28,7 @@ static bool is_declaration_specifier(const TokenVec* vec, int index);
 static bool is_type_specifier(const TokenVec* vec, int index);
 
 static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
-    ConstantNode* constant_node = malloc(sizeof(ConstantNode));
-    constant_node->character_constant = NULL;
+    ConstantNode* constant_node = calloc(1, sizeof(ConstantNode));
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -61,13 +60,7 @@ static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
 }
 
 static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index) {
-    PrimaryExprNode* primary_expr_node = malloc(sizeof(PrimaryExprNode));
-
-    primary_expr_node->constant_node  = NULL;
-    primary_expr_node->expr_node      = NULL;
-    primary_expr_node->string         = NULL;
-    primary_expr_node->identifier     = NULL;
-    primary_expr_node->identifier_len = 0;
+    PrimaryExprNode* primary_expr_node = calloc(1, sizeof(PrimaryExprNode));
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -116,15 +109,18 @@ static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index
 }
 
 static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index) {
-    PostfixExprNode* postfix_expr_node = malloc(sizeof(PostfixExprNode));
+    PostfixExprNode* postfix_expr_node = calloc(1, sizeof(PostfixExprNode));
 
-    postfix_expr_node->primary_expr_node = NULL;
-    postfix_expr_node->postfix_expr_node = NULL;
-    postfix_expr_node->expr_node         = NULL;
     postfix_expr_node->assign_expr_nodes = create_vector();
-    postfix_expr_node->identifier        = NULL;
-    postfix_expr_node->identifier_len    = 0;
     postfix_expr_node->postfix_expr_type = PS_PRIMARY;
+
+    // postfix_expr_node->primary_expr_node = NULL;
+    // postfix_expr_node->postfix_expr_node = NULL;
+    // postfix_expr_node->expr_node         = NULL;
+    // postfix_expr_node->assign_expr_nodes = create_vector();
+    // postfix_expr_node->identifier        = NULL;
+    // postfix_expr_node->identifier_len    = 0;
+    // postfix_expr_node->postfix_expr_type = PS_PRIMARY;
     
     postfix_expr_node->primary_expr_node = create_primary_expr_node(vec, index);
     if (postfix_expr_node->primary_expr_node == NULL) {
@@ -142,11 +138,8 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
         case TK_LSQUARE: {
             ++(*index);
 
-            p_postfix_expr_node                     = malloc(sizeof(PostfixExprNode));
+            p_postfix_expr_node                     = calloc(1, sizeof(PostfixExprNode));
             p_postfix_expr_node->postfix_expr_node  = current;
-            p_postfix_expr_node->identifier         = NULL;
-            p_postfix_expr_node->identifier_len     = 0;
-            p_postfix_expr_node->primary_expr_node  = NULL;
             p_postfix_expr_node->assign_expr_nodes  = create_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_LSQUARE;
             p_postfix_expr_node->expr_node          = create_expr_node(vec, index);
@@ -167,12 +160,8 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
         case TK_LPAREN: {
             ++(*index);
 
-            p_postfix_expr_node                     = malloc(sizeof(PostfixExprNode));
+            p_postfix_expr_node                     = calloc(1, sizeof(PostfixExprNode));
             p_postfix_expr_node->postfix_expr_node  = current;
-            p_postfix_expr_node->expr_node          = NULL;
-            p_postfix_expr_node->identifier         = NULL;
-            p_postfix_expr_node->identifier_len     = 0;
-            p_postfix_expr_node->primary_expr_node  = NULL;
             p_postfix_expr_node->assign_expr_nodes  = create_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_LPAREN;
 
@@ -199,10 +188,8 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
         case TK_DOT: {
             ++(*index);
 
-            p_postfix_expr_node                     = malloc(sizeof(PostfixExprNode));
+            p_postfix_expr_node                     = calloc(1, sizeof(PostfixExprNode));
             p_postfix_expr_node->postfix_expr_node  = current;
-            p_postfix_expr_node->expr_node          = NULL;
-            p_postfix_expr_node->primary_expr_node  = NULL;
             p_postfix_expr_node->assign_expr_nodes  = create_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_DOT;
 
@@ -223,10 +210,8 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
         case TK_ARROW: {
             ++(*index);
 
-            p_postfix_expr_node                     = malloc(sizeof(PostfixExprNode));
+            p_postfix_expr_node                     = calloc(1, sizeof(PostfixExprNode));
             p_postfix_expr_node->postfix_expr_node  = current;
-            p_postfix_expr_node->expr_node          = NULL;
-            p_postfix_expr_node->primary_expr_node  = NULL;
             p_postfix_expr_node->assign_expr_nodes  = create_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_ARROW;
             
@@ -266,11 +251,8 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
 }
 
 static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
-    UnaryExprNode* unary_expr_node = malloc(sizeof(UnaryExprNode));
+    UnaryExprNode* unary_expr_node = calloc(1, sizeof(UnaryExprNode));
 
-    unary_expr_node->postfix_expr_node = NULL;
-    unary_expr_node->unary_expr_node   = NULL;
-    unary_expr_node->cast_expr_node    = NULL;
     unary_expr_node->type              = UN_NONE;
 
     const Token* token = vec->tokens[*index];
@@ -376,9 +358,7 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
 }
 
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index) {
-    CastExprNode* cast_expr_node = malloc(sizeof(CastExprNode));
-    cast_expr_node->unary_expr_node = NULL;
-    cast_expr_node->cast_expr_node  = NULL;
+    CastExprNode* cast_expr_node = calloc(1, sizeof(CastExprNode));
 
     cast_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
     if (cast_expr_node->unary_expr_node == NULL) {
@@ -390,12 +370,10 @@ static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index) {
 }
 
 static MultiPlicativeExprNode* create_multiplicative_expr_node(const TokenVec* vec, int* index) {
-    MultiPlicativeExprNode* multiplicative_expr_node = malloc(sizeof(MultiPlicativeExprNode));
+    MultiPlicativeExprNode* multiplicative_expr_node = calloc(1, sizeof(MultiPlicativeExprNode));
 
-    multiplicative_expr_node->operator_type            = OP_NONE;
-    multiplicative_expr_node->cast_expr_node           = NULL;
-    multiplicative_expr_node->multiplicative_expr_node = NULL;
-    multiplicative_expr_node->cast_expr_node           = create_cast_expr_node(vec, index);
+    multiplicative_expr_node->operator_type  = OP_NONE;
+    multiplicative_expr_node->cast_expr_node = create_cast_expr_node(vec, index);
     if (multiplicative_expr_node->cast_expr_node == NULL) {
         error("Failed to create cast-expression node.\n");
         return NULL;
@@ -426,11 +404,9 @@ static MultiPlicativeExprNode* create_multiplicative_expr_node(const TokenVec* v
 }
 
 static AdditiveExprNode* create_additive_expr_node(const TokenVec* vec, int* index) {
-    AdditiveExprNode* additive_expr_node = malloc(sizeof(AdditiveExprNode));
+    AdditiveExprNode* additive_expr_node = calloc(1, sizeof(AdditiveExprNode));
 
     additive_expr_node->operator_type            = OP_NONE;
-    additive_expr_node->multiplicative_expr_node = NULL;
-    additive_expr_node->additive_expr_node       = NULL;
     additive_expr_node->multiplicative_expr_node = create_multiplicative_expr_node(vec, index);
     if (additive_expr_node->multiplicative_expr_node == NULL) {
         error("Failed to create multiplicative-expression node.\n");
@@ -460,10 +436,8 @@ static AdditiveExprNode* create_additive_expr_node(const TokenVec* vec, int* ind
 }
 
 static ShiftExprNode* create_shift_expr(const TokenVec* vec, int* index) {
-    ShiftExprNode* shift_expr_node = malloc(sizeof(ShiftExprNode));
+    ShiftExprNode* shift_expr_node = calloc(1, sizeof(ShiftExprNode));
 
-    shift_expr_node->additive_expr_node = NULL;
-    shift_expr_node->shift_expr_node    = NULL;
     shift_expr_node->additive_expr_node = create_additive_expr_node(vec, index);
     if (shift_expr_node->additive_expr_node == NULL) {
         error("Failed to additive-expression node.\n");
@@ -474,10 +448,8 @@ static ShiftExprNode* create_shift_expr(const TokenVec* vec, int* index) {
 }
 
 static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int* index) {
-    RelationalExprNode* relational_expr_node = malloc(sizeof(RelationalExprNode));
+    RelationalExprNode* relational_expr_node = calloc(1, sizeof(RelationalExprNode));
 
-    relational_expr_node->shift_expr_node      = NULL;
-    relational_expr_node->relational_expr_node = NULL;
     relational_expr_node->cmp_type             = CMP_NONE;
     relational_expr_node->shift_expr_node      = create_shift_expr(vec, index);
     if (relational_expr_node->shift_expr_node == NULL) {
@@ -490,9 +462,8 @@ static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int*
     while (token->type == TK_LANGLE || token->type == TK_RANGLE || token->type == TK_LE || token->type == TK_GE) {
         ++(*index);
     
-        RelationalExprNode* parent = malloc(sizeof(EqualityExprNode));
+        RelationalExprNode* parent = calloc(1, sizeof(EqualityExprNode));
 
-        parent->shift_expr_node      = NULL;
         parent->relational_expr_node = current;
         parent->shift_expr_node      = create_shift_expr(vec, index);
         if (parent->shift_expr_node == NULL) {
@@ -513,9 +484,8 @@ static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int*
 }
 
 static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* index) {
-    EqualityExprNode* equality_expr_node = malloc(sizeof(EqualityExprNode));
+    EqualityExprNode* equality_expr_node = calloc(1, sizeof(EqualityExprNode));
 
-    equality_expr_node->equality_expr_node   = NULL;
     equality_expr_node->cmp_type             = CMP_NONE;
     equality_expr_node->relational_expr_node = create_relational_expr_node(vec, index);
     if (equality_expr_node->relational_expr_node == NULL) {
@@ -528,7 +498,7 @@ static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* ind
     while (token->type == TK_EQ || token->type == TK_NE) {
         ++(*index);
     
-        EqualityExprNode* p_equality_expr_node = malloc(sizeof(EqualityExprNode));
+        EqualityExprNode* p_equality_expr_node = calloc(1, sizeof(EqualityExprNode));
 
         p_equality_expr_node->equality_expr_node   = current;
         p_equality_expr_node->relational_expr_node = create_relational_expr_node(vec, index);
@@ -548,10 +518,7 @@ static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* ind
 }
 
 static AndExprNode* create_and_expr_node(const TokenVec* vec, int* index) {
-    AndExprNode* and_expr_node = malloc(sizeof(AndExprNode));
-
-    and_expr_node->equality_expr_node = NULL;
-    and_expr_node->and_expr_node      = NULL;
+    AndExprNode* and_expr_node = calloc(1, sizeof(AndExprNode));
 
     and_expr_node->equality_expr_node = create_equality_expr_node(vec, index);
     if (and_expr_node->equality_expr_node == NULL) {
@@ -563,10 +530,9 @@ static AndExprNode* create_and_expr_node(const TokenVec* vec, int* index) {
 }
 
 static ExclusiveOrExprNode* create_exclusive_or_expr_node(const TokenVec* vec, int* index) {
-    ExclusiveOrExprNode* exclusive_or_expr_node = malloc(sizeof(ExclusiveOrExprNode));
+    ExclusiveOrExprNode* exclusive_or_expr_node = calloc(1, sizeof(ExclusiveOrExprNode));
 
-    exclusive_or_expr_node->exclusive_or_expr_node = NULL;
-    exclusive_or_expr_node->and_expr_node          = create_and_expr_node(vec, index);
+    exclusive_or_expr_node->and_expr_node = create_and_expr_node(vec, index);
     if (exclusive_or_expr_node->and_expr_node == NULL) {
         error("Failed to create and-expression node.\n");
         return NULL;
@@ -589,9 +555,8 @@ static InclusiveOrExprNode* create_inclusive_or_expr_node(const TokenVec* vec, i
 }
 
 static LogicalAndExprNode* create_logical_and_expr_node(const TokenVec* vec, int* index) {
-    LogicalAndExprNode* logical_and_expr_node = malloc(sizeof(LogicalAndExprNode));
+    LogicalAndExprNode* logical_and_expr_node = calloc(1, sizeof(LogicalAndExprNode));
 
-    logical_and_expr_node->logical_and_expr_node  = NULL;
     logical_and_expr_node->inclusive_or_expr_node = create_inclusive_or_expr_node(vec, index);
     if (logical_and_expr_node->inclusive_or_expr_node == NULL) {
         error("Failed to create inclusive-or-expression node.\n");
@@ -603,7 +568,7 @@ static LogicalAndExprNode* create_logical_and_expr_node(const TokenVec* vec, int
     while (token->type == TK_LOGAND) {
         ++(*index);
 
-        LogicalAndExprNode* p_logical_and_expr_node = malloc(sizeof(LogicalAndExprNode));
+        LogicalAndExprNode* p_logical_and_expr_node = calloc(1, sizeof(LogicalAndExprNode));
 
         p_logical_and_expr_node->logical_and_expr_node  = current;
         p_logical_and_expr_node->inclusive_or_expr_node = create_inclusive_or_expr_node(vec, index);
@@ -620,9 +585,8 @@ static LogicalAndExprNode* create_logical_and_expr_node(const TokenVec* vec, int
 }
 
 static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* index) {
-    LogicalOrExprNode* logical_or_expr_node = malloc(sizeof(LogicalOrExprNode));
+    LogicalOrExprNode* logical_or_expr_node = calloc(1, sizeof(LogicalOrExprNode));
 
-    logical_or_expr_node->logical_or_expr_node  = NULL;
     logical_or_expr_node->logical_and_expr_node = create_logical_and_expr_node(vec, index);
     if (logical_or_expr_node->logical_and_expr_node == NULL) {
         error("Failed to create logical-and-expression node.\n");
@@ -634,7 +598,7 @@ static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* 
     while (token->type == TK_LOGOR) {
         ++(*index);
 
-        LogicalOrExprNode* p_logical_or_expr_node = malloc(sizeof(LogicalOrExprNode));
+        LogicalOrExprNode* p_logical_or_expr_node = calloc(1, sizeof(LogicalOrExprNode));
 
         p_logical_or_expr_node->logical_or_expr_node  = current;
         p_logical_or_expr_node->logical_and_expr_node = create_logical_and_expr_node(vec, index);
@@ -651,10 +615,8 @@ static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* 
 }
 
 static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, int* index) {
-    ConditionalExprNode* conditional_expr_node = malloc(sizeof(ConditionalExprNode));
+    ConditionalExprNode* conditional_expr_node = calloc(1, sizeof(ConditionalExprNode));
 
-    conditional_expr_node->expr_node             = NULL;
-    conditional_expr_node->conditional_expr_node = NULL;
     conditional_expr_node->logical_or_expr_node  = create_logical_or_expr_node(vec, index);
     if (conditional_expr_node->logical_or_expr_node == NULL) {
         error("Failed to create logical-or-expression node.\n");
@@ -689,11 +651,9 @@ static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, in
 }
 
 static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index) {
-    AssignExprNode* assign_expr_node = malloc(sizeof(AssignExprNode));
+    AssignExprNode* assign_expr_node = calloc(1, sizeof(AssignExprNode));
 
-    assign_expr_node->conditional_expr_node = NULL;
-    assign_expr_node->assign_expr_node      = NULL;
-    assign_expr_node->assign_operator       = OP_NONE;
+    assign_expr_node->assign_operator = OP_NONE;
 
     const int buf = *index;
     assign_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
@@ -737,9 +697,8 @@ static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index) 
 }
 
 static ExprNode* create_expr_node(const TokenVec* vec, int* index) {
-    ExprNode* expr_node = malloc(sizeof(ExprNode));
+    ExprNode* expr_node = calloc(1, sizeof(ExprNode));
 
-    expr_node->expr_node        = NULL;
     expr_node->assign_expr_node = create_assign_expr_node(vec, index);
     if (expr_node->assign_expr_node == NULL) {
         error("Failed to create assignment-expression node.\n");
@@ -751,7 +710,7 @@ static ExprNode* create_expr_node(const TokenVec* vec, int* index) {
     while (token->type == TK_COMMA) {
         ++(*index);
 
-        ExprNode* p_expr_node = malloc(sizeof(ExprNode));
+        ExprNode* p_expr_node = calloc(1, sizeof(ExprNode));
 
         p_expr_node->expr_node        = current;
         p_expr_node->assign_expr_node = create_assign_expr_node(vec, index);
@@ -768,10 +727,7 @@ static ExprNode* create_expr_node(const TokenVec* vec, int* index) {
 }
 
 static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
-    JumpStmtNode* jump_stmt_node = malloc(sizeof(JumpStmtNode));
-
-    jump_stmt_node->identifier = NULL;
-    jump_stmt_node->expr_node  = NULL;
+    JumpStmtNode* jump_stmt_node = calloc(1, sizeof(JumpStmtNode));
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -832,7 +788,7 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
 }
 
 static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
-    ExprStmtNode* expr_stmt_node = malloc(sizeof(ExprStmtNode));
+    ExprStmtNode* expr_stmt_node = calloc(1, sizeof(ExprStmtNode));
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_SEMICOL) {
@@ -857,11 +813,7 @@ static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
 }
 
 static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* index) {
-    SelectionStmtNode* selection_stmt_node = malloc(sizeof(SelectionStmtNode));
-
-    selection_stmt_node->expr_node    = NULL;
-    selection_stmt_node->stmt_node[0] = NULL;
-    selection_stmt_node->stmt_node[1] = NULL;
+    SelectionStmtNode* selection_stmt_node = calloc(1, sizeof(SelectionStmtNode));
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -952,9 +904,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
 }
 
 static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
-    ItrStmtNode* itr_stmt_node = malloc(sizeof(ItrStmtNode));
-    itr_stmt_node->expr_node[1] = NULL;
-    itr_stmt_node->expr_node[2] = NULL;
+    ItrStmtNode* itr_stmt_node = calloc(1, sizeof(ItrStmtNode));
 
     itr_stmt_node->declaration_nodes = create_vector();
     
@@ -1105,8 +1055,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
 }
 
 static LabeledStmtNode* create_labeled_stmt_node(const TokenVec* vec, int* index) {
-    LabeledStmtNode* labeled_stmt_node = malloc(sizeof(LabeledStmtNode));
-    labeled_stmt_node->conditional_expr_node = NULL;
+    LabeledStmtNode* labeled_stmt_node = calloc(1, sizeof(LabeledStmtNode));
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -1164,14 +1113,7 @@ static LabeledStmtNode* create_labeled_stmt_node(const TokenVec* vec, int* index
 }
 
 static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
-    StmtNode* stmt_node = malloc(sizeof(StmtNode));
-
-    stmt_node->labeled_stmt_node   = NULL;
-    stmt_node->jump_stmt_node      = NULL;
-    stmt_node->itr_stmt_node       = NULL;
-    stmt_node->expr_stmt_node      = NULL;
-    stmt_node->compound_stmt_node  = NULL;
-    stmt_node->selection_stmt_node = NULL;
+    StmtNode* stmt_node = calloc(1, sizeof(StmtNode));
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -1269,10 +1211,7 @@ static InitializerListNode* create_initializer_list_node(const TokenVec* vec, in
 }
 
 static InitializerNode* create_initializer_node(const TokenVec* vec, int* index) {
-    InitializerNode* initializer_node = malloc(sizeof(InitializerNode));
-
-    initializer_node->initializer_list_node = NULL;
-    initializer_node->assign_expr_node      = NULL;
+    InitializerNode* initializer_node = calloc(1, sizeof(InitializerNode));
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_LBRCKT) {
@@ -1308,11 +1247,9 @@ static bool is_declarator(const TokenVec* vec, int index) {
 }
 
 static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, int* index) {
-    ParamDeclarationNode* param_declaration_node = malloc(sizeof(ParamDeclarationNode));
+    ParamDeclarationNode* param_declaration_node = calloc(1, sizeof(ParamDeclarationNode));
 
     param_declaration_node->decl_spec_nodes          = create_vector();
-    param_declaration_node->declarator_node          = NULL;
-    param_declaration_node->abstract_declarator_node = NULL;
 
     while (is_declaration_specifier(vec, *index)) {
         DeclSpecifierNode* decl_spec_node = create_decl_specifier_node(vec, index);
@@ -1332,9 +1269,7 @@ static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, 
 }
 
 static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
-    ParamListNode* param_list_node = malloc(sizeof(ParamListNode));
-
-    param_list_node->param_list_node = NULL;
+    ParamListNode* param_list_node = calloc(1, sizeof(ParamListNode));
     
     param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
     if (param_list_node->param_declaration_node == NULL) {
@@ -1351,9 +1286,7 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
 
         ++(*index);
 
-        ParamListNode* p_param_list_node = malloc(sizeof(ParamListNode));
-
-        p_param_list_node->param_list_node = NULL;
+        ParamListNode* p_param_list_node = calloc(1, sizeof(ParamListNode));
 
         p_param_list_node->param_list_node        = current;
         p_param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
@@ -1370,9 +1303,8 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
 }
 
 static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* index) {
-    ParamTypeListNode* param_type_list_node = malloc(sizeof(ParamTypeListNode));
+    ParamTypeListNode* param_type_list_node = calloc(1, sizeof(ParamTypeListNode));
     
-    param_type_list_node->has_ellipsis    = false;
     param_type_list_node->param_list_node = create_param_list_node(vec, index);
     if (param_type_list_node->param_list_node == NULL) {
         error("Failed to create parameter-type-list node.\n");
@@ -1396,15 +1328,9 @@ static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* 
 }
 
 static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, int* index) {
-    DirectDeclaratorNode* direct_declarator_node = malloc(sizeof(DirectDeclaratorNode));
+    DirectDeclaratorNode* direct_declarator_node = calloc(1, sizeof(DirectDeclaratorNode));
 
-    direct_declarator_node->identifier             = NULL;
-    direct_declarator_node->identifier_len         = 0;
-    direct_declarator_node->declarator_node        = NULL; // @todo
-    direct_declarator_node->direct_declarator_node = NULL; // @todo
-    direct_declarator_node->conditional_expr_node  = NULL; // @todo
-    direct_declarator_node->param_type_list_node   = NULL; // @todo
-    direct_declarator_node->identifier_list        = create_vector();
+    direct_declarator_node->identifier_list = create_vector();
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -1421,47 +1347,6 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
         break;
     }
     default: {
-#if 0
-        direct_declarator_node->direct_declarator_node = create_direct_declarator_node(vec, index);
-        if (direct_declarator_node->direct_declarator_node == NULL) {
-            error("Failed to create direct-declarator node.\n");
-            return NULL;
-        }
-        
-        token = vec->tokens[*index];
-        switch (token->type) {
-        case TK_LSQUARE: {
-            ++(*index);
-
-            token = vec->tokens[*index];
-            if (token->type == TK_RSQUARE) {
-                ++(*index);
-                break;
-            }
-
-            direct_declarator_node->conditional_expr_node = create_conditional_expr_node(vec, index);
-            if (direct_declarator_node->conditional_expr_node == NULL) {
-                error("Failed to create conditional-expr node.\n");
-                return NULL;
-            }
-
-            token = vec->tokens[*index];
-            if (token->type != TK_RSQUARE) {
-                error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
-                return NULL;
-            }
-            break;
-        }
-        case TK_LPAREN: {
-            // @todo
-            break;
-        }
-        default: {
-            break;
-        }
-        }
-#endif
-
         break;
     }
     }
@@ -1471,14 +1356,9 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
     while (token->type == TK_LSQUARE || token->type == TK_LPAREN) {
         ++(*index);
    
-        DirectDeclaratorNode* p_direct_declarator_node = malloc(sizeof(DirectDeclaratorNode));
+        DirectDeclaratorNode* p_direct_declarator_node = calloc(1, sizeof(DirectDeclaratorNode));
         
-        p_direct_declarator_node->identifier             = NULL;
-        p_direct_declarator_node->identifier_len         = 0;
-        p_direct_declarator_node->declarator_node        = NULL; 
         p_direct_declarator_node->direct_declarator_node = current;
-        p_direct_declarator_node->conditional_expr_node  = NULL; 
-        p_direct_declarator_node->param_type_list_node   = NULL; 
         p_direct_declarator_node->identifier_list        = create_vector();
 
         switch (token->type) {
@@ -1573,9 +1453,7 @@ static PointerNode* create_pointer_node(const TokenVec* vec, int* index) {
 }
 
 static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index) {
-    DeclaratorNode* declarator_node = malloc(sizeof(DeclaratorNode));
-
-    declarator_node->pointer_node = NULL;
+    DeclaratorNode* declarator_node = calloc(1, sizeof(DeclaratorNode));
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_ASTER) {
@@ -1592,10 +1470,9 @@ static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index) {
 }
 
 static InitDeclaratorNode* create_init_declarator_node(const TokenVec* vec, int* index) {
-    InitDeclaratorNode* init_declarator_node = malloc(sizeof(InitDeclaratorNode));
+    InitDeclaratorNode* init_declarator_node = calloc(1, sizeof(InitDeclaratorNode));
 
-    init_declarator_node->initializer_node = NULL;
-    init_declarator_node->declarator_node  = create_declarator_node(vec, index);
+    init_declarator_node->declarator_node = create_declarator_node(vec, index);
     if (init_declarator_node->declarator_node == NULL) {
         error("Failed to create declarator-node.\n");
         return NULL;
@@ -1616,9 +1493,7 @@ static InitDeclaratorNode* create_init_declarator_node(const TokenVec* vec, int*
 }
 
 static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* vec, int* index) {
-    SpecifierQualifierNode* specifier_qualifier_node = malloc(sizeof(SpecifierQualifierNode));
-    specifier_qualifier_node->type_specifier_node = NULL;
-    specifier_qualifier_node->is_const            = false;
+    SpecifierQualifierNode* specifier_qualifier_node = calloc(1, sizeof(SpecifierQualifierNode));
 
     const Token* token = vec->tokens[*index];
     if (is_type_specifier(vec, *index)) {
@@ -1774,10 +1649,7 @@ static EnumeratorListNode* create_enumerator_list_node(const TokenVec* vec, int*
 }
 
 static EnumSpecifierNode* create_enum_specifier_node(const TokenVec* vec, int* index) {
-    EnumSpecifierNode* enum_specifier_node = malloc(sizeof(EnumSpecifierNode));
-
-    enum_specifier_node->identifier           = NULL;
-    enum_specifier_node->enumerator_list_node = NULL;
+    EnumSpecifierNode* enum_specifier_node = calloc(1, sizeof(EnumSpecifierNode));
 
     const Token* token = vec->tokens[*index];
     if (token->type != TK_ENUM) {
@@ -1817,11 +1689,9 @@ static EnumSpecifierNode* create_enum_specifier_node(const TokenVec* vec, int* i
 }
 
 static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index) {
-    TypeSpecifierNode* type_specifier_node = malloc(sizeof(TypeSpecifierNode));
+    TypeSpecifierNode* type_specifier_node = calloc(1, sizeof(TypeSpecifierNode));
 
-    type_specifier_node->type_specifier                 = TYPE_NONE;
-    type_specifier_node->struct_specifier_node = NULL;
-    type_specifier_node->struct_name                    = NULL;
+    type_specifier_node->type_specifier = TYPE_NONE;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {
@@ -1860,11 +1730,7 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
 }
 
 static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index) {
-    DeclSpecifierNode* decl_specifier_node = malloc(sizeof(DeclSpecifierNode));
-
-    decl_specifier_node->type_specifier_node = NULL;
-    decl_specifier_node->is_const            = false;
-    decl_specifier_node->is_static           = false;
+    DeclSpecifierNode* decl_specifier_node = calloc(1, sizeof(DeclSpecifierNode));
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_STATIC) {
@@ -1997,11 +1863,9 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
 }
 
 static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
-    FuncDefNode* func_def_node = malloc(sizeof(FuncDefNode));
+    FuncDefNode* func_def_node = calloc(1, sizeof(FuncDefNode));
 
     func_def_node->decl_specifier_nodes = create_vector();
-    func_def_node->declarator_node      = NULL;
-    func_def_node->compound_stmt_node   = NULL;
 
     // {declaration-specifier}*
     while (is_declaration_specifier(vec, *index)) {
@@ -2055,10 +1919,7 @@ static bool is_func_def(const TokenVec* vec, int index) {
 }
 
 static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* index) {
-    ExternalDeclNode* external_decl_node = malloc(sizeof(ExternalDeclNode));
-    external_decl_node->enum_specifier_node = NULL;
-    external_decl_node->declaration_node    = NULL;
-    external_decl_node->func_def_node       = NULL;
+    ExternalDeclNode* external_decl_node = calloc(1, sizeof(ExternalDeclNode));
 
     const Token* token = vec->tokens[*index];
     if (token->type == TK_TYPEDEF) {

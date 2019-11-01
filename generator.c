@@ -157,7 +157,7 @@ static void process_identifier_right(const char* identifier, int len) {
             print_code("mov rax, [rax]");
         } 
         print_code("push rax");
-        intstack_push(size_stack, lv->type->type_size);
+        intstack_push(size_stack, lv->type->size);
 
         return;
     } 
@@ -169,7 +169,7 @@ static void process_identifier_right(const char* identifier, int len) {
         print_code("mov rax, [rax]");
     }
     print_code("push rax");
-    intstack_push(size_stack, gv->type->type_size);
+    intstack_push(size_stack, gv->type->size);
 }
 
 static void process_identifier_addr(const char* identifier, int len) {
@@ -373,12 +373,12 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         print_code("pop rdi");
         print_code("pop rax");
         if (lv != NULL) {
-            print_code("imul rdi, %d", lv->type->type_size);
+            print_code("imul rdi, %d", lv->type->size);
+
             print_code("add rax, rdi");
-            // print_code("sub rax, %d", lv->type->type_size * lv->type->array_size);
         } else {
             const GlobalVar* gv = get_globalvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
-            print_code("imul rdi, %d", gv->type->type_size);
+            print_code("imul rdi, %d", gv->type->size);
             print_code("add rax, rdi");
         }
 
@@ -1238,18 +1238,22 @@ static void process_declaration(const DeclarationNode* node) {
         const PointerNode* pointer_node = declarator_node->pointer_node;
         if (pointer_node != NULL) {
             lv->type->ptr_count = pointer_node->count;
+            lv->type->size      = 8;
+        } else {
+            lv->type->size = lv->type->type_size;
         }
 
         const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
         const ConditionalExprNode*  conditional_expr_node  = direct_declarator_node->conditional_expr_node;
         if (conditional_expr_node == NULL) {
             lv->type->array_size = 0;
-            current_offset += lv->type->type_size;
+            current_offset += lv->type->size;
         } else {
             lv->type->array_size = get_array_size_from_constant_expr(conditional_expr_node);
-            current_offset += (lv->type->array_size * lv->type->type_size);
+            current_offset += (lv->type->array_size * lv->type->size);
+
         }
-        lv->offset = align_offset(current_offset, lv->type->type_size);
+        lv->offset = align_offset(current_offset, lv->type->size);
 
         const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
         lv->name_len = ident_node->identifier_len;
@@ -1412,10 +1416,7 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
 }
 
 static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
-    Type* type = malloc(sizeof(Type));
-    type->array_size  = 0;
-    type->ptr_count   = 0;
-    type->struct_info = NULL;
+    Type* type = calloc(1, sizeof(Type));
 
     switch (node->type_specifier) {
     case TYPE_VOID: { 
@@ -1502,6 +1503,9 @@ static void process_args(const ParamListNode* node, int arg_index) {
     const PointerNode* pointer_node = declarator_node->pointer_node;
     if (pointer_node != NULL) {
         lv->type->ptr_count = pointer_node->count;
+        lv->type->size      = 8;
+    } else {
+        lv->type->size = lv->type->type_size;
     }
 
     print_code("mov [rbp-%d], %s", lv->offset, arg_registers[arg_index]);
@@ -1578,10 +1582,7 @@ static int get_int_constant_from_initializer(const InitializerNode* node) {
 }
 
 static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
-    Type* type = malloc(sizeof(Type));
-    type->array_size  = 0;
-    type->ptr_count   = 0;
-    type->struct_info = NULL;
+    Type* type = calloc(1, sizeof(Type));
 
     switch (node->type_specifier) {
     case TYPE_CHAR: { 
@@ -1634,7 +1635,10 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
                     const PointerNode* pointer_node = node->pointer_node;
                     if (pointer_node != NULL) {
                         field_type->ptr_count = pointer_node->count;
-                    } 
+                        field_type->size      = 8; 
+                    } else {
+                        field_type->size = field_type->type_size;
+                    }
 
                     const char* field_name = node->direct_declarator_node->identifier;
  
@@ -1642,7 +1646,7 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
                     field_info->type      = field_type;
 
                     field_info->offset = offset;
-                    offset += field_info->type->type_size;
+                    offset += field_info->type->size;
 
                     strptrmap_put(type->struct_info->field_info_map, field_name, field_info);
                 }
@@ -1690,6 +1694,9 @@ static void process_global_declaration(const DeclarationNode* node) {
         const PointerNode* pointer_node = declarator_node->pointer_node;
         if (pointer_node != NULL) {
             gv->type->ptr_count = pointer_node->count;
+            gv->type->size      = 8;
+        } else {
+            gv->type->size = gv->type->type_size;
         }
 
         const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;

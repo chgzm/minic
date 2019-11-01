@@ -32,6 +32,7 @@ struct StructInfo {
 struct Type {
     int         base_type;
     int         type_size;
+    int         size;
     int         array_size;
     int         ptr_count;
     StructInfo* struct_info;

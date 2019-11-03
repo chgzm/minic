@@ -1278,13 +1278,17 @@ static void process_declaration(const DeclarationNode* node) {
     }
 }
 
-static void process_compound_stmt(const CompoundStmtNode* node) {
-    for (int i = 0; i < node->declaration_nodes->size; ++i) {
-        process_declaration(node->declaration_nodes->elements[i]);
+static void process_block_item(const BlockItemNode* node) {
+    if (node->declaration_node != NULL) {
+        process_declaration(node->declaration_node);
+    } else {
+        process_stmt(node->stmt_node);
     }
+}
 
-    for (int i = 0; i < node->stmt_nodes->size; ++i) {
-        process_stmt(node->stmt_nodes->elements[i]);
+static void process_compound_stmt(const CompoundStmtNode* node) {
+    for (int i = 0; i < node->block_item_nodes->size; ++i) {
+        process_block_item(node->block_item_nodes->elements[i]);
     }
 }
 
@@ -1335,78 +1339,79 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
     }
 
     int size = 0;
+    for (int i = 0; i < node->block_item_nodes->size; ++i) {
+        const BlockItemNode* block_item_node = node->block_item_nodes->elements[i];
+        //
+        // declaration
+        // 
+        if (block_item_node->declaration_node != NULL) {
+            const DeclarationNode* declaration_node = block_item_node->declaration_node;
 
-    //
-    // declaration
-    // 
-    for (int i = 0; i < node->declaration_nodes->size; ++i) {
-        const DeclarationNode* declaration_node = (const DeclarationNode*)(node->declaration_nodes->elements[i]);
+            int var_size = 0;
+            const Vector* decl_specifier_nodes = declaration_node->decl_specifier_nodes;
+            for (int j = 0; j < decl_specifier_nodes->size; ++j) {
+                const DeclSpecifierNode* decl_specifier_node = (const DeclSpecifierNode*)(decl_specifier_nodes->elements[j]);
+                if (decl_specifier_node->type_specifier_node != NULL) {
+                    const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
 
-        int var_size = 0;
-        const Vector* decl_specifier_nodes = declaration_node->decl_specifier_nodes;
-        for (int j = 0; j < decl_specifier_nodes->size; ++j) {
-            const DeclSpecifierNode* decl_specifier_node = (const DeclSpecifierNode*)(decl_specifier_nodes->elements[j]);
-            if (decl_specifier_node->type_specifier_node != NULL) {
-                const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
+                    if (type_specifier_node->type_specifier == TYPE_STRUCT) {
+                        const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
+                        const char* ident = struct_specifier_node->identifier;
+                        const StructInfo* struct_info = strptrmap_get(struct_map, ident);
+                        var_size = struct_info->field_info_map->size * 8;
+                    } 
+                    else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
+                        const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
+                        var_size = struct_info->field_info_map->size * 8;
+                    } else {
+                        var_size = 8; // @todo
+                    }
 
-                if (type_specifier_node->type_specifier == TYPE_STRUCT) {
-                    const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
-                    const char* ident = struct_specifier_node->identifier;
-                    const StructInfo* struct_info = strptrmap_get(struct_map, ident);
-                    var_size = struct_info->field_info_map->size * 8;
-                } 
-                else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
-                    const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-                    var_size = struct_info->field_info_map->size * 8;
-                } else {
-                    var_size = 8; // @todo
+                    break;
                 }
-
-                break;
             }
-        }
 
-        const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
-        for (int j = 0; j < init_declarator_nodes->size; ++j) {
-            const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[j]);
-            const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
-            const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
-
-            if (direct_declarator_node->conditional_expr_node == NULL) {
-                size += var_size;
-            } else {
-                const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
-                size += (array_size * var_size);
-            }
-        }
-    }
-
-    //
-    // statement
-    // 
-    for (int i = 0; i < node->stmt_nodes->size; ++i) {
-        const StmtNode* stmt_node = node->stmt_nodes->elements[i];
-        size += calc_localvar_size_in_compound_stmt(stmt_node->compound_stmt_node);
-
-        if (stmt_node->itr_stmt_node == NULL) {
-            continue;
-        }
-
-        const ItrStmtNode* itr_stmt_node = stmt_node->itr_stmt_node;
-        for (int j = 0; j < itr_stmt_node->declaration_nodes->size; ++j) {
-            const DeclarationNode* declaration_node = (const DeclarationNode*)(itr_stmt_node->declaration_nodes->elements[j]);
             const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
-
-            for (int k = 0; k < init_declarator_nodes->size; ++k) {
-                const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[k]);
+            for (int j = 0; j < init_declarator_nodes->size; ++j) {
+                const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[j]);
                 const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
                 const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
 
                 if (direct_declarator_node->conditional_expr_node == NULL) {
-                    size += 8;
+                    size += var_size;
                 } else {
                     const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
-                    size += (array_size * 8);
+                    size += (array_size * var_size);
+                }
+            }
+        }
+        //
+        // statement
+        // 
+        else {
+            const StmtNode* stmt_node = block_item_node->stmt_node;
+            size += calc_localvar_size_in_compound_stmt(stmt_node->compound_stmt_node);
+
+            if (stmt_node->itr_stmt_node == NULL) {
+                continue;
+            }
+
+            const ItrStmtNode* itr_stmt_node = stmt_node->itr_stmt_node;
+            for (int j = 0; j < itr_stmt_node->declaration_nodes->size; ++j) {
+                const DeclarationNode* declaration_node = (const DeclarationNode*)(itr_stmt_node->declaration_nodes->elements[j]);
+                const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
+
+                for (int k = 0; k < init_declarator_nodes->size; ++k) {
+                    const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[k]);
+                    const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
+                    const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
+
+                    if (direct_declarator_node->conditional_expr_node == NULL) {
+                        size += 8;
+                    } else {
+                        const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
+                        size += (array_size * 8);
+                    }
                 }
             }
         }

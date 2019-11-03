@@ -236,7 +236,11 @@ initializer-list:
     initializer {, initializer}*
 
 compound-statement: 
-    '{' {declaration}* {statement}* '}'
+    '{' {block-item}* '}'
+
+block-item:
+    declaration
+    statement
 
 statement: 
     labeled-statement

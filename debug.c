@@ -97,6 +97,7 @@ static void dump_declaration_node(const DeclarationNode* node, int indent);
 static void dump_init_declarator_node(const InitDeclaratorNode* node, int indent);
 static void dump_initializer_node(const InitializerNode* node, int indent);
 static void dump_initializer_list_node(const InitializerListNode* node, int indent);
+static void dump_block_item_node(const BlockItemNode* node, int indent);
 static void dump_compound_stmt_node(const CompoundStmtNode* node, int indent);
 static void dump_stmt_node(const StmtNode* node, int indent);
 static void dump_labeled_stmt_node(const LabeledStmtNode* node, int indent);
@@ -644,16 +645,21 @@ static void dump_initializer_list_node(const InitializerListNode* node, int inde
     printf_indent(indent, "InitializerListNode\n");
 }
 
+static void dump_block_item_node(const BlockItemNode* node, int indent) {
+    printf_indent(indent, "BlockItemNode\n");
+
+    if (node->declaration_node != NULL) {
+        dump_declaration_node(node->declaration_node, indent + 2);
+    } else {
+        dump_stmt_node(node->stmt_node, indent + 2);
+    }
+}
+
 static void dump_compound_stmt_node(const CompoundStmtNode* node, int indent) {
     printf_indent(indent, "CompoundStmtNode\n");
-    for (int i = 0; i < node->declaration_nodes->size; ++i) {
-        const DeclarationNode* declaration_node = (const DeclarationNode*)(node->declaration_nodes->elements[i]);
-        dump_declaration_node(declaration_node, indent + 2);
-    }
-
-    for (int i = 0; i < node->stmt_nodes->size; ++i) {
-        const StmtNode* stmt_node = (const StmtNode*)(node->stmt_nodes->elements[i]);
-        dump_stmt_node(stmt_node, indent + 2);
+    for (int i = 0; i < node->block_item_nodes->size; ++i) {
+        const BlockItemNode* block_item_node = node->block_item_nodes->elements[i];
+        dump_block_item_node(block_item_node, indent + 2);
     }
 }
 

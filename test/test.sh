@@ -59,6 +59,7 @@ assert_return test_localvar_3.c 17
 assert_return test_localvar_4.c 7
 assert_return test_localvar_5.c 34
 assert_return test_localvar_6.c 34
+assert_return test_localvar_7.c 120
 
 assert_return test_func.c 42
 assert_return test_func_2.c 5

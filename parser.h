@@ -143,6 +143,7 @@ typedef struct InitDeclaratorNode InitDeclaratorNode;
 typedef struct InitializerNode InitializerNode;
 typedef struct InitializerListNode InitializerListNode;
 typedef struct CompoundStmtNode CompoundStmtNode;
+typedef struct BlockItemNode BlockItemNode;
 typedef struct StmtNode StmtNode;
 typedef struct LabeledStmtNode LabeledStmtNode;
 typedef struct ExprStmtNode ExprStmtNode;
@@ -387,8 +388,12 @@ struct InitializerListNode {
 };
 
 struct CompoundStmtNode {
-    Vector* declaration_nodes;
-    Vector* stmt_nodes;
+    Vector* block_item_nodes;
+};
+
+struct BlockItemNode {
+    DeclarationNode* declaration_node;
+    StmtNode*        stmt_node;
 };
 
 struct StmtNode {

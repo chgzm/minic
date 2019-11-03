@@ -1807,56 +1807,53 @@ static bool is_declaration_specifier(const TokenVec* vec, int index) {
     );
 }
 
+static BlockItemNode* create_block_item_node(const TokenVec* vec, int* index) {
+    BlockItemNode* block_item_node = calloc(1, sizeof(BlockItemNode));
+
+    if (is_declaration_specifier(vec, *index)) {
+        block_item_node->declaration_node = create_declaration_node(vec, index);
+        if (block_item_node->declaration_node == NULL) {
+            error("Failed to create decalratiaon node.\n");
+            return NULL;
+        }
+    }
+    else {
+        block_item_node->stmt_node = create_stmt_node(vec, index);
+        if (block_item_node->stmt_node == NULL) {
+            error("Failed to create statement node.\n");
+            return NULL;
+        }
+    }
+
+    return block_item_node;
+}
+
 static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index) {
     CompoundStmtNode* compound_stmt_node = malloc(sizeof(CompoundStmtNode));
 
-    compound_stmt_node->declaration_nodes = create_vector();
-    compound_stmt_node->stmt_nodes        = create_vector();
+    compound_stmt_node->block_item_nodes = create_vector();
 
-    // {
-    {
-        const Token* token = vec->tokens[*index];
-        if (token->type != TK_LBRCKT) {
-            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
-            return NULL;
-        }
-        ++(*index);
+    const Token* token = vec->tokens[*index];
+    if (token->type != TK_LBRCKT) {
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
+        return NULL;
     }
+    ++(*index);
 
-    // declaration*
-    {
-        while (is_declaration_specifier(vec, *index)) {
-            DeclarationNode* declaration_node = create_declaration_node(vec, index);
-            if (declaration_node == NULL) {
-                error("Failed to create declaration-node.\n");
-                return NULL;
-            }
-
-            vector_push_back(compound_stmt_node->declaration_nodes, declaration_node);
+    while (true) {
+        token = vec->tokens[*index];
+        if (token->type == TK_RBRCKT) {
+            ++(*index);
+            break;
         }
-    }
 
-    // statement*
-    {
-        while (vec->tokens[*index]->type != TK_RBRCKT) {
-            StmtNode* stmt_node = create_stmt_node(vec, index);
-            if (stmt_node == NULL) {
-                error("Failed to create statement node.\n");
-                return NULL;
-            }
-
-            vector_push_back(compound_stmt_node->stmt_nodes, stmt_node);
+        BlockItemNode* block_item_node = create_block_item_node(vec, index);
+        if (block_item_node == NULL) {
+            error("Failed to create block-item node.\n");
+            return NULL; 
         }
-    }
 
-    // }
-    {
-        const Token* token = vec->tokens[*index];
-        if (token->type != TK_RBRCKT) {
-            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
-            return NULL;
-        }
-        ++(*index);
+        vector_push_back(compound_stmt_node->block_item_nodes, block_item_node);
     }
 
     return compound_stmt_node;

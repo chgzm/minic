@@ -48,7 +48,7 @@ struct __va_list {
 // fmt
 //
 
-const char* fmt(const char* fmt, ...);
+char* fmt(const char* fmt, ...);
 
 //
 // read file

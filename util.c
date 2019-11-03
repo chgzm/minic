@@ -59,7 +59,7 @@ void error(const char* fmt, ...) {
 // fmt
 //
 
-const char* fmt(const char* fmt, ...) {
+char* fmt(const char* fmt, ...) {
     char buf[1024];
     va_list ap;
     va_start(ap, fmt);

@@ -60,7 +60,7 @@ static const char* get_label() {
     return fmt(".L%d", label_index++);
 }
 
-static const char* get_string_label() {
+static char* get_string_label() {
     return fmt(".LC%d", string_index++);
 }
 
@@ -1781,14 +1781,35 @@ static void process_global_declaration(const DeclarationNode* node) {
                 }
             } 
             else {
-                printf(".data\n");
-                printf("%s:\n", gv->name);
-
                 InitializerListNode* initializer_list_node = initializer_node->initializer_list_node;
-                for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
-                    const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
-                    const int int_constant = get_int_constant(init->assign_expr_node);
-                    print_code(".quad %d", int_constant); 
+                const InitializerNode* first = initializer_list_node->initializer_nodes->elements[0];
+                if (is_int_constant(first->assign_expr_node)) {
+                    printf(".data\n");
+                    printf("%s:\n", gv->name);
+
+                    for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
+                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
+                        const int int_constant = get_int_constant(init->assign_expr_node);
+                        print_code(".quad %d", int_constant); 
+                    }
+                } else {
+                    Vector* label_list = create_vector();
+                    for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
+                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
+                        char* label = get_string_label();
+                        printf(".data\n");
+                        printf("%s:\n", label);
+                        print_code(".string \"%s\"", get_character_constant(init->assign_expr_node));
+                        print_code(".text\n");
+
+                        vector_push_back(label_list, label);
+                   }
+
+                   printf("%s:\n", gv->name);
+                   for (int j = 0; j < label_list->size; ++j) {
+                       char* l = label_list->elements[j];
+                       print_code(".quad %s", l);
+                   }
                 }
             }
         }

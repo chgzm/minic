@@ -52,6 +52,7 @@ assert_return test_return_mod_2.c 0
 assert_return test_return_mix.c 33
 assert_return test_return_paren.c 50
 assert_return test_return_paren_2.c 35
+assert_return test_return_minus.c 1
 
 assert_return test_localvar.c 42
 assert_return test_localvar_2.c 7

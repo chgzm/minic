@@ -2022,7 +2022,6 @@ TransUnitNode* parse(const TokenVec* vec) {
 
     int index = 0;
     while (index < vec->size) {
-        printf("index=%d\n", index);
         ExternalDeclNode* external_decl_node = create_external_decl_node(vec, &index);
         if (external_decl_node == NULL) {
             error("Failed to create external-declaration node.\n");

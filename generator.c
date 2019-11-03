@@ -577,6 +577,12 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
             break;
         }
         case OP_SUB: {
+            process_cast_expr(node->cast_expr_node);
+            print_code("pop rdi");
+            print_code("mov rax, 0");
+            print_code("sub rax, rdi");
+            print_code("push rax");
+
             break;
         }
         case OP_TILDE: {

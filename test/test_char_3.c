@@ -7,7 +7,7 @@ int main() {
     a[4] = 'o';
     a[5] = '\0';
 
-    printf("%s\n", a);
+    printf("%s", a);
 
     return 0;
 }

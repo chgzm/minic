@@ -350,7 +350,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
             process_conditional_expr(assign_expr_node->conditional_expr_node);
         }
 
-        for (int i = 0; i < node->assign_expr_nodes->size; ++i) {
+        for (int i = node->assign_expr_nodes->size - 1; i >= 0; --i) {
             print_code("pop rax");
             print_code("mov %s, rax", arg_registers[i]);
         }
@@ -1565,27 +1565,6 @@ static void process_func_def(const FuncDefNode* node) {
     current_offset = 0;
 }
 
-static int get_int_constant_from_initializer(const InitializerNode* node) {
-    return node->assign_expr_node
-               ->conditional_expr_node
-               ->logical_or_expr_node
-               ->logical_and_expr_node
-               ->inclusive_or_expr_node
-               ->exclusive_or_expr_node
-               ->and_expr_node
-               ->equality_expr_node
-               ->relational_expr_node
-               ->shift_expr_node
-               ->additive_expr_node
-               ->multiplicative_expr_node
-               ->cast_expr_node
-               ->unary_expr_node
-               ->postfix_expr_node
-               ->primary_expr_node
-               ->constant_node
-               ->integer_constant;
-}
-
 static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     Type* type = calloc(1, sizeof(Type));
 
@@ -1674,6 +1653,67 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     }
 }
 
+static int get_int_constant(const AssignExprNode* node) {
+    return node->conditional_expr_node
+               ->logical_or_expr_node
+               ->logical_and_expr_node
+               ->inclusive_or_expr_node
+               ->exclusive_or_expr_node
+               ->and_expr_node
+               ->equality_expr_node
+               ->relational_expr_node
+               ->shift_expr_node
+               ->additive_expr_node
+               ->multiplicative_expr_node
+               ->cast_expr_node
+               ->unary_expr_node
+               ->postfix_expr_node
+               ->primary_expr_node
+               ->constant_node
+               ->integer_constant;
+}
+
+static const char* get_character_constant(const AssignExprNode* node) {
+    return node->conditional_expr_node
+               ->logical_or_expr_node
+               ->logical_and_expr_node
+               ->inclusive_or_expr_node
+               ->exclusive_or_expr_node
+               ->and_expr_node
+               ->equality_expr_node
+               ->relational_expr_node
+               ->shift_expr_node
+               ->additive_expr_node
+               ->multiplicative_expr_node
+               ->cast_expr_node
+               ->unary_expr_node
+               ->postfix_expr_node
+               ->primary_expr_node
+               ->constant_node
+               ->character_constant;
+}
+
+
+static bool is_int_constant(const AssignExprNode* node) {
+     return (CONST_INT == node->conditional_expr_node
+                              ->logical_or_expr_node
+                              ->logical_and_expr_node
+                              ->inclusive_or_expr_node
+                              ->exclusive_or_expr_node
+                              ->and_expr_node
+                              ->equality_expr_node
+                              ->relational_expr_node
+                              ->shift_expr_node
+                              ->additive_expr_node
+                              ->multiplicative_expr_node
+                              ->cast_expr_node
+                              ->unary_expr_node
+                              ->postfix_expr_node
+                              ->primary_expr_node
+                              ->constant_node
+                              ->const_type);
+}
+
 static void process_global_declaration(const DeclarationNode* node) {
     // create type
     Type* type = NULL;
@@ -1723,17 +1763,31 @@ static void process_global_declaration(const DeclarationNode* node) {
         if (init_declarator_node->initializer_node != NULL) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
 
-            printf(".data\n");
-            printf("%s:\n", gv->name);
-
             if (initializer_node->assign_expr_node != NULL) {
-                const int int_constant = get_int_constant_from_initializer(initializer_node);
-                print_code(".quad %d", int_constant); 
+                if (is_int_constant(initializer_node->assign_expr_node)) {
+                    const int int_constant = get_int_constant(initializer_node->assign_expr_node);
+                    printf(".data\n");
+                    printf("%s:\n", gv->name);
+                    print_code(".quad %d", int_constant); 
+                } 
+                else {
+                    const char* label = get_string_label();
+                    printf(".data\n");
+                    printf("%s:\n", label);
+                    print_code(".string \"%s\"", get_character_constant(initializer_node->assign_expr_node));
+                    print_code(".text\n");
+                    printf("%s:\n", gv->name);
+                    print_code(".quad %s", label); 
+                }
             } 
             else {
+                printf(".data\n");
+                printf("%s:\n", gv->name);
+
                 InitializerListNode* initializer_list_node = initializer_node->initializer_list_node;
                 for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
-                    const int int_constant = get_int_constant_from_initializer(initializer_list_node->initializer_nodes->elements[j]);
+                    const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
+                    const int int_constant = get_int_constant(init->assign_expr_node);
                     print_code(".quad %d", int_constant); 
                 }
             }

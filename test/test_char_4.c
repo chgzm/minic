@@ -10,7 +10,7 @@ char* func() {
 
 int main() {
     char* str = func();
-    printf("%s\n", str);
+    printf("%s", str);
     
     return 0;
 }

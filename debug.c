@@ -48,7 +48,11 @@ void debug(const char* fmt, ...) {
 
 void dump_tokens(const TokenVec* vec) {
     for (int i = 0; i < vec->size; ++i) {
-        fprintf(stdout, "index=%d,token=\"%s\"\n", i, decode_token_type(vec->tokens[i]->type));
+        printf("index=%d,token=\"%s\"", i, decode_token_type(vec->tokens[i]->type));
+        if (vec->tokens[i]->type == TK_IDENT) {
+            printf("=\"%s\"", vec->tokens[i]->str);
+        }
+        printf("\n");
     }
 }
 

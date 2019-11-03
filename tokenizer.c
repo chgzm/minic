@@ -66,6 +66,23 @@ static Token* read_directive(const char* p, int* pos) {
 
     *pos += len; 
 
+    int a = 0;
+    while (p[*pos + a] == ' ') {
+        ++a;
+    }
+
+    while (isalpha(p[*pos + a]) || p[*pos + a] == '_' || isdigit(p[*pos +a])) {
+        ++a;
+    }
+
+    while (p[*pos + a] == ' ') {
+        ++a;
+    }
+
+    if (p[*pos + a] != '\n') {
+        token->has_value = true;
+    }
+
     return token;
 }
 

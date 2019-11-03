@@ -32,22 +32,18 @@ static int enabled_read(const TokenVec* in_vec, int* index, TokenVec* out_vec) {
         if (strncmp("define", token->str, 6) == 0) {
             ++(*index);
             const Token* name = in_vec->tokens[*index];
-
             ++(*index);
-            if (*index == in_vec->size) {
+
+            if (token->has_value) {
+                Token* value = in_vec->tokens[*index];
+                strptrmap_put(define_map, name->str, value);
+                ++(*index);
+                return STATE_ENABLED;
+            }
+            else  {
                 strptrmap_put(define_map, name->str, NULL);
                 return STATE_ENABLED;
             }
-            Token* value = in_vec->tokens[*index];
-
-            if (value->type != TK_NUM && value->type != TK_STR) {
-                strptrmap_put(define_map, name->str, NULL);
-                return STATE_ENABLED;
-            }
-
-            strptrmap_put(define_map, name->str, value);
-            ++(*index);
-            return STATE_ENABLED;
         }
         //
         // #include

@@ -24,6 +24,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
 static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
 static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index);
 static InitializerNode* create_initializer_node(const TokenVec* vec, int* index);
+static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* vec, int* index);
 static bool is_declaration_specifier(const TokenVec* vec, int index);
 static bool is_type_specifier(const TokenVec* vec, int index);
 
@@ -250,6 +251,24 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
     return current;
 }
 
+static TypeNameNode* create_type_name_node(const TokenVec* vec, int* index) {
+    TypeNameNode* type_name_node = calloc(1, sizeof(TypeNameNode));
+
+    type_name_node->specifier_qualifier_node = create_specifier_qualifier_node(vec, index);
+    if (type_name_node->specifier_qualifier_node == NULL) {
+        error("Faield to create specifier-qualifier node.\n");
+        return NULL;
+    }
+
+    const Token* token = vec->tokens[*index];
+    if (token->type == TK_ASTER) {
+        type_name_node->is_pointer = true;
+        ++(*index);
+    }
+
+    return type_name_node;
+}
+
 static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
     UnaryExprNode* unary_expr_node = calloc(1, sizeof(UnaryExprNode));
 
@@ -282,7 +301,6 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
         break;
     }
     case TK_SIZEOF: {
-        unary_expr_node->type = UN_SIZEOF;
         ++(*index);
 
         token = vec->tokens[*index];
@@ -293,23 +311,30 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
         ++(*index);
 
         token = vec->tokens[*index];
-        switch (token->type) {
-        case TK_CHAR:   { unary_expr_node->sizeof_type = SIZEOFTYPE_CHAR;   break; }
-        case TK_INT:    { unary_expr_node->sizeof_type = SIZEOFTYPE_INT;    break; }
-        case TK_DOUBLE: { unary_expr_node->sizeof_type = SIZEOFTYPE_DOUBLE; break; } 
-        case TK_IDENT:  { 
-            unary_expr_node->sizeof_type     = SIZEOFTYPE_IDENT;
+        //
+        // sizeof ( identifier )
+        //
+        if (token->type == TK_IDENT &&  !strptrmap_contains(typedef_map, token->str)) {
+            unary_expr_node->type = UN_SIZEOF_IDENT;
+
             unary_expr_node->sizeof_name_len = token->strlen;
             unary_expr_node->sizeof_name     = malloc(sizeof(char) * token->strlen);
             strncpy(unary_expr_node->sizeof_name, token->str, token->strlen);
-            break; 
+
+            ++(*index);
         }
-        default: {
-            error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
-            return NULL;
+        //
+        // sizeof ( type-name )
+        //
+        else {
+            unary_expr_node->type = UN_SIZEOF_TYPE;
+
+            unary_expr_node->type_name_node = create_type_name_node(vec, index);
+            if (unary_expr_node->type_name_node == NULL) {
+                error("Failed to create type-name node.\n");
+                return NULL;
+            }
         }
-        }
-        ++(*index);
 
         token = vec->tokens[*index];
         if (token->type != TK_RPAREN) {
@@ -1997,6 +2022,7 @@ TransUnitNode* parse(const TokenVec* vec) {
 
     int index = 0;
     while (index < vec->size) {
+        printf("index=%d\n", index);
         ExternalDeclNode* external_decl_node = create_external_decl_node(vec, &index);
         if (external_decl_node == NULL) {
             error("Failed to create external-declaration node.\n");
@@ -2084,12 +2110,13 @@ const char* decode_jump_type(int type) {
 
 const char* decode_unary_type(int type) {
     switch (type) {
-    case UN_NONE:   { return "UN_NONE";   }
-    case UN_INC:    { return "UN_INC";    }
-    case UN_DEC:    { return "UN_DEC";    }
-    case UN_OP:     { return "UN_OP";     }
-    case UN_SIZEOF: { return "UN_SIZEOF"; }
-    default:        { return "INVALID";   }
+    case UN_NONE:         { return "UN_NONE";         }
+    case UN_INC:          { return "UN_INC";          }
+    case UN_DEC:          { return "UN_DEC";          }
+    case UN_OP:           { return "UN_OP";           }
+    case UN_SIZEOF_IDENT: { return "UN_SIZEOF_IDENT"; }
+    case UN_SIZEOF_TYPE:  { return "UN_SIZEOF_TYPE";  }
+    default:              { return "INVALID";         }
     }
 }
 

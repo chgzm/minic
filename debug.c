@@ -94,8 +94,6 @@ static void dump_type_name_node(const TypeNameNode* node, int indent);
 static void dump_param_type_list_node(const ParamTypeListNode* node, int indent);
 static void dump_param_list_node(const ParamListNode* node, int indent);
 static void dump_param_declaration_node(const ParamDeclarationNode* node, int indent);
-static void dump_abstract_declarator_node(const AbstractDeclaratorNode* node, int indent);
-static void dump_direct_abstract_declarator_node(const DirectAbstractDeclaratorNode* node, int indent);
 static void dump_enum_specifier_node(const EnumSpecifierNode* node, int indent);
 static void dump_enumerator_list_node(const EnumeratorListNode* node, int indent);
 static void dump_declaration_node(const DeclarationNode* node, int indent);
@@ -589,22 +587,14 @@ static void dump_param_declaration_node(const ParamDeclarationNode* node, int in
     if (node->declarator_node != NULL) {
         dump_declarator_node(node->declarator_node, indent + 2);
     }
-
-    if (node->abstract_declarator_node != NULL) {
-        dump_abstract_declarator_node(node->abstract_declarator_node, indent + 2);
-    }
-}
-
-static void dump_abstract_declarator_node(const AbstractDeclaratorNode* node, int indent) {
-    printf_indent(indent, "AbstractDeclaratorNode\n");
-}
-
-static void dump_DirectAbstractDeclarator_node(const DirectAbstractDeclaratorNode* node, int indent) {
-    printf_indent(indent, "DirectAbstractDeclaratorNode\n");
 }
 
 static void dump_enum_specifier_node(const EnumSpecifierNode* node, int indent) {
     printf_indent(indent, "EnumSpecifierNode\n");
+
+    if (node->enumerator_list_node != NULL) {
+        dump_enumerator_list_node(node->enumerator_list_node, indent + 2);
+    }
 }
 
 static void dump_enumerator_list_node(const EnumeratorListNode* node, int indent) {

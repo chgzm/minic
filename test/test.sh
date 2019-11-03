@@ -147,6 +147,8 @@ assert_return test_switch_2.c 14
 assert_return test_switch_3.c 70
 
 assert_return test_sizeof.c 17
+assert_return test_sizeof_2.c 32
+assert_return test_sizeof_3.c 80
 
 assert_return test_typedef.c 3
 

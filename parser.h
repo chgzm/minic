@@ -60,11 +60,12 @@ enum JumpType {
 };
 
 enum UnaryType {
-    UN_NONE,   // none
-    UN_INC,    // ++
-    UN_DEC,    // --
-    UN_OP,     // unary-operator
-    UN_SIZEOF, // "sizeof"
+    UN_NONE,         // none
+    UN_INC,          // ++
+    UN_DEC,          // --
+    UN_OP,           // unary-operator
+    UN_SIZEOF_IDENT, // sizeof ( identifier ) 
+    UN_SIZEOF_TYPE,  // sizeof ( type-name )
 };
 
 enum SizeofType {
@@ -288,9 +289,9 @@ struct UnaryExprNode {
     PostfixExprNode* postfix_expr_node;
     UnaryExprNode*   unary_expr_node;
     CastExprNode*    cast_expr_node;
+    TypeNameNode*    type_name_node;
     int              type;
     int              op_type;
-    int              sizeof_type;
     int              sizeof_name_len;
     char*            sizeof_name;
 }; 
@@ -335,6 +336,8 @@ struct AssignExprNode {
 };
 
 struct TypeNameNode {
+    SpecifierQualifierNode* specifier_qualifier_node;
+    bool                    is_pointer; 
 };
 
 struct ParamTypeListNode {
@@ -350,13 +353,6 @@ struct ParamListNode {
 struct ParamDeclarationNode {
     Vector*                 decl_spec_nodes;
     DeclaratorNode*         declarator_node;
-    AbstractDeclaratorNode* abstract_declarator_node;
-};
-
-struct AbstractDeclaratorNode {
-};
-
-struct DirectAbstractDeclaratorNode {
 };
 
 struct EnumSpecifierNode {

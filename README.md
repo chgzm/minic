@@ -138,8 +138,8 @@ unary-expression:
     ++ unary-expression
     -- unary-expression
     unary-operator cast-expression
-    sizeof unary-expression
-    sizeof type-name
+    sizeof '(' identifier ')'
+    sizeof '(' type-name ')'
 
 postfix-expression: 
     primary-expression
@@ -190,7 +190,7 @@ unary-operator:
     '!'
 
 type-name: 
-    {specifier-qualifier}+ {abstract-declarator}?
+    specifier-qualifier {'*'}?
 
 parameter-type-list: 
     parameter-list {, ...}?
@@ -200,18 +200,7 @@ parameter-list:
 
 parameter-declaration: 
     {declaration-specifier}+ declarator
-    {declaration-specifier}+ abstract-declarator
     {declaration-specifier}+
-
-abstract-declarator:
-    pointer
-    pointer direct-abstract-declarator
-    direct-abstract-declarator
-
-direct-abstract-declarator:
-    '(' abstract-declarator ')'
-    {direct-abstract-declarator}? '[' {conditional-expression}? ']'
-    {direct-abstract-declarator}? '(' {parameter-type-list}? ')'
 
 enum-specifier: 
     enum {identifier}? '{' enumerator-list '}'

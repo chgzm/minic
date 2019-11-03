@@ -483,7 +483,8 @@ static void process_unary_expr_left(const UnaryExprNode* node) {
 
         break;
     }
-    case UN_SIZEOF: {
+    case UN_SIZEOF_IDENT: 
+    case UN_SIZEOF_TYPE: {
         break;
     }
     default: {
@@ -506,7 +507,8 @@ static void process_unary_expr_addr(const UnaryExprNode* node) {
     case UN_DEC: {
         break;
     }
-    case UN_SIZEOF: {
+    case UN_SIZEOF_IDENT: 
+    case UN_SIZEOF_TYPE: {
         break;
     }
     default: {
@@ -590,30 +592,49 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
 
         break;
     }
-    case UN_SIZEOF: {
+    case UN_SIZEOF_IDENT: {
         int size = 0;
-        switch (node->sizeof_type) {
-        case SIZEOFTYPE_CHAR:   { size = 1; break; }
-        case SIZEOFTYPE_INT:    { size = 8; break; }
-        case SIZEOFTYPE_DOUBLE: { size = 8; break; } 
-        case SIZEOFTYPE_IDENT:  { 
-            const LocalVar* lv = get_localvar(node->sizeof_name, node->sizeof_name_len);
-            if (lv != NULL) {
-                size = lv->type->type_size;
-                break;
-            } 
-
+        const LocalVar* lv = get_localvar(node->sizeof_name, node->sizeof_name_len);
+        if (lv != NULL) {
+            size = lv->type->type_size;
+        } 
+        else {
             const GlobalVar* gv = get_globalvar(node->sizeof_name, node->sizeof_name_len);
-            if (gv != NULL) {
-                size = gv->type->type_size;
-                break;
-            } 
+            size = gv->type->type_size;
+        }
 
-            break;                                   
+        print_code("push %d", size);
+
+        break;
+    }
+    case UN_SIZEOF_TYPE: {
+        const TypeNameNode* type_name_node = node->type_name_node;
+        int size = 0;
+        if (type_name_node->is_pointer) {
+            size = 8;
         }
-        default: {
-            break;
-        }
+        else {
+            const TypeSpecifierNode* type_specifier_node = type_name_node->specifier_qualifier_node->type_specifier_node; 
+            switch (type_specifier_node->type_specifier) {
+            case TYPE_CHAR:   { size = 1; break; }
+            case TYPE_INT:    { size = 8; break; }
+            case TYPE_DOUBLE: { size = 8; break; } 
+            case TYPE_STRUCT: { 
+                const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
+                const char* ident = struct_specifier_node->identifier;
+                const StructInfo* struct_info = strptrmap_get(struct_map, ident);
+                size = struct_info->size;
+                break;                                   
+            }
+            case TYPE_TYPEDEFNAME: {
+                const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
+                size = struct_info->size;
+                break;
+            }
+            default: {
+                break;
+            }
+            }
         }
 
         print_code("push %d", size);

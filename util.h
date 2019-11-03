@@ -32,6 +32,7 @@ void error(const char* fmt, ...);
 #define false 0
 #define true  1
 #define O_RDONLY 0
+#define FILE void
 
 typedef struct __va_list va_list;
 struct __va_list {

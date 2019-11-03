@@ -53,6 +53,7 @@ void dump_tokens(const TokenVec* vec) {
             printf("=\"%s\"", vec->tokens[i]->str);
         }
         printf("\n");
+        fflush(stdout);
     }
 }
 

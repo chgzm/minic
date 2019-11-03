@@ -243,7 +243,8 @@ void strptrmap_put(StrPtrMap* map, const char* key, void* val) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
-        map->entries[index] = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
+        // map->entries[index] = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
+        map->entries[index] = calloc(1, sizeof(StrPtrMapEntry));
         map->entries[index]->key  = strdup(key);
         map->entries[index]->val  = val;
         map->entries[index]->next = NULL;
@@ -253,9 +254,10 @@ void strptrmap_put(StrPtrMap* map, const char* key, void* val) {
         while (current->next != NULL) {
             current = current->next;
         }
-        current->next       = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
-        current->key        = strdup(key);
-        current->val        = val;
+        // current->next    = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
+        current->next       = calloc(1, sizeof(StrPtrMapEntry));
+        current->next->key  = strdup(key);
+        current->next->val  = val;
         current->next->next = NULL;
     }
 

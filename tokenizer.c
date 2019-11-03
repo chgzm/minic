@@ -684,6 +684,7 @@ TokenVec* tokenize(char* addr) {
 const char* decode_token_type(int type) {
     switch (type) {
     case TK_NUM:      { return "TK_NUM";      }
+    case TK_BYTE:     { return "TK_BYTE";     }
     case TK_STR:      { return "TK_STR";      }
     case TK_IDENT:    { return "TK_IDENT";    }
     case TK_STATIC:   { return "TK_STATIC";   }
@@ -704,6 +705,7 @@ const char* decode_token_type(int type) {
     case TK_BREAK:    { return "TK_BREAK";    }
     case TK_CONTINUE: { return "TK_CONTINUE"; }
     case TK_RETURN:   { return "TK_RETURN";   }
+    case TK_SIZEOF:   { return "TK_SIZEOF";   }
     case TK_PLUS:     { return "TK_PLUS";     }
     case TK_MINUS:    { return "TK_MINUS";    }
     case TK_ASTER:    { return "TK_ASTER";    }
@@ -728,6 +730,7 @@ const char* decode_token_type(int type) {
     case TK_HASH:     { return "TK_HASH";     }
     case TK_COMMA:    { return "TK_COMMA";    } 
     case TK_DOT:      { return "TK_DOT";      }
+    case TK_ARROW:    { return "TK_ARROW";    }
     case TK_EQ:       { return "TK_EQ";       }
     case TK_NE:       { return "TK_NE";       }
     case TK_LE:       { return "TK_LE";       }

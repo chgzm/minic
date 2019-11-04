@@ -1919,7 +1919,7 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
 
 static bool is_func_def(const TokenVec* vec, int index) {
     const Token* token = vec->tokens[index];
-    while (token->type != TK_IDENT) {
+    while (!(token->type == TK_IDENT && !strptrmap_contains(typedef_map, token->str))) {
         ++index;
         token = vec->tokens[index];
     }

@@ -279,6 +279,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_LSQUARE: {
         process_postfix_expr_left(node->postfix_expr_node);
         process_expr(node->expr_node);
+
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
         const LocalVar* lv = get_localvar(identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
 
@@ -325,6 +326,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         print_code("mov rax, [rax]");
         print_code("add rax, %d", field_info->offset);
         print_code("push rax");
+
         // intstack_push(size_stack, 8);
 
         break;        
@@ -1596,6 +1598,11 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     Type* type = calloc(1, sizeof(Type));
 
     switch (node->type_specifier) {
+    case TYPE_VOID: { 
+        type->base_type = VAR_VOID;
+        type->type_size = 0;
+        return type;
+    }
     case TYPE_CHAR: { 
         type->base_type = VAR_CHAR;
         type->type_size = 1;

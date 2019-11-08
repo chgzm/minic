@@ -151,8 +151,9 @@ static void process_identifier_right(const char* identifier, int len) {
     // local variable
     const LocalVar* lv = get_localvar(identifier, len);
     if (lv != NULL) {
-        print_code("mov rax, rbp");
-        print_code("sub rax, %d", lv->offset);
+        // print_code("mov rax, rbp");
+        // print_code("sub rax, %d", lv->offset);
+        print_code("lea rax, [rbp-%d]", lv->offset);
         if (lv->type->array_size == 0) { 
             print_code("mov rax, [rax]");
         } 
@@ -1455,7 +1456,7 @@ static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
     switch (node->type_specifier) {
     case TYPE_VOID: { 
         type->base_type = VAR_VOID;
-        type->type_size = 0;
+        type->type_size = 8;
         return type;
     }
     case TYPE_CHAR: { 
@@ -1503,7 +1504,18 @@ static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
     }
 }
 
-static void process_args(const ParamListNode* node, int arg_index) {
+static int count_param_list_node(const ParamListNode* node) {
+    int cnt = 0;
+    const ParamListNode* current = node;
+    while (current != NULL) {
+        current = current->param_list_node;
+        ++cnt;
+    }
+
+    return cnt;
+}
+
+static void process_param_list_node(const ParamListNode* node, int arg_index) {
     const ParamDeclarationNode* param_declaration_node = node->param_declaration_node;
     const DeclaratorNode* declarator_node = param_declaration_node->declarator_node;
     if (declarator_node == NULL) {
@@ -1543,9 +1555,17 @@ static void process_args(const ParamListNode* node, int arg_index) {
     }
 
     print_code("mov [rbp-%d], %s", lv->offset, arg_registers[arg_index]);
+}
 
-    if (node->param_list_node != NULL) {
-        process_args(node->param_list_node, arg_index + 1);
+static void process_args(const ParamListNode* node) {
+    const int param_count = count_param_list_node(node);
+
+    const ParamListNode* current = node;
+    int index = 1;
+    while (current != NULL) {
+        process_param_list_node(current, param_count - index);
+        current = current->param_list_node;
+        ++index;
     }
 }
 
@@ -1557,7 +1577,7 @@ static void process_func_declarator(const DeclaratorNode* node) {
     }
 
     const ParamListNode* param_list_node = param_type_list_node->param_list_node;
-    process_args(param_list_node, 0);
+    process_args(param_list_node);
 }
 
 static void process_func_def(const FuncDefNode* node) {
@@ -1600,7 +1620,7 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     switch (node->type_specifier) {
     case TYPE_VOID: { 
         type->base_type = VAR_VOID;
-        type->type_size = 0;
+        type->type_size = 8;
         return type;
     }
     case TYPE_CHAR: { 

@@ -5,7 +5,7 @@ function assert_return() {
     expected="$2"
 
     ./minic "./test/${file}" > ./test/tmp.s
-    gcc -o ./test/tmp ./test/tmp.s
+    gcc -static -o ./test/tmp ./test/tmp.s
     ./test/tmp
     actual="$?"
 
@@ -174,6 +174,8 @@ assert_output test_char_3.c "hello"
 assert_output test_char_4.c "hey"
 
 assert_return test_conditional_op.c 9
+
+assert_return test_vector.c 30
 
 assert_output test_printf.c "Hello, World."
 

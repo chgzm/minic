@@ -25,7 +25,7 @@ void debug(const char* fmt, ...);
 // token
 //
 
-void dump_tokens(const TokenVec* vec);
+void dump_tokens(const Vector* vec);
 
 //
 // parser

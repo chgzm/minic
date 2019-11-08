@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "util.h"
+
 enum TokenType {
     TK_NUM,       // number literal
     TK_BYTE,      // char literal
@@ -86,18 +88,7 @@ struct Token {
     bool   has_value; // true if token is "#define" and has value (#define key value)
 };
 
-typedef struct TokenVec TokenVec;
-struct TokenVec {
-    Token** tokens;     
-    int size; 
-    int capacity;
-};
-
-TokenVec* tokenvec_create();
-int get_token_type(const TokenVec* vec, int index);
-void tokenvec_push_back(TokenVec* vec, Token* token);
-
-TokenVec* tokenize(char* addr);
+Vector* tokenize(char* addr);
 
 //
 // debug

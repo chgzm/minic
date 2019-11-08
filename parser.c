@@ -14,24 +14,24 @@ static StrPtrMap* typedef_map;
 // forward declaration
 //
 
-static ExprNode* create_expr_node(const TokenVec* vec, int* index);
-static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index);
-static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index);
-static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index);
-static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index);
-static StmtNode* create_stmt_node(const TokenVec* vec, int* index);
-static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index);
-static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index);
-static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index);
-static InitializerNode* create_initializer_node(const TokenVec* vec, int* index);
-static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* vec, int* index);
-static bool is_declaration_specifier(const TokenVec* vec, int index);
-static bool is_type_specifier(const TokenVec* vec, int index);
+static ExprNode* create_expr_node(const Vector* vec, int* index);
+static AssignExprNode* create_assign_expr_node(const Vector* vec, int* index);
+static DeclSpecifierNode* create_decl_specifier_node(const Vector* vec, int* index);
+static DeclaratorNode* create_declarator_node(const Vector* vec, int* index);
+static DeclarationNode* create_declaration_node(const Vector* vec, int* index);
+static StmtNode* create_stmt_node(const Vector* vec, int* index);
+static CompoundStmtNode* create_compound_stmt_node(const Vector* vec, int* index);
+static CastExprNode* create_cast_expr_node(const Vector* vec, int* index);
+static TypeSpecifierNode* create_type_specifier_node(const Vector* vec, int* index);
+static InitializerNode* create_initializer_node(const Vector* vec, int* index);
+static SpecifierQualifierNode* create_specifier_qualifier_node(const Vector* vec, int* index);
+static bool is_declaration_specifier(const Vector* vec, int index);
+static bool is_type_specifier(const Vector* vec, int index);
 
-static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
+static ConstantNode* create_constant_node(const Vector* vec, int* index) {
     ConstantNode* constant_node = calloc(1, sizeof(ConstantNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_NUM: {
         constant_node->const_type       = CONST_INT;
@@ -60,10 +60,10 @@ static ConstantNode* create_constant_node(const TokenVec* vec, int* index) {
     return constant_node;
 }
 
-static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index) {
+static PrimaryExprNode* create_primary_expr_node(const Vector* vec, int* index) {
     PrimaryExprNode* primary_expr_node = calloc(1, sizeof(PrimaryExprNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_IDENT: {
         primary_expr_node->identifier     = malloc(sizeof(char) * token->strlen);
@@ -91,7 +91,7 @@ static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index
             return NULL;
         }
 
-        Token* rparen_token = vec->tokens[*index];
+        Token* rparen_token = vec->elements[*index];
         if (rparen_token->type != TK_RPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(rparen_token->type));
             return NULL;
@@ -109,7 +109,7 @@ static PrimaryExprNode* create_primary_expr_node(const TokenVec* vec, int* index
     return primary_expr_node;
 }
 
-static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index) {
+static PostfixExprNode* create_postfix_expr_node(const Vector* vec, int* index) {
     PostfixExprNode* postfix_expr_node = calloc(1, sizeof(PostfixExprNode));
 
     postfix_expr_node->assign_expr_nodes = create_vector();
@@ -130,7 +130,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
     }
 
     PostfixExprNode* current = postfix_expr_node;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_LSQUARE || token->type == TK_LPAREN || token->type == TK_DOT
         || token->type == TK_ARROW   || token->type == TK_INC    || token->type == TK_DEC) {
         
@@ -149,7 +149,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
                 return NULL;
             }
 
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type != TK_RSQUARE) {
                 error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;    
@@ -166,7 +166,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
             p_postfix_expr_node->assign_expr_nodes  = create_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_LPAREN;
 
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             while (token->type != TK_RPAREN) {
                 AssignExprNode* assign_expr_node = create_assign_expr_node(vec, index);
                 if (assign_expr_node == NULL) {
@@ -175,11 +175,11 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
                 }
 
                 vector_push_back(p_postfix_expr_node->assign_expr_nodes, assign_expr_node); 
-                token = vec->tokens[*index];
+                token = vec->elements[*index];
 
                 if (token->type == TK_COMMA) {
                     ++(*index);   
-                    token = vec->tokens[*index];
+                    token = vec->elements[*index];
                 }
             }
 
@@ -194,7 +194,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
             p_postfix_expr_node->assign_expr_nodes  = create_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_DOT;
 
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type != TK_IDENT) {
                 error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;    
@@ -216,7 +216,7 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
             p_postfix_expr_node->assign_expr_nodes  = create_vector();
             p_postfix_expr_node->postfix_expr_type  = PS_ARROW;
             
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type != TK_IDENT) {
                 error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;    
@@ -245,13 +245,13 @@ static PostfixExprNode* create_postfix_expr_node(const TokenVec* vec, int* index
         }
 
         current = p_postfix_expr_node;
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
     }
 
     return current;
 }
 
-static TypeNameNode* create_type_name_node(const TokenVec* vec, int* index) {
+static TypeNameNode* create_type_name_node(const Vector* vec, int* index) {
     TypeNameNode* type_name_node = calloc(1, sizeof(TypeNameNode));
 
     type_name_node->specifier_qualifier_node = create_specifier_qualifier_node(vec, index);
@@ -260,7 +260,7 @@ static TypeNameNode* create_type_name_node(const TokenVec* vec, int* index) {
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_ASTER) {
         type_name_node->is_pointer = true;
         ++(*index);
@@ -269,12 +269,12 @@ static TypeNameNode* create_type_name_node(const TokenVec* vec, int* index) {
     return type_name_node;
 }
 
-static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
+static UnaryExprNode* create_unary_expr_node(const Vector* vec, int* index) {
     UnaryExprNode* unary_expr_node = calloc(1, sizeof(UnaryExprNode));
 
     unary_expr_node->type = UN_NONE;
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_INC: {
         unary_expr_node->type = UN_INC;
@@ -303,14 +303,14 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
     case TK_SIZEOF: {
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_LPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         //
         // sizeof ( identifier )
         //
@@ -336,7 +336,7 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
             }
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_RPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -382,7 +382,7 @@ static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
     return unary_expr_node;
 }
 
-static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index) {
+static CastExprNode* create_cast_expr_node(const Vector* vec, int* index) {
     CastExprNode* cast_expr_node = calloc(1, sizeof(CastExprNode));
 
     cast_expr_node->unary_expr_node = create_unary_expr_node(vec, index);
@@ -394,7 +394,7 @@ static CastExprNode* create_cast_expr_node(const TokenVec* vec, int* index) {
     return cast_expr_node;
 }
 
-static MultiPlicativeExprNode* create_multiplicative_expr_node(const TokenVec* vec, int* index) {
+static MultiPlicativeExprNode* create_multiplicative_expr_node(const Vector* vec, int* index) {
     MultiPlicativeExprNode* multiplicative_expr_node = calloc(1, sizeof(MultiPlicativeExprNode));
 
     multiplicative_expr_node->operator_type  = OP_NONE;
@@ -405,7 +405,7 @@ static MultiPlicativeExprNode* create_multiplicative_expr_node(const TokenVec* v
     }
 
     MultiPlicativeExprNode* current = multiplicative_expr_node;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_ASTER || token->type == TK_SLASH || token->type == TK_PER) {
         ++(*index);
 
@@ -421,14 +421,14 @@ static MultiPlicativeExprNode* create_multiplicative_expr_node(const TokenVec* v
         else if (token->type == TK_SLASH) { p_multiplicative_expr_node->operator_type = OP_DIV; }
         else if (token->type == TK_PER)   { p_multiplicative_expr_node->operator_type = OP_MOD; }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_multiplicative_expr_node;
     }
 
     return current;
 }
 
-static AdditiveExprNode* create_additive_expr_node(const TokenVec* vec, int* index) {
+static AdditiveExprNode* create_additive_expr_node(const Vector* vec, int* index) {
     AdditiveExprNode* additive_expr_node = calloc(1, sizeof(AdditiveExprNode));
 
     additive_expr_node->operator_type            = OP_NONE;
@@ -439,7 +439,7 @@ static AdditiveExprNode* create_additive_expr_node(const TokenVec* vec, int* ind
     }
 
     AdditiveExprNode* current = additive_expr_node;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_PLUS || token->type == TK_MINUS) {
         ++(*index);
 
@@ -453,14 +453,14 @@ static AdditiveExprNode* create_additive_expr_node(const TokenVec* vec, int* ind
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_additive_expr_node;
     }
 
     return current;
 }
 
-static ShiftExprNode* create_shift_expr(const TokenVec* vec, int* index) {
+static ShiftExprNode* create_shift_expr(const Vector* vec, int* index) {
     ShiftExprNode* shift_expr_node = calloc(1, sizeof(ShiftExprNode));
 
     shift_expr_node->additive_expr_node = create_additive_expr_node(vec, index);
@@ -472,7 +472,7 @@ static ShiftExprNode* create_shift_expr(const TokenVec* vec, int* index) {
     return shift_expr_node;
 }
 
-static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int* index) {
+static RelationalExprNode* create_relational_expr_node(const Vector* vec, int* index) {
     RelationalExprNode* relational_expr_node = calloc(1, sizeof(RelationalExprNode));
 
     relational_expr_node->cmp_type             = CMP_NONE;
@@ -483,7 +483,7 @@ static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int*
     }
     
     RelationalExprNode* current = relational_expr_node;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_LANGLE || token->type == TK_RANGLE || token->type == TK_LE || token->type == TK_GE) {
         ++(*index);
     
@@ -501,14 +501,14 @@ static RelationalExprNode* create_relational_expr_node(const TokenVec* vec, int*
         else if (token->type == TK_LE)     { parent->cmp_type = CMP_LE; }
         else if (token->type == TK_GE)     { parent->cmp_type = CMP_GE; }
      
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = parent;
     }
 
     return current;
 }
 
-static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* index) {
+static EqualityExprNode* create_equality_expr_node(const Vector* vec, int* index) {
     EqualityExprNode* equality_expr_node = calloc(1, sizeof(EqualityExprNode));
 
     equality_expr_node->cmp_type             = CMP_NONE;
@@ -519,7 +519,7 @@ static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* ind
     }
 
     EqualityExprNode* current = equality_expr_node;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_EQ || token->type == TK_NE) {
         ++(*index);
     
@@ -535,14 +535,14 @@ static EqualityExprNode* create_equality_expr_node(const TokenVec* vec, int* ind
         if      (token->type == TK_EQ) { p_equality_expr_node->cmp_type = CMP_EQ; }
         else if (token->type == TK_NE) { p_equality_expr_node->cmp_type = CMP_NE; }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_equality_expr_node;
     }
 
     return current;
 }
 
-static AndExprNode* create_and_expr_node(const TokenVec* vec, int* index) {
+static AndExprNode* create_and_expr_node(const Vector* vec, int* index) {
     AndExprNode* and_expr_node = calloc(1, sizeof(AndExprNode));
 
     and_expr_node->equality_expr_node = create_equality_expr_node(vec, index);
@@ -554,7 +554,7 @@ static AndExprNode* create_and_expr_node(const TokenVec* vec, int* index) {
     return and_expr_node;
 }
 
-static ExclusiveOrExprNode* create_exclusive_or_expr_node(const TokenVec* vec, int* index) {
+static ExclusiveOrExprNode* create_exclusive_or_expr_node(const Vector* vec, int* index) {
     ExclusiveOrExprNode* exclusive_or_expr_node = calloc(1, sizeof(ExclusiveOrExprNode));
 
     exclusive_or_expr_node->and_expr_node = create_and_expr_node(vec, index);
@@ -566,7 +566,7 @@ static ExclusiveOrExprNode* create_exclusive_or_expr_node(const TokenVec* vec, i
     return exclusive_or_expr_node;
 }
 
-static InclusiveOrExprNode* create_inclusive_or_expr_node(const TokenVec* vec, int* index) {
+static InclusiveOrExprNode* create_inclusive_or_expr_node(const Vector* vec, int* index) {
     InclusiveOrExprNode* inclusive_or_expr_node = malloc(sizeof(InclusiveOrExprNode));
 
     inclusive_or_expr_node->inclusive_or_expr_node = NULL;
@@ -579,7 +579,7 @@ static InclusiveOrExprNode* create_inclusive_or_expr_node(const TokenVec* vec, i
     return inclusive_or_expr_node;
 }
 
-static LogicalAndExprNode* create_logical_and_expr_node(const TokenVec* vec, int* index) {
+static LogicalAndExprNode* create_logical_and_expr_node(const Vector* vec, int* index) {
     LogicalAndExprNode* logical_and_expr_node = calloc(1, sizeof(LogicalAndExprNode));
 
     logical_and_expr_node->inclusive_or_expr_node = create_inclusive_or_expr_node(vec, index);
@@ -588,7 +588,7 @@ static LogicalAndExprNode* create_logical_and_expr_node(const TokenVec* vec, int
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     LogicalAndExprNode* current = logical_and_expr_node;
     while (token->type == TK_LOGAND) {
         ++(*index);
@@ -602,14 +602,14 @@ static LogicalAndExprNode* create_logical_and_expr_node(const TokenVec* vec, int
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_logical_and_expr_node;
     }
 
     return current;
 }
 
-static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* index) {
+static LogicalOrExprNode* create_logical_or_expr_node(const Vector* vec, int* index) {
     LogicalOrExprNode* logical_or_expr_node = calloc(1, sizeof(LogicalOrExprNode));
 
     logical_or_expr_node->logical_and_expr_node = create_logical_and_expr_node(vec, index);
@@ -618,7 +618,7 @@ static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* 
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     LogicalOrExprNode* current = logical_or_expr_node;
     while (token->type == TK_LOGOR) {
         ++(*index);
@@ -632,14 +632,14 @@ static LogicalOrExprNode* create_logical_or_expr_node(const TokenVec* vec, int* 
             return NULL;
         }
         
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_logical_or_expr_node;
     }
 
     return current;
 }
 
-static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, int* index) {
+static ConditionalExprNode* create_conditional_expr_node(const Vector* vec, int* index) {
     ConditionalExprNode* conditional_expr_node = calloc(1, sizeof(ConditionalExprNode));
 
     conditional_expr_node->logical_or_expr_node  = create_logical_or_expr_node(vec, index);
@@ -648,7 +648,7 @@ static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, in
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_QUESTION) {
         ++(*index);
 
@@ -658,7 +658,7 @@ static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, in
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_COLON) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -675,7 +675,7 @@ static ConditionalExprNode* create_conditional_expr_node(const TokenVec* vec, in
     return conditional_expr_node;
 }
 
-static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index) {
+static AssignExprNode* create_assign_expr_node(const Vector* vec, int* index) {
     AssignExprNode* assign_expr_node = calloc(1, sizeof(AssignExprNode));
 
     assign_expr_node->assign_operator = OP_NONE;
@@ -687,7 +687,7 @@ static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index) 
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_ASSIGN || token->type == TK_MUL_EQ || token->type == TK_DIV_EQ
      || token->type == TK_MOD_EQ || token->type == TK_ADD_EQ || token->type == TK_SUB_EQ
      || token->type == TK_AND_EQ || token->type == TK_XOR_EQ || token->type == TK_OR_EQ) {
@@ -721,7 +721,7 @@ static AssignExprNode* create_assign_expr_node(const TokenVec* vec, int* index) 
     return assign_expr_node;
 }
 
-static ExprNode* create_expr_node(const TokenVec* vec, int* index) {
+static ExprNode* create_expr_node(const Vector* vec, int* index) {
     ExprNode* expr_node = calloc(1, sizeof(ExprNode));
 
     expr_node->assign_expr_node = create_assign_expr_node(vec, index);
@@ -731,7 +731,7 @@ static ExprNode* create_expr_node(const TokenVec* vec, int* index) {
     }
 
     ExprNode* current = expr_node;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_COMMA) {
         ++(*index);
 
@@ -744,23 +744,23 @@ static ExprNode* create_expr_node(const TokenVec* vec, int* index) {
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_expr_node;
     }
 
     return current;
 }
 
-static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
+static JumpStmtNode* create_jump_stmt_node(const Vector* vec, int* index) {
     JumpStmtNode* jump_stmt_node = calloc(1, sizeof(JumpStmtNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_CONTINUE: {
         jump_stmt_node->jump_type = JMP_CONTINUE;
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_SEMICOL) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -773,7 +773,7 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
         jump_stmt_node->jump_type = JMP_BREAK;        
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_SEMICOL) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -786,14 +786,16 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
         jump_stmt_node->jump_type = JMP_RETURN;
 
         ++(*index);
-        if (vec->tokens[*index]->type != TK_SEMICOL) {
+        token = vec->elements[*index];
+        if (token->type != TK_SEMICOL) {
             jump_stmt_node->expr_node = create_expr_node(vec, index);
             if (jump_stmt_node->expr_node == NULL) {
                 error("Failed to create expression node.\n");
                 return NULL;
             }
 
-            if (vec->tokens[*index]->type != TK_SEMICOL) {
+            token = vec->elements[*index];
+            if (token->type != TK_SEMICOL) {
                 error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;
             }
@@ -812,10 +814,10 @@ static JumpStmtNode* create_jump_stmt_node(const TokenVec* vec, int* index) {
     return jump_stmt_node;
 }
 
-static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
+static ExprStmtNode* create_expr_stmt_node(const Vector* vec, int* index) {
     ExprStmtNode* expr_stmt_node = calloc(1, sizeof(ExprStmtNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_SEMICOL) {
         expr_stmt_node->expr_node = NULL;
         ++(*index);
@@ -826,7 +828,7 @@ static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
             error("Failed to create expression-node.\n");
             return NULL;
         }
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_SEMICOL) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -837,14 +839,14 @@ static ExprStmtNode* create_expr_stmt_node(const TokenVec* vec, int* index) {
     return expr_stmt_node;
 }
 
-static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* index) {
+static SelectionStmtNode* create_selection_stmt_node(const Vector* vec, int* index) {
     SelectionStmtNode* selection_stmt_node = calloc(1, sizeof(SelectionStmtNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_IF: {
         ++(*index);
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_LPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -857,7 +859,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_RPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -870,7 +872,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type == TK_ELSE) {
             ++(*index);
             selection_stmt_node->selection_type = SELECT_IF_ELSE;
@@ -891,7 +893,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
         selection_stmt_node->selection_type = SELECT_SWITCH;
 
         ++(*index);
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_LPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -904,7 +906,7 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_RPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -928,19 +930,19 @@ static SelectionStmtNode* create_selection_stmt_node(const TokenVec* vec, int* i
     return selection_stmt_node;
 }
 
-static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
+static ItrStmtNode* create_itr_stmt_node(const Vector* vec, int* index) {
     ItrStmtNode* itr_stmt_node = calloc(1, sizeof(ItrStmtNode));
 
     itr_stmt_node->declaration_nodes = create_vector();
     
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_WHILE: {
         itr_stmt_node->itr_type = ITR_WHILE;
         ++(*index);
 
         // '('
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_LPAREN) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -955,7 +957,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         }
 
         // ')'
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_RPAREN) {
             error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
             return NULL;
@@ -976,14 +978,14 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         ++(*index);
 
         // '('
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_LPAREN) {
             error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type == TK_SEMICOL) {
             ++(*index);
         } 
@@ -998,7 +1000,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
                 vector_push_back(itr_stmt_node->declaration_nodes, declaration_node);
             }
 
-            // token = vec->tokens[*index];
+            // token = vec->elements[*index];
             // if (token->type != TK_SEMICOL) {
             //     error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
             //     return NULL;
@@ -1014,7 +1016,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             }
 
             // ';'
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type != TK_SEMICOL) {
                 error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
                 return NULL;
@@ -1023,7 +1025,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         }
 
         // {expression}? ;
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type == TK_SEMICOL) {
             ++(*index);
         } else {
@@ -1034,7 +1036,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             }
 
             // ';'
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type != TK_SEMICOL) {
                 error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
                 return NULL;
@@ -1043,7 +1045,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
         }
 
         // {expression}? )
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type == TK_RPAREN) {
             ++(*index);
         } else {
@@ -1054,7 +1056,7 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
             }
 
             // ')'
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type != TK_RPAREN) {
                 error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
                 return NULL;
@@ -1079,10 +1081,10 @@ static ItrStmtNode* create_itr_stmt_node(const TokenVec* vec, int* index) {
     return itr_stmt_node;
 }
 
-static LabeledStmtNode* create_labeled_stmt_node(const TokenVec* vec, int* index) {
+static LabeledStmtNode* create_labeled_stmt_node(const Vector* vec, int* index) {
     LabeledStmtNode* labeled_stmt_node = calloc(1, sizeof(LabeledStmtNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_CASE: {
         ++(*index);
@@ -1094,7 +1096,7 @@ static LabeledStmtNode* create_labeled_stmt_node(const TokenVec* vec, int* index
             return NULL;
         }
        
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_COLON) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -1113,7 +1115,7 @@ static LabeledStmtNode* create_labeled_stmt_node(const TokenVec* vec, int* index
         ++(*index);
         labeled_stmt_node->labeled_stmt_type = LABELED_DEFAULT;
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_COLON) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -1137,10 +1139,10 @@ static LabeledStmtNode* create_labeled_stmt_node(const TokenVec* vec, int* index
     return labeled_stmt_node;
 }
 
-static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
+static StmtNode* create_stmt_node(const Vector* vec, int* index) {
     StmtNode* stmt_node = calloc(1, sizeof(StmtNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_CASE:
     case TK_DEFAULT: {
@@ -1206,7 +1208,7 @@ static StmtNode* create_stmt_node(const TokenVec* vec, int* index) {
     return stmt_node;
 }
 
-static InitializerListNode* create_initializer_list_node(const TokenVec* vec, int* index) {
+static InitializerListNode* create_initializer_list_node(const Vector* vec, int* index) {
     InitializerListNode* initializer_list_node = malloc(sizeof(InitializerListNode));
 
     initializer_list_node->initializer_nodes = create_vector();
@@ -1218,7 +1220,7 @@ static InitializerListNode* create_initializer_list_node(const TokenVec* vec, in
     }
     vector_push_back(initializer_list_node->initializer_nodes, initializer_node);
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_COMMA) {
         ++(*index);
 
@@ -1229,16 +1231,16 @@ static InitializerListNode* create_initializer_list_node(const TokenVec* vec, in
         }
         vector_push_back(initializer_list_node->initializer_nodes, node);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
     }
 
     return initializer_list_node;
 }
 
-static InitializerNode* create_initializer_node(const TokenVec* vec, int* index) {
+static InitializerNode* create_initializer_node(const Vector* vec, int* index) {
     InitializerNode* initializer_node = calloc(1, sizeof(InitializerNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_LBRCKT) {
         ++(*index); 
 
@@ -1248,7 +1250,7 @@ static InitializerNode* create_initializer_node(const TokenVec* vec, int* index)
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_RBRCKT) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -1266,12 +1268,12 @@ static InitializerNode* create_initializer_node(const TokenVec* vec, int* index)
     return initializer_node;
 }
 
-static bool is_declarator(const TokenVec* vec, int index) {
-    const Token* token = vec->tokens[index];
+static bool is_declarator(const Vector* vec, int index) {
+    const Token* token = vec->elements[index];
     return (token->type == TK_IDENT || token->type == TK_ASTER);
 }
 
-static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, int* index) {
+static ParamDeclarationNode* create_param_declaration_node(const Vector* vec, int* index) {
     ParamDeclarationNode* param_declaration_node = calloc(1, sizeof(ParamDeclarationNode));
 
     param_declaration_node->decl_spec_nodes          = create_vector();
@@ -1293,7 +1295,7 @@ static ParamDeclarationNode* create_param_declaration_node(const TokenVec* vec, 
     return param_declaration_node;
 }
 
-static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
+static ParamListNode* create_param_list_node(const Vector* vec, int* index) {
     ParamListNode* param_list_node = calloc(1, sizeof(ParamListNode));
     
     param_list_node->param_declaration_node = create_param_declaration_node(vec, index);
@@ -1303,9 +1305,10 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
     }
     
     ParamListNode* current = param_list_node;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_COMMA) {
-        if (vec->tokens[*index + 1]->type == TK_ELLIPSIS) {
+        Token* tk = vec->elements[*index + 1];
+        if (tk->type == TK_ELLIPSIS) {
             break;
         }
 
@@ -1320,14 +1323,14 @@ static ParamListNode* create_param_list_node(const TokenVec* vec, int* index) {
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_param_list_node;
     }
 
     return current;
 }
 
-static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* index) {
+static ParamTypeListNode* create_param_type_list_node(const Vector* vec, int* index) {
     ParamTypeListNode* param_type_list_node = calloc(1, sizeof(ParamTypeListNode));
     
     param_type_list_node->param_list_node = create_param_list_node(vec, index);
@@ -1336,11 +1339,11 @@ static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* 
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_COMMA) {
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_ELLIPSIS) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -1352,12 +1355,12 @@ static ParamTypeListNode* create_param_type_list_node(const TokenVec* vec, int* 
     return param_type_list_node;
 }
 
-static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, int* index) {
+static DirectDeclaratorNode* create_direct_declarator_node(const Vector* vec, int* index) {
     DirectDeclaratorNode* direct_declarator_node = calloc(1, sizeof(DirectDeclaratorNode));
 
     direct_declarator_node->identifier_list = create_vector();
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_IDENT: {
         direct_declarator_node->identifier     = malloc(sizeof(char) * token->strlen);
@@ -1377,7 +1380,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
     }
 
     DirectDeclaratorNode* current = direct_declarator_node;
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     while (token->type == TK_LSQUARE || token->type == TK_LPAREN) {
         ++(*index);
    
@@ -1388,7 +1391,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
 
         switch (token->type) {
         case TK_LSQUARE: {
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type == TK_RSQUARE) {
                 ++(*index);
                 break;
@@ -1400,7 +1403,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
                 return NULL;
             }
 
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
             if (token->type != TK_RSQUARE) {
                 error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;
@@ -1417,7 +1420,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
                     return NULL;
                 } 
 
-                token = vec->tokens[*index];
+                token = vec->elements[*index];
                 if (token->type != TK_RPAREN) {
                     error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                     return NULL;
@@ -1425,14 +1428,14 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
                 ++(*index);
             } 
             else {
-                token = vec->tokens[*index];
+                token = vec->elements[*index];
                 while (token->type == TK_IDENT) {
                     char* identifier = malloc(sizeof(char) * token->strlen);
                     strncpy(identifier, token->str, token->strlen);
                     vector_push_back(p_direct_declarator_node->identifier_list, identifier);
 
                     ++(*index);
-                    token = vec->tokens[*index];
+                    token = vec->elements[*index];
                 }
 
                 if (token->type != TK_RPAREN) {
@@ -1449,38 +1452,38 @@ static DirectDeclaratorNode* create_direct_declarator_node(const TokenVec* vec, 
         }
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         current = p_direct_declarator_node;
     }
 
     return current;
 }
 
-static PointerNode* create_pointer_node(const TokenVec* vec, int* index) {
+static PointerNode* create_pointer_node(const Vector* vec, int* index) {
     PointerNode* pointer_node = malloc(sizeof(PointerNode));
 
     pointer_node->count = 1;
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type != TK_ASTER) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     ++(*index);
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     while (token->type == TK_ASTER) {
         ++(pointer_node->count);
         ++(*index);
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
     } 
     
     return pointer_node;  
 }
 
-static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index) {
+static DeclaratorNode* create_declarator_node(const Vector* vec, int* index) {
     DeclaratorNode* declarator_node = calloc(1, sizeof(DeclaratorNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_ASTER) {
         declarator_node->pointer_node = create_pointer_node(vec, index); 
     }
@@ -1494,7 +1497,7 @@ static DeclaratorNode* create_declarator_node(const TokenVec* vec, int* index) {
     return declarator_node;
 }
 
-static InitDeclaratorNode* create_init_declarator_node(const TokenVec* vec, int* index) {
+static InitDeclaratorNode* create_init_declarator_node(const Vector* vec, int* index) {
     InitDeclaratorNode* init_declarator_node = calloc(1, sizeof(InitDeclaratorNode));
 
     init_declarator_node->declarator_node = create_declarator_node(vec, index);
@@ -1503,7 +1506,7 @@ static InitDeclaratorNode* create_init_declarator_node(const TokenVec* vec, int*
         return NULL;
     }
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_ASSIGN) {
         ++(*index);
 
@@ -1517,10 +1520,10 @@ static InitDeclaratorNode* create_init_declarator_node(const TokenVec* vec, int*
     return init_declarator_node;
 }
 
-static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* vec, int* index) {
+static SpecifierQualifierNode* create_specifier_qualifier_node(const Vector* vec, int* index) {
     SpecifierQualifierNode* specifier_qualifier_node = calloc(1, sizeof(SpecifierQualifierNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (is_type_specifier(vec, *index)) {
         specifier_qualifier_node->type_specifier_node = create_type_specifier_node(vec, index);
         if (specifier_qualifier_node->type_specifier_node == NULL) {
@@ -1540,7 +1543,7 @@ static SpecifierQualifierNode* create_specifier_qualifier_node(const TokenVec* v
     return specifier_qualifier_node;
 }
 
-static StructDeclaratorListNode* create_struct_declarator_list_node(const TokenVec* vec, int* index) {
+static StructDeclaratorListNode* create_struct_declarator_list_node(const Vector* vec, int* index) {
     StructDeclaratorListNode* struct_declarator_list_node = malloc(sizeof(StructDeclaratorListNode));
 
     struct_declarator_list_node->declarator_nodes = create_vector();
@@ -1551,7 +1554,7 @@ static StructDeclaratorListNode* create_struct_declarator_list_node(const TokenV
     }
     vector_push_back(struct_declarator_list_node->declarator_nodes, declarator_node);
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (token->type == TK_COMMA) {
         DeclaratorNode* node = create_declarator_node(vec, index);
         if (node == NULL) {
@@ -1559,18 +1562,18 @@ static StructDeclaratorListNode* create_struct_declarator_list_node(const TokenV
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         vector_push_back(struct_declarator_list_node->declarator_nodes, node);
     }
 
     return struct_declarator_list_node;
 }
 
-static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec, int* index) {
+static StructDeclarationNode* create_struct_declaration_node(const Vector* vec, int* index) {
     StructDeclarationNode* struct_declaration_node = malloc(sizeof(StructDeclarationNode));  
     struct_declaration_node->specifier_qualifier_nodes = create_vector();
     
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (is_type_specifier(vec, *index) || token->type == TK_CONST) {
         while (is_type_specifier(vec, *index) || token->type == TK_CONST) {
             SpecifierQualifierNode* specifier_qualifier_node = create_specifier_qualifier_node(vec, index);
@@ -1581,7 +1584,7 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
         
             vector_push_back(struct_declaration_node->specifier_qualifier_nodes, specifier_qualifier_node);
 
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
         }
     } 
     
@@ -1591,7 +1594,7 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
         return NULL;
     }
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     if (token->type != TK_SEMICOL) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
@@ -1601,18 +1604,18 @@ static StructDeclarationNode* create_struct_declaration_node(const TokenVec* vec
     return struct_declaration_node;
 }
 
-static StructSpecifierNode* create_struct_specifier_node(const TokenVec* vec, int* index) {
+static StructSpecifierNode* create_struct_specifier_node(const Vector* vec, int* index) {
     StructSpecifierNode* struct_specifier_node = malloc(sizeof(StructSpecifierNode));
     struct_specifier_node->struct_declaration_nodes = create_vector();
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type != TK_STRUCT) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     ++(*index);
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     if (token->type != TK_IDENT) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
@@ -1623,10 +1626,10 @@ static StructSpecifierNode* create_struct_specifier_node(const TokenVec* vec, in
     struct_specifier_node->identifier     = malloc(sizeof(char) * token->strlen);
     strncpy(struct_specifier_node->identifier, token->str, token->strlen);
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     if (token->type == TK_LBRCKT) {
         ++(*index);
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         while (token->type != TK_RBRCKT) {
             StructDeclarationNode* struct_declaration_node = create_struct_declaration_node(vec, index);
             if (struct_declaration_node == NULL) {
@@ -1635,7 +1638,7 @@ static StructSpecifierNode* create_struct_specifier_node(const TokenVec* vec, in
             }
 
             vector_push_back(struct_specifier_node->struct_declaration_nodes, struct_declaration_node);
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
         }
 
         ++(*index); 
@@ -1644,11 +1647,11 @@ static StructSpecifierNode* create_struct_specifier_node(const TokenVec* vec, in
     return struct_specifier_node;
 }
 
-static EnumeratorListNode* create_enumerator_list_node(const TokenVec* vec, int* index) {
+static EnumeratorListNode* create_enumerator_list_node(const Vector* vec, int* index) {
     EnumeratorListNode* enumerator_list_node = malloc(sizeof(EnumeratorListNode));
     enumerator_list_node->identifiers = create_vector();
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (true) {
         if (token->type != TK_IDENT) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
@@ -1659,10 +1662,10 @@ static EnumeratorListNode* create_enumerator_list_node(const TokenVec* vec, int*
         vector_push_back(enumerator_list_node->identifiers, identifier);
 
         ++(*index);
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type == TK_COMMA) {
            ++(*index);
-           token = vec->tokens[*index];
+           token = vec->elements[*index];
         }
 
         if (token->type == TK_RBRCKT) {
@@ -1673,24 +1676,24 @@ static EnumeratorListNode* create_enumerator_list_node(const TokenVec* vec, int*
     return enumerator_list_node;
 }
 
-static EnumSpecifierNode* create_enum_specifier_node(const TokenVec* vec, int* index) {
+static EnumSpecifierNode* create_enum_specifier_node(const Vector* vec, int* index) {
     EnumSpecifierNode* enum_specifier_node = calloc(1, sizeof(EnumSpecifierNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type != TK_ENUM) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
     ++(*index);
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     if (token->type == TK_IDENT) {
         enum_specifier_node->identifier = malloc(sizeof(char) * token->strlen);
         strncpy(enum_specifier_node->identifier, token->str, token->strlen);
         ++(*index);
     }
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     if (token->type != TK_LBRCKT) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
@@ -1703,7 +1706,7 @@ static EnumSpecifierNode* create_enum_specifier_node(const TokenVec* vec, int* i
         return NULL;
     }
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     if (token->type != TK_RBRCKT) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
@@ -1713,12 +1716,12 @@ static EnumSpecifierNode* create_enum_specifier_node(const TokenVec* vec, int* i
     return enum_specifier_node;
 }
 
-static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* index) {
+static TypeSpecifierNode* create_type_specifier_node(const Vector* vec, int* index) {
     TypeSpecifierNode* type_specifier_node = calloc(1, sizeof(TypeSpecifierNode));
 
     type_specifier_node->type_specifier = TYPE_NONE;
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;   ++(*index); break; }
     case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;   ++(*index); break; }
@@ -1754,10 +1757,10 @@ static TypeSpecifierNode* create_type_specifier_node(const TokenVec* vec, int* i
     return type_specifier_node;
 }
 
-static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* index) {
+static DeclSpecifierNode* create_decl_specifier_node(const Vector* vec, int* index) {
     DeclSpecifierNode* decl_specifier_node = calloc(1, sizeof(DeclSpecifierNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_STATIC) {
         decl_specifier_node->is_static = true;
         ++(*index);
@@ -1777,13 +1780,13 @@ static DeclSpecifierNode* create_decl_specifier_node(const TokenVec* vec, int* i
     return decl_specifier_node;
 }
 
-static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index) {
+static DeclarationNode* create_declaration_node(const Vector* vec, int* index) {
     DeclarationNode* declaration_node = malloc(sizeof(DeclarationNode));
 
     declaration_node->decl_specifier_nodes  = create_vector();
     declaration_node->init_declarator_nodes = create_vector();
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     while (is_declaration_specifier(vec, *index) && token->type != TK_SEMICOL) {
         DeclSpecifierNode* decl_specifier_node = create_decl_specifier_node(vec, index);
         if (decl_specifier_node == NULL) {
@@ -1794,7 +1797,7 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
         vector_push_back(declaration_node->decl_specifier_nodes, decl_specifier_node);
     }
 
-    token = vec->tokens[*index];
+    token = vec->elements[*index];
     while (token->type != TK_SEMICOL) {
         InitDeclaratorNode* init_declarator_node = create_init_declarator_node(vec, index);
         if (init_declarator_node == NULL) {
@@ -1804,10 +1807,10 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
 
         vector_push_back(declaration_node->init_declarator_nodes, init_declarator_node);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type == TK_COMMA) {
             ++(*index);
-            token = vec->tokens[*index];
+            token = vec->elements[*index];
         } 
     }
     ++(*index);
@@ -1815,8 +1818,8 @@ static DeclarationNode* create_declaration_node(const TokenVec* vec, int* index)
     return declaration_node;
 }
 
-static bool is_type_specifier(const TokenVec* vec, int index) {
-    const Token* token = vec->tokens[index];
+static bool is_type_specifier(const Vector* vec, int index) {
+    const Token* token = vec->elements[index];
     const int type = token->type;
     return (type == TK_VOID   || type == TK_CHAR || type == TK_INT
          || type == TK_DOUBLE || type == TK_STRUCT
@@ -1824,15 +1827,16 @@ static bool is_type_specifier(const TokenVec* vec, int index) {
     );
 }
 
-static bool is_declaration_specifier(const TokenVec* vec, int index) {
-    const int type = vec->tokens[index]->type;
+static bool is_declaration_specifier(const Vector* vec, int index) {
+    const Token* token = vec->elements[index];
+    const int type = token->type;
     return (is_type_specifier(vec, index)
          || type == TK_CONST
          || type == TK_STATIC
     );
 }
 
-static BlockItemNode* create_block_item_node(const TokenVec* vec, int* index) {
+static BlockItemNode* create_block_item_node(const Vector* vec, int* index) {
     BlockItemNode* block_item_node = calloc(1, sizeof(BlockItemNode));
 
     if (is_declaration_specifier(vec, *index)) {
@@ -1853,12 +1857,12 @@ static BlockItemNode* create_block_item_node(const TokenVec* vec, int* index) {
     return block_item_node;
 }
 
-static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* index) {
+static CompoundStmtNode* create_compound_stmt_node(const Vector* vec, int* index) {
     CompoundStmtNode* compound_stmt_node = malloc(sizeof(CompoundStmtNode));
 
     compound_stmt_node->block_item_nodes = create_vector();
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type != TK_LBRCKT) {
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
@@ -1866,7 +1870,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
     ++(*index);
 
     while (true) {
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type == TK_RBRCKT) {
             ++(*index);
             break;
@@ -1884,7 +1888,7 @@ static CompoundStmtNode* create_compound_stmt_node(const TokenVec* vec, int* ind
     return compound_stmt_node;
 }
 
-static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
+static FuncDefNode* create_func_def_node(const Vector* vec, int* index) {
     FuncDefNode* func_def_node = calloc(1, sizeof(FuncDefNode));
 
     func_def_node->decl_specifier_nodes = create_vector();
@@ -1917,14 +1921,14 @@ static FuncDefNode* create_func_def_node(const TokenVec* vec, int* index) {
     return func_def_node;
 }
 
-static bool is_func_def(const TokenVec* vec, int index) {
-    const Token* token = vec->tokens[index];
+static bool is_func_def(const Vector* vec, int index) {
+    const Token* token = vec->elements[index];
     while (!(token->type == TK_IDENT && !strptrmap_contains(typedef_map, token->str))) {
         ++index;
-        token = vec->tokens[index];
+        token = vec->elements[index];
     }
     ++index;
-    token = vec->tokens[index];
+    token = vec->elements[index];
 
     if (token->type != TK_LPAREN) {
         return false;
@@ -1932,29 +1936,29 @@ static bool is_func_def(const TokenVec* vec, int index) {
 
     while (token->type != TK_RPAREN) {
         ++index;
-        token = vec->tokens[index];
+        token = vec->elements[index];
     }
     ++index;
-    token = vec->tokens[index];
+    token = vec->elements[index];
 
     return (token->type == TK_LBRCKT);
 }
 
-static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* index) {
+static ExternalDeclNode* create_external_decl_node(const Vector* vec, int* index) {
     ExternalDeclNode* external_decl_node = calloc(1, sizeof(ExternalDeclNode));
 
-    const Token* token = vec->tokens[*index];
+    const Token* token = vec->elements[*index];
     if (token->type == TK_TYPEDEF) {
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_STRUCT) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_IDENT) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -1963,7 +1967,7 @@ static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* ind
         strncpy(struct_name, token->str, token->strlen);
         ++(*index);
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_IDENT) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -1981,7 +1985,7 @@ static ExternalDeclNode* create_external_decl_node(const TokenVec* vec, int* ind
             return NULL;
         }
 
-        token = vec->tokens[*index];
+        token = vec->elements[*index];
         if (token->type != TK_SEMICOL) {
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
@@ -2015,7 +2019,7 @@ static TransUnitNode* create_trans_unit_node() {
     return trans_unit_node;
 }
 
-TransUnitNode* parse(const TokenVec* vec) {
+TransUnitNode* parse(const Vector* vec) {
     // init
     typedef_map = create_strptrmap(1024);
     TransUnitNode* trans_unit_node = create_trans_unit_node();

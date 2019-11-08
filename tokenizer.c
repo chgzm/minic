@@ -7,25 +7,6 @@
 
 #include "util.h"
 
-TokenVec* tokenvec_create() {
-    TokenVec* vec = malloc(sizeof(TokenVec));
-    vec->tokens   = malloc(sizeof(Token*) * 1024);
-    vec->capacity = 1024;
-    vec->size     = 0;
-
-    return vec;
-}
-
-void tokenvec_push_back(TokenVec* vec, Token* token) {
-    if (vec->size == vec->capacity) {
-        vec->capacity *= 2;
-        vec->tokens = realloc(vec->tokens, sizeof(Token*) * vec->capacity);
-    }
-
-    vec->tokens[vec->size] = token;
-    ++(vec->size);
-}
-
 static bool is_symbol(char p) {
     switch (p) {
     case '+': case '-':
@@ -604,8 +585,8 @@ static bool is_block_comment_end(const char* p, int pos) {
     return (strncmp(&p[pos], "*/", 2) == 0);
 }
 
-TokenVec* tokenize(char* addr) {
-    TokenVec* vec = tokenvec_create();
+Vector* tokenize(char* addr) {
+    Vector* vec = create_vector();
 
     int pos = 0;
     const char* p = (const char*)(addr);
@@ -630,7 +611,7 @@ TokenVec* tokenize(char* addr) {
                 error("Failed to read directive.\n");
                 return NULL;
             }
-            tokenvec_push_back(vec, token);
+            vector_push_back(vec, token);
         }
         else if (p[pos] == '\'') {
             Token* token = read_character(p, &pos);
@@ -638,7 +619,7 @@ TokenVec* tokenize(char* addr) {
                 error("Failed to read character.\n");
                 return NULL;
             }
-            tokenvec_push_back(vec, token);
+            vector_push_back(vec, token);
         }
         else if (p[pos] == '"') {
             Token* token = read_string(p, &pos);
@@ -646,7 +627,7 @@ TokenVec* tokenize(char* addr) {
                 error("Failed to read string.\n");
                 return NULL;
             }
-            tokenvec_push_back(vec, token);
+            vector_push_back(vec, token);
         }
         else if (is_symbol(p[pos])) {
             Token* token = read_symbol(p, &pos);
@@ -654,7 +635,7 @@ TokenVec* tokenize(char* addr) {
                 error("Failed to read symbol.\n");
                 return NULL;
             }
-            tokenvec_push_back(vec, token);
+            vector_push_back(vec, token);
         }
         else if (isalpha(p[pos]) || p[pos] == '_') {
             Token* token = read_identifier(p, &pos);
@@ -662,7 +643,7 @@ TokenVec* tokenize(char* addr) {
                 error("Failed to read identifier.\n");
                 return NULL;
             }
-            tokenvec_push_back(vec, token);
+            vector_push_back(vec, token);
         }
         else if (isdigit(p[pos])) {
             Token* token = read_number(p, &pos);
@@ -670,7 +651,7 @@ TokenVec* tokenize(char* addr) {
                 error("Failed to read number.\n");
                 return NULL;
             }
-            tokenvec_push_back(vec, token);
+            vector_push_back(vec, token);
         }
         else {
             error("Invalid character[%d]='%c'\n", pos, p[pos]);
@@ -754,6 +735,7 @@ const char* decode_token_type(int type) {
     }
 }
 
-int get_token_type(const TokenVec* vec, int index) {
-    return vec->tokens[index]->type;
+int get_token_type(const Vector* vec, int index) {
+    Token* token = vec->elements[index];
+    return token->type;
 }

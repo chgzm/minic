@@ -46,11 +46,12 @@ void debug(const char* fmt, ...) {
 // token
 //
 
-void dump_tokens(const TokenVec* vec) {
+void dump_tokens(const Vector* vec) {
     for (int i = 0; i < vec->size; ++i) {
-        printf("index=%d,token=\"%s\"", i, decode_token_type(vec->tokens[i]->type));
-        if (vec->tokens[i]->type == TK_IDENT) {
-            printf("=\"%s\"", vec->tokens[i]->str);
+        Token* token = vec->elements[i];
+        printf("index=%d,token=\"%s\"", i, decode_token_type(token->type));
+        if (token->type == TK_IDENT) {
+            printf("=\"%s\"", token->str);
         }
         printf("\n");
         fflush(stdout);

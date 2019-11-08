@@ -9,6 +9,6 @@ enum State {
     STATE_INVALID,
 };
 
-TokenVec* preprocess(const TokenVec* vec);
+Vector* preprocess(const Vector* vec);
 
 #endif

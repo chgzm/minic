@@ -434,7 +434,7 @@ struct JumpStmtNode {
 // parse
 //
 
-TransUnitNode* parse(const TokenVec* vec);
+TransUnitNode* parse(const Vector* vec);
 
 //
 // debug

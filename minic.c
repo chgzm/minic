@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    const TokenVec* vec = tokenize(addr);
+    const Vector* vec = tokenize(addr);
     if (vec == NULL) {
         error("Failed to tokenize.\n");
         return -1;
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
         dump_tokens(vec);
     }
 
-    const TokenVec* processed_vec = preprocess(vec); 
+    const Vector* processed_vec = preprocess(vec); 
     if (processed_vec == NULL) {
         error("Failed to preprocess.\n");
         return -1;

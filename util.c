@@ -202,6 +202,7 @@ void intstack_push(IntStack* stack, int e) {
 
 int intstack_top(IntStack* stack) {
     if (stack->top < 0) {
+        fprintf(stderr, "stack is empty.\n");
         exit(-1);
     }
 
@@ -367,6 +368,7 @@ int strintmap_get(StrIntMap* map, const char* key) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
+        fprintf(stderr, "no key=\"%s\"\n", key);
         exit(-1);
     }
     else {
@@ -379,6 +381,7 @@ int strintmap_get(StrIntMap* map, const char* key) {
             current = current->next;
         }
 
+        fprintf(stderr, "no key=\"%s\"\n", key);
         exit(-1);
     }
 }

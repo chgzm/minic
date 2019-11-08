@@ -272,7 +272,7 @@ static TypeNameNode* create_type_name_node(const TokenVec* vec, int* index) {
 static UnaryExprNode* create_unary_expr_node(const TokenVec* vec, int* index) {
     UnaryExprNode* unary_expr_node = calloc(1, sizeof(UnaryExprNode));
 
-    unary_expr_node->type              = UN_NONE;
+    unary_expr_node->type = UN_NONE;
 
     const Token* token = vec->tokens[*index];
     switch (token->type) {

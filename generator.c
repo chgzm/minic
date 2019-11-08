@@ -31,6 +31,7 @@ static IntStack* size_stack;
 //
 
 static void process_expr(const ExprNode* node);
+static void process_expr_left(const ExprNode* node);
 static void process_stmt(const StmtNode* node);
 static void process_conditional_expr(const ConditionalExprNode* node);
 static void process_compound_stmt(const CompoundStmtNode* node);
@@ -222,7 +223,7 @@ static void process_primary_expr_left(const PrimaryExprNode* node) {
     }
     // ( expression )
     else if (node->expr_node != NULL) {
-        process_expr(node->expr_node);
+        process_expr_left(node->expr_node);
     }
     // identifier
     else if (node->identifier != NULL) {
@@ -1020,6 +1021,26 @@ static void process_assign_expr(const AssignExprNode* node) {
         }
     }
 }
+
+static void process_expr_left(const ExprNode* node) {
+    process_unary_expr_left(node
+               ->assign_expr_node
+               ->conditional_expr_node
+               ->logical_or_expr_node
+               ->logical_and_expr_node
+               ->inclusive_or_expr_node
+               ->exclusive_or_expr_node
+               ->and_expr_node
+               ->equality_expr_node
+               ->relational_expr_node
+               ->shift_expr_node
+               ->additive_expr_node
+               ->multiplicative_expr_node
+               ->cast_expr_node
+               ->unary_expr_node
+    );
+}
+
 
 static void process_expr(const ExprNode* node) {
     // <assignment-expression>

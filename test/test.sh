@@ -5,6 +5,24 @@ function assert_return() {
     expected="$2"
 
     ./minic "./test/${file}" > ./test/tmp.s
+    gcc -o ./test/tmp ./test/tmp.s
+    ./test/tmp
+    actual="$?"
+
+    printf "\e[1m${file}:\n  \e[0m"
+    if [[ "${actual}" = "${expected}" ]]; then
+        echo -e "\e[32mExpected: ${expected}, Actual: ${actual} => OK.\e[0m"
+    else
+        echo -e "\e[31mExpected: ${expected}, Actual: ${actual} => NG.\e[0m"
+        exit 1
+    fi
+}
+
+function assert_return_static() {
+    file="$1"
+    expected="$2"
+
+    ./minic "./test/${file}" > ./test/tmp.s
     gcc -static -o ./test/tmp ./test/tmp.s
     ./test/tmp
     actual="$?"
@@ -175,7 +193,7 @@ assert_output test_char_4.c "hey"
 
 assert_return test_conditional_op.c 9
 
-assert_return test_vector.c 30
+assert_return_static test_vector.c 30
 
 assert_output test_printf.c "Hello, World."
 

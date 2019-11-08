@@ -183,7 +183,7 @@ static void process_identifier_addr(const char* identifier, int len) {
         print_code("push rax");
         stack_push(lv_stack, lv);
 
-        // intstack_push(size_stack, 8);
+        intstack_push(size_stack, 8);
     }
 }
 
@@ -325,17 +325,28 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         process_postfix_expr_left(node->postfix_expr_node);
 
         LocalVar* lv = stack_top(lv_stack);
-        stack_pop(lv_stack);
+        if (lv != NULL) {
+            stack_pop(lv_stack);
 
-        const StructInfo* struct_info = lv->type->struct_info;
-        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+            const StructInfo* struct_info = lv->type->struct_info;
+            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+            stack_push(struct_info_stack, field_info->type->struct_info);
 
-        print_code("pop rax");
-        print_code("mov rax, [rax]");
-        print_code("add rax, %d", field_info->offset);
-        print_code("push rax");
+            print_code("pop rax");
+            print_code("mov rax, [rax]");
+            print_code("add rax, %d", field_info->offset);
+            print_code("push rax");
+        } else {
+            StructInfo* struct_info = stack_top(struct_info_stack);
+            stack_pop(struct_info_stack);
+            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+            stack_push(struct_info_stack, field_info->type->struct_info);
 
-        // intstack_push(size_stack, 8);
+            print_code("pop rax");
+            print_code("mov rax, [rax]");
+            print_code("add rax, %d", field_info->offset);
+            print_code("push rax");
+        }
 
         break;        
     }
@@ -424,15 +435,28 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         process_postfix_expr_left(node->postfix_expr_node);
 
         LocalVar* lv = stack_top(lv_stack);
-        stack_pop(lv_stack);
+        if (lv != NULL) {
+            stack_pop(lv_stack);
 
-        const StructInfo* struct_info = lv->type->struct_info;
-        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+            const StructInfo* struct_info = lv->type->struct_info;
+            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+            stack_push(struct_info_stack, field_info->type->struct_info);
 
-        print_code("pop rax");
-        print_code("mov rax, [rax]");
-        print_code("add rax, %d", field_info->offset);
-        print_code("push [rax]");
+            print_code("pop rax");
+            print_code("mov rax, [rax]");
+            print_code("add rax, %d", field_info->offset);
+            print_code("push [rax]");
+        } else {
+            StructInfo* struct_info = stack_top(struct_info_stack);
+            stack_pop(struct_info_stack);
+            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+            stack_push(struct_info_stack, field_info->type->struct_info);
+
+            print_code("pop rax");
+            print_code("mov rax, [rax]");
+            print_code("add rax, %d", field_info->offset);
+            print_code("push [rax]");
+        }
 
         break;        
     }
@@ -1682,6 +1706,8 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
             type->struct_info->field_info_map = create_strptrmap(1024);
             type->struct_info->size           = 0;
 
+            strptrmap_put(struct_map, struct_name, type->struct_info);
+
             int offset = 0;
             for (int i = 0; i < struct_declaration_nodes->size; ++i) {
                 const StructDeclarationNode* struct_declaration_node  = struct_declaration_nodes->elements[i];
@@ -1718,7 +1744,7 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
                 }
             }
             type->struct_info->size = type->struct_info->field_info_map->size * 8;
-            strptrmap_put(struct_map, struct_name, type->struct_info);
+            // strptrmap_put(struct_map, struct_name, type->struct_info);
         }
         //
         // "struct" identifier
@@ -1727,6 +1753,17 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
             // @todo
         }
 
+        return type;
+    }
+    case TYPE_TYPEDEFNAME: {
+        type->base_type = VAR_STRUCT;   
+        type->type_size = 0;
+        StructInfo* struct_info = strptrmap_get(struct_map, node->struct_name);
+        if (struct_info == NULL) {
+            error("Invalid sturct name=\"%s\"\n", node->struct_name);
+            return NULL;
+        }
+        type->struct_info = struct_info;
         return type;
     }
     default: {

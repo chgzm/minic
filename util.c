@@ -147,7 +147,7 @@ void vector_push_back(Vector* vec, void* e) {
 //
 
 Stack* create_stack() {
-    Stack* stack = malloc(sizeof(Stack));
+    Stack* stack    = malloc(sizeof(Stack));
     stack->elements = malloc(sizeof(void*) * 16);
     stack->capacity = 16;
     stack->top      = -1;
@@ -218,10 +218,10 @@ void intstack_pop(IntStack* stack) {
 //
 
 StrPtrMap* create_strptrmap(int capacity) {
-    StrPtrMap* map = (StrPtrMap*)(malloc(sizeof(StrPtrMap)));
+    StrPtrMap* map = malloc(sizeof(StrPtrMap));
     map->size     = 0;
     map->capacity = capacity;
-    map->entries  = (StrPtrMapEntry**)(malloc(sizeof(StrPtrMapEntry*) * capacity));
+    map->entries  = malloc(sizeof(StrPtrMapEntry*) * capacity);
 
     for (int i = 0; i < map->capacity; ++i) {
         map->entries[i] = NULL;
@@ -244,7 +244,6 @@ void strptrmap_put(StrPtrMap* map, const char* key, void* val) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
-        // map->entries[index] = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
         map->entries[index] = calloc(1, sizeof(StrPtrMapEntry));
         map->entries[index]->key  = strdup(key);
         map->entries[index]->val  = val;
@@ -255,7 +254,6 @@ void strptrmap_put(StrPtrMap* map, const char* key, void* val) {
         while (current->next != NULL) {
             current = current->next;
         }
-        // current->next    = (StrPtrMapEntry*)(malloc(sizeof(StrPtrMapEntry)));
         current->next       = calloc(1, sizeof(StrPtrMapEntry));
         current->next->key  = strdup(key);
         current->next->val  = val;
@@ -310,10 +308,10 @@ void* strptrmap_get(StrPtrMap* map, const char* key) {
 //
 
 StrIntMap* create_strintmap(int capacity) {
-    StrIntMap* map = (StrIntMap*)(malloc(sizeof(StrIntMap)));
+    StrIntMap* map = malloc(sizeof(StrIntMap));
     map->size      = 0;
     map->capacity  = capacity;
-    map->entries   = (StrIntMapEntry**)(malloc(sizeof(StrIntMapEntry*) * capacity));
+    map->entries   = malloc(sizeof(StrIntMapEntry*) * capacity);
 
     for (int i = 0; i < map->capacity; ++i) {
         map->entries[i] = NULL;
@@ -326,7 +324,7 @@ void strintmap_put(StrIntMap* map, const char* key, int val) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
-        map->entries[index] = (StrIntMapEntry*)(malloc(sizeof(StrIntMapEntry)));
+        map->entries[index] = malloc(sizeof(StrIntMapEntry));
         map->entries[index]->key  = strdup(key);
         map->entries[index]->val  = val;
         map->entries[index]->next = NULL;
@@ -336,7 +334,7 @@ void strintmap_put(StrIntMap* map, const char* key, int val) {
         while (current->next != NULL) {
             current = current->next;
         }
-        current->next       = (StrIntMapEntry*)(malloc(sizeof(StrIntMapEntry)));
+        current->next       = malloc(sizeof(StrIntMapEntry));
         current->key        = strdup(key);
         current->val        = val;
         current->next->next = NULL;

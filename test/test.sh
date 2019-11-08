@@ -157,6 +157,7 @@ assert_output test_global_3.c "Hello"
 assert_return test_struct.c 6
 assert_return test_struct_2.c 15
 assert_return test_struct_3.c 120
+assert_return test_struct_4.c 3
 
 assert_return test_comment.c 42
 assert_return test_comment_2.c 42

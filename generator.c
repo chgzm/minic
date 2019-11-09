@@ -386,10 +386,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         print_code("imul rdi, %d", type->size);
         print_code("add rax, rdi");
 
-        const int size = intstack_top(size_stack); 
-        intstack_pop(size_stack);
-
-        if (size == 1) {
+        if (type->size == 1) {
             print_code("movzx eax, BYTE PTR [rax]");
         } else {
             print_code("mov rax, [rax]");

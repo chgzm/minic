@@ -299,8 +299,9 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         print_code("add rax, rdi");
         print_code("push rax");
-        // intstack_push(size_stack, 8);
 
+        stack_push(type_stack, type);
+        // intstack_push(size_stack, 8);
         break;
     }
     // postfix-expression . identifier

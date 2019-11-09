@@ -33,6 +33,10 @@ void error(const char* fmt, ...);
 #define true  1
 #define O_RDONLY 0
 #define FILE void
+#define stdout 1
+#define stderr 2
+#define SEEK_SET 0
+#define SEEK_END 2
 
 typedef struct __va_list va_list;
 struct __va_list {

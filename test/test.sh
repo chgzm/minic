@@ -149,6 +149,7 @@ assert_return test_ptr.c 5
 assert_return test_ptr_2.c 100
 assert_return test_ptr_3.c 100
 assert_return test_ptr_4.c 10
+assert_return test_ptr_5.c 17
 
 assert_return test_global.c 9
 assert_return test_global_2.c 10

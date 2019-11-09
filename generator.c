@@ -24,8 +24,7 @@ static StrPtrMap* struct_map;
 static StrIntMap* enum_map;
 static Stack* break_label_stack;
 static Stack* continue_label_stack;
-static Stack* lv_stack;
-static Stack* struct_info_stack;
+static Stack* type_stack;
 static IntStack* size_stack;
 
 //
@@ -135,7 +134,7 @@ static void process_identifier_left(const char* identifier, int len) {
     if (lv != NULL) {
         print_code("lea rax, [rbp-%d]", lv->offset);
         print_code("push rax");
-        stack_push(lv_stack, lv);
+        stack_push(type_stack, lv->type);
     } 
     else {
         const GlobalVar* gv = get_globalvar(identifier, len);    
@@ -161,7 +160,7 @@ static void process_identifier_right(const char* identifier, int len) {
         } 
         print_code("push rax");
         intstack_push(size_stack, lv->type->size);
-        stack_push(lv_stack, lv);
+        stack_push(type_stack, lv->type);
 
         return;
     } 
@@ -174,6 +173,7 @@ static void process_identifier_right(const char* identifier, int len) {
     }
     print_code("push rax");
     intstack_push(size_stack, gv->type->size);
+    stack_push(type_stack, gv->type);
 }
 
 static void process_identifier_addr(const char* identifier, int len) {
@@ -181,7 +181,7 @@ static void process_identifier_addr(const char* identifier, int len) {
     if (lv != NULL) {
         print_code("lea rax, [rbp-%d]", lv->offset);
         print_code("push rax");
-        stack_push(lv_stack, lv);
+        stack_push(type_stack, lv->type);
 
         intstack_push(size_stack, 8);
     }
@@ -284,15 +284,16 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     // postfix-expression [ expression ]
     case PS_LSQUARE: {
         process_postfix_expr_left(node->postfix_expr_node);
-        process_expr(node->expr_node);
 
-        LocalVar* lv = stack_top(lv_stack);
-        stack_pop(lv_stack);
+        Type* type = stack_top(type_stack);
+        stack_pop(type_stack);
+
+        process_expr(node->expr_node);
 
         print_code("pop rdi");
         print_code("pop rax");
-        print_code("imul rdi, %d", lv->type->type_size);
-        if (lv->type->ptr_count != 0) { 
+        print_code("imul rdi, %d", type->type_size);
+        if (type->ptr_count != 0) { 
             print_code("mov rax, [rax]");
         } 
 
@@ -306,10 +307,10 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_DOT: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        LocalVar* lv = stack_top(lv_stack);
-        stack_pop(lv_stack);
+        Type* type = stack_top(type_stack);
+        stack_pop(type_stack);
 
-        const StructInfo* struct_info = lv->type->struct_info;
+        const StructInfo* struct_info = type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
         print_code("pop rax");
@@ -324,29 +325,17 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_ARROW: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        LocalVar* lv = stack_top(lv_stack);
-        if (lv != NULL) {
-            stack_pop(lv_stack);
+        Type* type = stack_top(type_stack);
+        stack_pop(type_stack);
 
-            const StructInfo* struct_info = lv->type->struct_info;
-            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
-            stack_push(struct_info_stack, field_info->type->struct_info);
+        const StructInfo* struct_info = type->struct_info;
+        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+        stack_push(type_stack, field_info->type);
 
-            print_code("pop rax");
-            print_code("mov rax, [rax]");
-            print_code("add rax, %d", field_info->offset);
-            print_code("push rax");
-        } else {
-            StructInfo* struct_info = stack_top(struct_info_stack);
-            stack_pop(struct_info_stack);
-            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
-            stack_push(struct_info_stack, field_info->type->struct_info);
-
-            print_code("pop rax");
-            print_code("mov rax, [rax]");
-            print_code("add rax, %d", field_info->offset);
-            print_code("push rax");
-        }
+        print_code("pop rax");
+        print_code("mov rax, [rax]");
+        print_code("add rax, %d", field_info->offset);
+        print_code("push rax");
 
         break;        
     }
@@ -386,22 +375,16 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     // postfix-expression [ expression ]
     case PS_LSQUARE: {
         process_postfix_expr_right(node->postfix_expr_node);
-        process_expr(node->expr_node);
 
-        LocalVar* lv = stack_top(lv_stack);
-        stack_pop(lv_stack);
+        Type* type = stack_top(type_stack);
+        stack_pop(type_stack);
+
+        process_expr(node->expr_node);
 
         print_code("pop rdi");
         print_code("pop rax");
-        if (lv != NULL) {
-            print_code("imul rdi, %d", lv->type->size);
-
-            print_code("add rax, rdi");
-        } else {
-            const GlobalVar* gv = get_globalvar(node->postfix_expr_node->primary_expr_node->identifier, node->postfix_expr_node->primary_expr_node->identifier_len);
-            print_code("imul rdi, %d", gv->type->size);
-            print_code("add rax, rdi");
-        }
+        print_code("imul rdi, %d", type->size);
+        print_code("add rax, rdi");
 
         const int size = intstack_top(size_stack); 
         intstack_pop(size_stack);
@@ -419,10 +402,10 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     case PS_DOT: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        LocalVar* lv = stack_top(lv_stack);
-        stack_pop(lv_stack);
+        Type* type = stack_top(type_stack);
+        stack_pop(type_stack);
 
-        const StructInfo* struct_info = lv->type->struct_info;
+        const StructInfo* struct_info = type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
         print_code("pop rax");
@@ -434,29 +417,17 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     case PS_ARROW: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        LocalVar* lv = stack_top(lv_stack);
-        if (lv != NULL) {
-            stack_pop(lv_stack);
+        Type* type = stack_top(type_stack);
+        stack_pop(type_stack);
 
-            const StructInfo* struct_info = lv->type->struct_info;
-            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
-            stack_push(struct_info_stack, field_info->type->struct_info);
+        const StructInfo* struct_info = type->struct_info;
+        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+        stack_push(type_stack, field_info->type);
 
-            print_code("pop rax");
-            print_code("mov rax, [rax]");
-            print_code("add rax, %d", field_info->offset);
-            print_code("push [rax]");
-        } else {
-            StructInfo* struct_info = stack_top(struct_info_stack);
-            stack_pop(struct_info_stack);
-            const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
-            stack_push(struct_info_stack, field_info->type->struct_info);
-
-            print_code("pop rax");
-            print_code("mov rax, [rax]");
-            print_code("add rax, %d", field_info->offset);
-            print_code("push [rax]");
-        }
+        print_code("pop rax");
+        print_code("mov rax, [rax]");
+        print_code("add rax, %d", field_info->offset);
+        print_code("push [rax]");
 
         break;        
     }
@@ -1965,8 +1936,7 @@ void gen(const TransUnitNode* node) {
     label_index          = 2;
     break_label_stack    = create_stack();
     continue_label_stack = create_stack();
-    lv_stack             = create_stack();
-    struct_info_stack    = create_stack();
+    type_stack           = create_stack();
     size_stack           = create_intstack();
     globalvar_list       = create_vector();
     struct_map           = create_strptrmap(1024);

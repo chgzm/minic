@@ -20,8 +20,8 @@ void vector_push_back(Vector* vec, void* e) {
         vec->elements = realloc(vec->elements, sizeof(void*) * vec->capacity);
     }
 
-    void** elements = vec->elements;
-    elements[vec->size] = e;
+    // void** elements = vec->elements;
+    vec->elements[vec->size] = e;
     ++vec->size;
 }
 

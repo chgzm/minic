@@ -197,6 +197,8 @@ assert_return test_conditional_op.c 9
 
 assert_return_static test_vector.c 30
 
+assert_return_static test_stack.c 6
+
 assert_output test_printf.c "Hello, World."
 
 echo -e "\e[36mPassed all tests.\e[0m"

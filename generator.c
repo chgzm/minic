@@ -384,7 +384,11 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         print_code("pop rdi");
         print_code("pop rax");
-        print_code("imul rdi, %d", type->size);
+        if (type->array_size == 0) {
+            print_code("imul rdi, %d", type->type_size);
+        } else {
+            print_code("imul rdi, %d", type->size);
+        }
         print_code("add rax, rdi");
 
         if (type->size == 1) {

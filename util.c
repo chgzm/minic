@@ -219,13 +219,9 @@ void intstack_pop(IntStack* stack) {
 
 StrPtrMap* create_strptrmap(int capacity) {
     StrPtrMap* map = malloc(sizeof(StrPtrMap));
-    map->size     = 0;
-    map->capacity = capacity;
-    map->entries  = malloc(sizeof(StrPtrMapEntry*) * capacity);
-
-    for (int i = 0; i < map->capacity; ++i) {
-        map->entries[i] = NULL;
-    }
+    map->size      = 0;
+    map->capacity  = capacity;
+    map->entries   = calloc(capacity, sizeof(StrPtrMapEntry*));
 
     return map;
 }
@@ -244,7 +240,7 @@ void strptrmap_put(StrPtrMap* map, const char* key, void* val) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
-        map->entries[index] = calloc(1, sizeof(StrPtrMapEntry));
+        map->entries[index]       = calloc(1, sizeof(StrPtrMapEntry));
         map->entries[index]->key  = strdup(key);
         map->entries[index]->val  = val;
         map->entries[index]->next = NULL;
@@ -311,11 +307,7 @@ StrIntMap* create_strintmap(int capacity) {
     StrIntMap* map = malloc(sizeof(StrIntMap));
     map->size      = 0;
     map->capacity  = capacity;
-    map->entries   = malloc(sizeof(StrIntMapEntry*) * capacity);
-
-    for (int i = 0; i < map->capacity; ++i) {
-        map->entries[i] = NULL;
-    }
+    map->entries   = calloc(capacity, sizeof(StrIntMapEntry*));
 
     return map;
 }
@@ -324,7 +316,7 @@ void strintmap_put(StrIntMap* map, const char* key, int val) {
     const int hash  = calc_hash(key);
     const int index = hash % map->capacity;
     if (map->entries[index] == NULL) {
-        map->entries[index] = malloc(sizeof(StrIntMapEntry));
+        map->entries[index]       = calloc(1, sizeof(StrIntMapEntry));
         map->entries[index]->key  = strdup(key);
         map->entries[index]->val  = val;
         map->entries[index]->next = NULL;
@@ -334,7 +326,7 @@ void strintmap_put(StrIntMap* map, const char* key, int val) {
         while (current->next != NULL) {
             current = current->next;
         }
-        current->next       = malloc(sizeof(StrIntMapEntry));
+        current->next       = calloc(1, sizeof(StrIntMapEntry));
         current->key        = strdup(key);
         current->val        = val;
         current->next->next = NULL;

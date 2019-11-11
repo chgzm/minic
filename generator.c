@@ -141,7 +141,7 @@ static void process_identifier_left(const char* identifier, int len) {
         print_code("lea rax, %s[rip]", gv->name);
         print_code("push rax");
     }
-    // intstack_push(size_stack, 8);
+    intstack_push(size_stack, 8);
 }
 
 static void process_identifier_right(const char* identifier, int len) {
@@ -174,17 +174,6 @@ static void process_identifier_right(const char* identifier, int len) {
     print_code("push rax");
     intstack_push(size_stack, gv->type->size);
     stack_push(type_stack, gv->type);
-}
-
-static void process_identifier_addr(const char* identifier, int len) {
-    LocalVar* lv = get_localvar(identifier, len);
-    if (lv != NULL) {
-        print_code("lea rax, [rbp-%d]", lv->offset);
-        print_code("push rax");
-        stack_push(type_stack, lv->type);
-
-        intstack_push(size_stack, 8);
-    }
 }
 
 static void process_constant_node(const ConstantNode* node) {
@@ -250,24 +239,6 @@ static void process_primary_expr_right(const PrimaryExprNode* node) {
     // identifier
     else if (node->identifier != NULL) {
         process_identifier_right(node->identifier, node->identifier_len);
-    }
-    else {
-        // @todo
-    }
-}
-
-static void process_primary_expr_addr(const PrimaryExprNode* node) {
-    // <constant>
-    if (node->constant_node != NULL) {
-        process_constant_node(node->constant_node);
-    }
-    // ( <expression> )
-    else if (node->expr_node != NULL) {
-        process_expr(node->expr_node);
-    }
-    // <identifier>
-    else if (node->identifier != NULL) {
-        process_identifier_addr(node->identifier, node->identifier_len);
     }
     else {
         // @todo
@@ -440,28 +411,6 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     }
 }
 
-static void process_postfix_expr_addr(const PostfixExprNode* node) {
-    switch (node->postfix_expr_type) {
-    // primary-expression
-    case PS_PRIMARY: {
-        process_primary_expr_addr(node->primary_expr_node);
-        break;
-    }
-    // postfix-expression ( {assignment-expression}* )
-    case PS_LPAREN: {
-        break;
-    }
-    // postfix-expression [ expression ]
-    case PS_LSQUARE: {
-        break;
-    }
-    default: {
-        // @todo
-        break;
-    }
-    }
-}
-
 static void process_unary_expr_left(const UnaryExprNode* node) {
     switch (node->type) {
     // postfix-expression
@@ -501,34 +450,10 @@ static void process_unary_expr_left(const UnaryExprNode* node) {
     }
 }
 
-static void process_unary_expr_addr(const UnaryExprNode* node) {
-    switch (node->type) {
-    // postfix-expression
-    case UN_NONE: {
-        process_postfix_expr_addr(node->postfix_expr_node);
-        break;
-    }
-    // ++ unary-expression
-    case UN_INC: {
-        break;
-    }
-    case UN_DEC: {
-        break;
-    }
-    case UN_SIZEOF_IDENT: 
-    case UN_SIZEOF_TYPE: {
-        break;
-    }
-    default: {
-        break;
-    }
-    }
-}
-
-static void process_cast_expr_addr(const CastExprNode* node) {
+static void process_cast_expr_left(const CastExprNode* node) {
     // unary-expression
     if (node->unary_expr_node != NULL) {
-        process_unary_expr_addr(node->unary_expr_node);
+        process_unary_expr_left(node->unary_expr_node);
     }
     // ( type-name ) cast-expression
     else {
@@ -569,7 +494,7 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
     case UN_OP: {
         switch (node->op_type) {
         case OP_AND: {
-            process_cast_expr_addr(node->cast_expr_node);
+            process_cast_expr_left(node->cast_expr_node);
 
             break;
         }

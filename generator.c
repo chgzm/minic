@@ -31,6 +31,7 @@ static IntStack* size_stack;
 // forward declaration
 //
 
+static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node);
 static void process_expr(const ExprNode* node);
 static void process_expr_left(const ExprNode* node);
 static void process_stmt(const StmtNode* node);
@@ -1407,6 +1408,69 @@ static int calc_localvar_size_in_itr_stmt_node(const ItrStmtNode* node) {
     return size;
 }
 
+static int calc_localvar_size_in_stmt(const StmtNode* node) {
+    if (node->labeled_stmt_node != NULL) {
+        return calc_localvar_size_in_labeled_stmt(node->labeled_stmt_node);
+    }
+    else if (node->compound_stmt_node != NULL) {
+        return calc_localvar_size_in_compound_stmt(node->compound_stmt_node);
+    }
+    else if (node->selection_stmt_node != NULL) {
+        return calc_localvar_size_in_selection_stmt_node(node->selection_stmt_node);
+    }
+    else if (node->itr_stmt_node != NULL) {
+        return calc_localvar_size_in_itr_stmt_node(node->itr_stmt_node);
+    }
+
+    return 0;
+}
+
+static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
+    int var_size = 0;
+    const Vector* decl_specifier_nodes = node->decl_specifier_nodes;
+    for (int i = 0; i < decl_specifier_nodes->size; ++i) {
+        const DeclSpecifierNode* decl_specifier_node = decl_specifier_nodes->elements[i];
+        if (decl_specifier_node->type_specifier_node == NULL) {
+            continue;
+        }
+
+        const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
+
+        if (type_specifier_node->type_specifier == TYPE_STRUCT) {
+            const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
+            const char* ident = struct_specifier_node->identifier;
+            const StructInfo* struct_info = strptrmap_get(struct_map, ident);
+            var_size = struct_info->field_info_map->size * 8;
+        } 
+        else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
+            const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
+            var_size = struct_info->field_info_map->size * 8;
+        } 
+        else {
+            var_size = 8; // @todo
+        }
+
+        break;
+    }
+
+    int size = 0;
+    const Vector* init_declarator_nodes = node->init_declarator_nodes;
+    for (int i = 0; i < init_declarator_nodes->size; ++i) {
+        const InitDeclaratorNode* init_declarator_node = init_declarator_nodes->elements[i];
+        const DeclaratorNode* declarator_node = init_declarator_node->declarator_node;
+        const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
+
+        if (direct_declarator_node->conditional_expr_node == NULL) {
+            size += var_size;
+        } else {
+            const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
+            size += (array_size * var_size);
+        }
+    }
+
+    return size;
+}
+
 static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
     if (node == NULL) {
         return 0;
@@ -1415,67 +1479,10 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
     int size = 0;
     for (int i = 0; i < node->block_item_nodes->size; ++i) {
         const BlockItemNode* block_item_node = node->block_item_nodes->elements[i];
-        //
-        // declaration
-        // 
         if (block_item_node->declaration_node != NULL) {
-            const DeclarationNode* declaration_node = block_item_node->declaration_node;
-
-            int var_size = 0;
-            const Vector* decl_specifier_nodes = declaration_node->decl_specifier_nodes;
-            for (int j = 0; j < decl_specifier_nodes->size; ++j) {
-                const DeclSpecifierNode* decl_specifier_node = (const DeclSpecifierNode*)(decl_specifier_nodes->elements[j]);
-                if (decl_specifier_node->type_specifier_node != NULL) {
-                    const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
-
-                    if (type_specifier_node->type_specifier == TYPE_STRUCT) {
-                        const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
-                        const char* ident = struct_specifier_node->identifier;
-                        const StructInfo* struct_info = strptrmap_get(struct_map, ident);
-                        var_size = struct_info->field_info_map->size * 8;
-                    } 
-                    else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
-                        const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-                        var_size = struct_info->field_info_map->size * 8;
-                    } else {
-                        var_size = 8; // @todo
-                    }
-
-                    break;
-                }
-            }
-
-            const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
-            for (int j = 0; j < init_declarator_nodes->size; ++j) {
-                const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[j]);
-                const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
-                const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
-
-                if (direct_declarator_node->conditional_expr_node == NULL) {
-                    size += var_size;
-                } else {
-                    const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
-                    size += (array_size * var_size);
-                }
-            }
-        }
-        //
-        // statement
-        // 
-        else {
-            const StmtNode* stmt_node = block_item_node->stmt_node;
-            if (stmt_node->labeled_stmt_node != NULL) {
-                size += calc_localvar_size_in_labeled_stmt(stmt_node->labeled_stmt_node);
-            }
-            else if (stmt_node->compound_stmt_node != NULL) {
-                size += calc_localvar_size_in_compound_stmt(stmt_node->compound_stmt_node);
-            }
-            else if (stmt_node->selection_stmt_node != NULL) {
-                size += calc_localvar_size_in_selection_stmt_node(stmt_node->selection_stmt_node);
-            }
-            else if (stmt_node->itr_stmt_node != NULL) {
-                size += calc_localvar_size_in_itr_stmt_node(stmt_node->itr_stmt_node);
-            }
+            size += calc_localvar_size_in_declaration(block_item_node->declaration_node);
+        } else {
+            size += calc_localvar_size_in_stmt(block_item_node->stmt_node);
         }
     }
 

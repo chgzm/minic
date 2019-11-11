@@ -263,10 +263,23 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         print_code("pop rdi");
         print_code("pop rax");
-        print_code("imul rdi, %d", type->type_size);
-        if (type->ptr_count != 0) { 
-            print_code("mov rax, [rax]");
-        } 
+
+        if (type->array_size) {
+            if (type->ptr_count > 0) {
+                print_code("imul rdi, 8");
+                print_code("mov rax, [rax]");
+            } else {
+                print_code("imul rdi, %d", type->type_size);
+            }
+        } else {
+            if (type->ptr_count > 1) {
+                print_code("imul rdi, 8");
+                print_code("mov rax, [rax]");
+            } else {
+                print_code("imul rdi, %d", type->type_size);
+                print_code("mov rax, [rax]");
+            }
+        }
 
         print_code("add rax, rdi");
         print_code("push rax");
@@ -355,6 +368,55 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         print_code("pop rdi");
         print_code("pop rax");
+
+        if (type->array_size) {
+            if (type->ptr_count > 0) {
+                print_code("imul rdi, 8");
+            } else {
+                print_code("imul rdi, %d", type->type_size);
+            }
+
+            print_code("add rax, rdi");
+            print_code("mov rax, [rax]");
+        }
+        else {
+            if (type->ptr_count > 1) {
+                print_code("imul rdi, 8");
+            } else {
+                print_code("imul rdi, %d", type->type_size);
+            }
+            print_code("add rax, rdi");
+            if (type->type_size == 1) {
+                print_code("movzx eax, BYTE PTR [rax]");
+            } else {
+                print_code("mov rax, [rax]");
+            } 
+        }
+        print_code("push rax");
+
+
+#if 0
+        if (type->array_size == 0) {
+            if (type->ptr_count < 2) {
+                print_code("imul rdi, %d", type->type_size);
+            } else {
+                print_code("imul rdi, 8");
+            }
+
+            print_code("add rax, rdi");
+            if (type->type_size == 1) {
+                print_code("movzx eax, BYTE PTR [rax]");
+            } else {
+                print_code("mov rax, [rax]");
+            }
+        } else {
+            print_code("imul rdi, %d", type->size);
+            print_code("add rax, rdi");
+            print_code("mov rax, [rax]");
+        }
+        print_code("push rax");
+#endif
+#if 0
         if (type->array_size == 0) {
             print_code("imul rdi, %d", type->type_size);
         } else {
@@ -368,6 +430,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
             print_code("mov rax, [rax]");
         }
         print_code("push rax");
+#endif
 
         break;
     }
@@ -1313,6 +1376,37 @@ static int get_array_size_from_constant_expr(const ConditionalExprNode* node) {
                ->integer_constant;
 }
 
+static int calc_localvar_size_in_labeled_stmt(const LabeledStmtNode* node) {
+    return 0;
+}
+
+static int calc_localvar_size_in_selection_stmt_node(const SelectionStmtNode* node) {
+    return 0;
+}
+
+static int calc_localvar_size_in_itr_stmt_node(const ItrStmtNode* node) {
+    int size = 0;
+    for (int i = 0; i < node->declaration_nodes->size; ++i) {
+        const DeclarationNode* declaration_node = node->declaration_nodes->elements[i];
+        const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
+
+        for (int j = 0; j < init_declarator_nodes->size; ++j) {
+            const InitDeclaratorNode* init_declarator_node = init_declarator_nodes->elements[j];
+            const DeclaratorNode* declarator_node = init_declarator_node->declarator_node;
+            const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
+
+            if (direct_declarator_node->conditional_expr_node == NULL) {
+                size += 8;
+            } else {
+                const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
+                size += (array_size * 8);
+            }
+        }
+    }
+
+    return size;
+}
+
 static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
     if (node == NULL) {
         return 0;
@@ -1370,29 +1464,17 @@ static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node) {
         // 
         else {
             const StmtNode* stmt_node = block_item_node->stmt_node;
-            size += calc_localvar_size_in_compound_stmt(stmt_node->compound_stmt_node);
-
-            if (stmt_node->itr_stmt_node == NULL) {
-                continue;
+            if (stmt_node->labeled_stmt_node != NULL) {
+                size += calc_localvar_size_in_labeled_stmt(stmt_node->labeled_stmt_node);
             }
-
-            const ItrStmtNode* itr_stmt_node = stmt_node->itr_stmt_node;
-            for (int j = 0; j < itr_stmt_node->declaration_nodes->size; ++j) {
-                const DeclarationNode* declaration_node = (const DeclarationNode*)(itr_stmt_node->declaration_nodes->elements[j]);
-                const Vector* init_declarator_nodes = declaration_node->init_declarator_nodes;
-
-                for (int k = 0; k < init_declarator_nodes->size; ++k) {
-                    const InitDeclaratorNode* init_declarator_node = (const InitDeclaratorNode*)(init_declarator_nodes->elements[k]);
-                    const DeclaratorNode* declarator_node = (const DeclaratorNode*)(init_declarator_node->declarator_node);
-                    const DirectDeclaratorNode* direct_declarator_node = (const DirectDeclaratorNode*)(declarator_node->direct_declarator_node);
-
-                    if (direct_declarator_node->conditional_expr_node == NULL) {
-                        size += 8;
-                    } else {
-                        const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
-                        size += (array_size * 8);
-                    }
-                }
+            else if (stmt_node->compound_stmt_node != NULL) {
+                size += calc_localvar_size_in_compound_stmt(stmt_node->compound_stmt_node);
+            }
+            else if (stmt_node->selection_stmt_node != NULL) {
+                size += calc_localvar_size_in_selection_stmt_node(stmt_node->selection_stmt_node);
+            }
+            else if (stmt_node->itr_stmt_node != NULL) {
+                size += calc_localvar_size_in_itr_stmt_node(stmt_node->itr_stmt_node);
             }
         }
     }
@@ -1602,7 +1684,7 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
         if (struct_declaration_nodes->size != 0) {
             type->struct_info                 = malloc(sizeof(StructInfo));
             type->struct_info->field_info_map = create_strptrmap(1024);
-            type->struct_info->size           = 0;
+            type->struct_info->size           = struct_declaration_nodes->size * 8; // @todo
 
             strptrmap_put(struct_map, struct_name, type->struct_info);
 
@@ -1615,7 +1697,12 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
                 for (int j = 0; j < specifier_qualifier_nodes->size; ++j) {
                     const SpecifierQualifierNode* specifier_qualifier_node = specifier_qualifier_nodes->elements[j];
                     const TypeSpecifierNode*      type_specifier_node      = specifier_qualifier_node->type_specifier_node;
+                    if (type_specifier_node == NULL) {
+                        continue;
+                    }
+
                     field_type = process_type_specifier_in_global(type_specifier_node);
+                    break;
                 }
 
                 const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
@@ -1655,13 +1742,13 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
     }
     case TYPE_TYPEDEFNAME: {
         type->base_type = VAR_STRUCT;   
-        type->type_size = 0;
         StructInfo* struct_info = strptrmap_get(struct_map, node->struct_name);
         if (struct_info == NULL) {
             error("Invalid sturct name=\"%s\"\n", node->struct_name);
             return NULL;
         }
         type->struct_info = struct_info;
+        type->type_size   = struct_info->size;
         return type;
     }
     default: {

@@ -32,6 +32,7 @@ static IntStack* size_stack;
 //
 
 static int calc_localvar_size_in_compound_stmt(const CompoundStmtNode* node);
+static int calc_localvar_size_in_stmt(const StmtNode* node);
 static void process_expr(const ExprNode* node);
 static void process_expr_left(const ExprNode* node);
 static void process_stmt(const StmtNode* node);
@@ -1378,14 +1379,21 @@ static int get_array_size_from_constant_expr(const ConditionalExprNode* node) {
 }
 
 static int calc_localvar_size_in_labeled_stmt(const LabeledStmtNode* node) {
-    return 0;
+    return calc_localvar_size_in_stmt(node->stmt_node);
 }
 
-static int calc_localvar_size_in_selection_stmt_node(const SelectionStmtNode* node) {
-    return 0;
+static int calc_localvar_size_in_selection_stmt(const SelectionStmtNode* node) {
+    int size = 0;
+    size += calc_localvar_size_in_stmt(node->stmt_node[0]);
+
+    if (node->stmt_node[1] != NULL) {
+        size += calc_localvar_size_in_stmt(node->stmt_node[1]);
+    }
+
+    return size;
 }
 
-static int calc_localvar_size_in_itr_stmt_node(const ItrStmtNode* node) {
+static int calc_localvar_size_in_itr_stmt(const ItrStmtNode* node) {
     int size = 0;
     for (int i = 0; i < node->declaration_nodes->size; ++i) {
         const DeclarationNode* declaration_node = node->declaration_nodes->elements[i];
@@ -1405,6 +1413,8 @@ static int calc_localvar_size_in_itr_stmt_node(const ItrStmtNode* node) {
         }
     }
 
+    size += calc_localvar_size_in_stmt(node->stmt_node);
+
     return size;
 }
 
@@ -1416,10 +1426,10 @@ static int calc_localvar_size_in_stmt(const StmtNode* node) {
         return calc_localvar_size_in_compound_stmt(node->compound_stmt_node);
     }
     else if (node->selection_stmt_node != NULL) {
-        return calc_localvar_size_in_selection_stmt_node(node->selection_stmt_node);
+        return calc_localvar_size_in_selection_stmt(node->selection_stmt_node);
     }
     else if (node->itr_stmt_node != NULL) {
-        return calc_localvar_size_in_itr_stmt_node(node->itr_stmt_node);
+        return calc_localvar_size_in_itr_stmt(node->itr_stmt_node);
     }
 
     return 0;
@@ -1435,7 +1445,6 @@ static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
         }
 
         const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
-
         if (type_specifier_node->type_specifier == TYPE_STRUCT) {
             const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
             const char* ident = struct_specifier_node->identifier;

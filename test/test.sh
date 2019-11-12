@@ -137,6 +137,7 @@ assert_return test_ptr_5.c 17
 assert_return test_global.c 9
 assert_return test_global_2.c 10
 assert_output test_global_3.c "Hello"
+assert_return test_global_4.c 3
 
 assert_return test_struct.c 6
 assert_return test_struct_2.c 15

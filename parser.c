@@ -1944,6 +1944,29 @@ static bool is_func_def(const Vector* vec, int index) {
     return (token->type == TK_LBRCKT);
 }
 
+static bool is_func_decl(const Vector* vec, int index) {
+    const Token* token = vec->elements[index];
+    while (!(token->type == TK_IDENT && !strptrmap_contains(typedef_map, token->str))) {
+        ++index;
+        token = vec->elements[index];
+    }
+    ++index;
+    token = vec->elements[index];
+
+    if (token->type != TK_LPAREN) {
+        return false;
+    }
+
+    while (token->type != TK_RPAREN) {
+        ++index;
+        token = vec->elements[index];
+    }
+    ++index;
+    token = vec->elements[index];
+
+    return (token->type == TK_SEMICOL);
+}
+
 static ExternalDeclNode* create_external_decl_node(const Vector* vec, int* index) {
     ExternalDeclNode* external_decl_node = calloc(1, sizeof(ExternalDeclNode));
 
@@ -1999,6 +2022,14 @@ static ExternalDeclNode* create_external_decl_node(const Vector* vec, int* index
             error("Failed to create function-definition node.\n");
             return NULL;
         }
+    }
+    else if (is_func_decl(vec, *index)) {
+        token = vec->elements[*index];
+        while (token->type != TK_SEMICOL) {
+            ++(*index);
+            token = vec->elements[*index];
+        }
+        ++(*index);
     }
     else {
         external_decl_node->declaration_node = create_declaration_node(vec, index);

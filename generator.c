@@ -146,6 +146,7 @@ static void process_identifier_left(const char* identifier, int len) {
         const GlobalVar* gv = get_globalvar(identifier, len);    
         print_code("lea rax, %s[rip]", gv->name);
         print_code("push rax");
+        stack_push(type_stack, gv->type);
     }
     intstack_push(size_stack, 8);
 }
@@ -1877,7 +1878,11 @@ static void process_global_declaration(const DeclarationNode* node) {
         }
 
         const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
-        printf(".global %s\n", ident_node->identifier);
+        if (init_declarator_node->initializer_node != NULL) {
+            printf(".global %s\n", ident_node->identifier);
+        } else {
+            printf(".comm %s,8,8\n", ident_node->identifier);
+        }
 
         gv->name_len = ident_node->identifier_len;
         gv->name     = malloc(sizeof(char) * gv->name_len);

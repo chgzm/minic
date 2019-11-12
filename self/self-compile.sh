@@ -4,7 +4,7 @@ if [[ -f ./self/all.c ]]; then
     rm ./self/all.c
 fi
 
-for file in util.c debug.c tokenizer.c preprocessor.c parser.c generator.c minic.c
+for file in util.c tokenizer.c preprocessor.c parser.c generator.c minic.c
 do
     cat ${file} >> ./self/all.c
 done

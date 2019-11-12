@@ -3,10 +3,13 @@
 #include "parser.h"
 #include "generator.h"
 #include "util.h"
-#include "debug.h"
 
 #include <stdio.h>
 #include <string.h>
+
+#ifdef MINIC_DEV
+#include "debug.h"
+#endif
 
 bool debug_flag = false;
 
@@ -38,9 +41,11 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+#ifdef MINIC_DEV
     if (debug_flag) {
         dump_tokens(vec);
     }
+#endif
 
     const Vector* processed_vec = preprocess(vec); 
     if (processed_vec == NULL) {
@@ -48,9 +53,11 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+#ifdef MINIC_DEV
     if (debug_flag) {
         dump_tokens(processed_vec);
     }
+#endif
 
     const TransUnitNode* node = parse(processed_vec);
     if (node == NULL) {
@@ -58,9 +65,11 @@ int main(int argc, char** argv) {
         return -1;
     }
 
+#ifdef MINIC_DEV
     if (debug_flag) {
         dump_nodes(node);
     }
+#endif
 
     gen(node);
 

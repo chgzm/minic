@@ -60,7 +60,7 @@ static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* 
     return current->identifier;
 }
 
-static const char* get_label() {
+static char* get_label() {
     return fmt(".L%d", label_index++);
 }
 
@@ -1120,8 +1120,8 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         break;
     }
     case SELECT_SWITCH: {
-        const char* label = get_label();
-        stack_push(break_label_stack, (void*)(label));
+        char* label = get_label();
+        stack_push(break_label_stack, label);
 
         process_expr(node->expr_node);
         process_stmt(node->stmt_node[0]);
@@ -1139,10 +1139,10 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
 static void process_itr_stmt(const ItrStmtNode* node) {
     switch (node->itr_type) {
     case ITR_WHILE: {
-        const char* label1 = get_label();
-        const char* label2 = get_label();
-        stack_push(continue_label_stack, (void*)(label1));
-        stack_push(break_label_stack, (void*)(label2));
+        char* label1 = get_label();
+        char* label2 = get_label();
+        stack_push(continue_label_stack, label1);
+        stack_push(break_label_stack, label2);
 
         printf("%s:\n", label1);
         process_expr(node->expr_node[0]);
@@ -1158,11 +1158,11 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         break;
     }
     case ITR_FOR: {
-        const char* label1 = get_label();
-        const char* label2 = get_label();
-        const char* label3 = get_label();
-        stack_push(continue_label_stack, (void*)(label2));
-        stack_push(break_label_stack, (void*)(label3));
+        char* label1 = get_label();
+        char* label2 = get_label();
+        char* label3 = get_label();
+        stack_push(continue_label_stack, label2);
+        stack_push(break_label_stack, label3);
 
         if (node->declaration_nodes->size != 0) {
             for (int i = 0; i < node->declaration_nodes->size; ++i) {

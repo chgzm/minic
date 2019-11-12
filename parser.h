@@ -320,7 +320,6 @@ struct ConstantNode {
     int   integer_constant;
     int   enumeration_constant;
     char* character_constant;  
-    float floating_constant;
 }; 
 
 struct ExprNode {

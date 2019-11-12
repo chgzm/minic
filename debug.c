@@ -511,10 +511,6 @@ static void dump_constant_node(const ConstantNode* node, int indent) {
         printf("CharacterConstant=\"%s\"\n", node->character_constant);
         break;
     }
-    case CONST_FLOAT: {
-        printf("FloatingConstant=%f\n", node->floating_constant);
-        break;
-    }
     default: {
         printf("\n");
         break;

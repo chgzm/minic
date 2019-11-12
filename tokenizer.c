@@ -589,7 +589,7 @@ Vector* tokenize(char* addr) {
     Vector* vec = create_vector();
 
     int pos = 0;
-    const char* p = (const char*)(addr);
+    const char* p = addr;
     while (p[pos]) {
         if (isspace(p[pos])) {
             ++pos;

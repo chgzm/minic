@@ -30,12 +30,6 @@ void error(const char* fmt, ...);
 #endif
 
 //
-// fmt
-//
-
-char* fmt(const char* fmt, ...);
-
-//
 // read file
 //
 

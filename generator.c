@@ -61,11 +61,15 @@ static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* 
 }
 
 static char* get_label() {
-    return fmt(".L%d", label_index++);
+    char buf[8];
+    snprintf(buf, 8, ".L%d", label_index++);
+    return strdup(buf);
 }
 
 static char* get_string_label() {
-    return fmt(".LC%d", string_index++);
+    char buf[8];
+    snprintf(buf, 8, ".LC%d", string_index++);
+    return strdup(buf);
 }
 
 static int align_offset(int offset, int size) {

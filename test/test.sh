@@ -144,7 +144,6 @@ assert_return test_struct_3.c 120
 assert_return test_struct_4.c 3
 assert_return test_struct_5.c 6
 assert_return test_struct_6.c 63
-assert_return test_struct_7.c 3
 
 assert_return test_comment.c 42
 assert_return test_comment_2.c 42
@@ -187,7 +186,7 @@ assert_return test_vector.c 30
 
 assert_return test_stack.c 6
 
-#assert_return test_strptrmap.c 3
+assert_return test_strptrmap.c 10
 
 assert_output test_printf.c "Hello, World."
 

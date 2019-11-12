@@ -48,9 +48,6 @@ struct __va_list {
 };
 
 void error(const char* fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
 }
 
 #endif
@@ -314,8 +311,8 @@ void strintmap_put(StrIntMap* map, const char* key, int val) {
             current = current->next;
         }
         current->next       = calloc(1, sizeof(StrIntMapEntry));
-        current->key        = strdup(key);
-        current->val        = val;
+        current->next->key  = strdup(key);
+        current->next->val  = val;
         current->next->next = NULL;
     }
 
@@ -332,6 +329,7 @@ bool strintmap_contains(StrIntMap* map, const char* key) {
     else {
         StrIntMapEntry* current = map->entries[index];
         while (current != NULL) {
+            fflush(stdout);
             if (strcmp(current->key, key) == 0) {
                 return true;
             }

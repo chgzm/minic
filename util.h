@@ -27,25 +27,6 @@ void _error(const char* fmt, ...);
 #else
 void error(const char* fmt, ...);
 
-#define NULL  0
-#define bool  int
-#define false 0
-#define true  1
-#define O_RDONLY 0
-#define FILE void
-#define stdout 1
-#define stderr 2
-#define SEEK_SET 0
-#define SEEK_END 2
-
-typedef struct __va_list va_list;
-struct __va_list {
-  int   gp_offset;
-  int   fp_offset;
-  void* overflow_arg_area;
-  void* reg_save_area;
-};
-
 #endif
 
 //

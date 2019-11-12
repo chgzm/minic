@@ -38,6 +38,7 @@ static int enabled_read(const Vector* in_vec, int* index, Vector* out_vec) {
                 Token* value = in_vec->elements[*index];
                 strptrmap_put(define_map, name->str, value);
                 ++(*index);
+
                 return STATE_ENABLED;
             }
             else  {
@@ -173,7 +174,9 @@ static int disabled_read(const Vector* in_vec, int* index, Vector* out_vec) {
 
 Vector* preprocess(const Vector* in_vec) {
     Vector* out_vec = create_vector();
-    define_map = create_strptrmap(32);
+    if (define_map == NULL) {
+        define_map = create_strptrmap(32);
+    }
 
     int state = STATE_ENABLED;
     int index = 0;

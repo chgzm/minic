@@ -192,7 +192,7 @@ static void process_constant_node(const ConstantNode* node) {
         printf(".data\n");
         printf("%s:\n", label);
         printf("  .string \"%s\"\n", node->character_constant);
-        printf("  .text\n");
+        printf(".text\n");
         printf("  lea rax, %s[rip]\n", label);
         printf("  push rax\n");
         // intstack_push(size_stack, 8);
@@ -1894,15 +1894,16 @@ static void process_global_declaration(const DeclarationNode* node) {
                     printf(".data\n");
                     printf("%s:\n", gv->name);
                     printf("  .quad %d\n", int_constant); 
+                    printf(".text\n");
                 } 
                 else {
                     const char* label = get_string_label();
                     printf(".data\n");
                     printf("%s:\n", label);
                     printf("  .string \"%s\"\n", get_character_constant(initializer_node->assign_expr_node));
-                    printf("  .text\n");
                     printf("%s:\n", gv->name);
                     printf("  .quad %s\n", label); 
+                    printf(".text\n");
                 }
             } 
             else {
@@ -1917,15 +1918,15 @@ static void process_global_declaration(const DeclarationNode* node) {
                         const int int_constant = get_int_constant(init->assign_expr_node);
                         printf("  .quad %d\n", int_constant); 
                     }
+                    printf(".text\n");
                 } else {
                     Vector* label_list = create_vector();
+                    printf(".data\n");
                     for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
                         const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
                         char* label = get_string_label();
-                        printf(".data\n");
                         printf("%s:\n", label);
                         printf("  .string \"%s\"\n", get_character_constant(init->assign_expr_node));
-                        printf("  .text\n");
 
                         vector_push_back(label_list, label);
                    }
@@ -1935,6 +1936,7 @@ static void process_global_declaration(const DeclarationNode* node) {
                        char* l = label_list->elements[j];
                        printf("  .quad %s\n", l);
                    }
+                   printf(".text\n");
                 }
             }
         }

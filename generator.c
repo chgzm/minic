@@ -43,14 +43,6 @@ static void process_declaration(const DeclarationNode* node);
 static Type* process_type_specifier_in_local(const TypeSpecifierNode* node);
 static int get_array_size_from_constant_expr(const ConditionalExprNode* node);
 
-static void print_code(const char* fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    printf("  ");
-    vprintf(fmt, ap);
-    printf("\n");
-}
-
 static const char* get_ident_from_direct_declarator(const DirectDeclaratorNode* node) {
     const DirectDeclaratorNode* current = node;
     while (current->direct_declarator_node != NULL) {
@@ -138,14 +130,14 @@ static GlobalVar* get_globalvar(const char* str, int len) {
 static void process_identifier_left(const char* identifier, int len) {
     LocalVar* lv = get_localvar(identifier, len);
     if (lv != NULL) {
-        print_code("lea rax, [rbp-%d]", lv->offset);
-        print_code("push rax");
+        printf("  lea rax, [rbp-%d]\n", lv->offset);
+        printf("  push rax\n");
         stack_push(type_stack, lv->type);
     } 
     else {
         const GlobalVar* gv = get_globalvar(identifier, len);    
-        print_code("lea rax, %s[rip]", gv->name);
-        print_code("push rax");
+        printf("  lea rax, %s[rip]\n", gv->name);
+        printf("  push rax\n");
         stack_push(type_stack, gv->type);
     }
     intstack_push(size_stack, 8);
@@ -154,18 +146,18 @@ static void process_identifier_left(const char* identifier, int len) {
 static void process_identifier_right(const char* identifier, int len) {
     // enum 
     if (strintmap_contains(enum_map, identifier)) {
-        print_code("push %d", strintmap_get(enum_map, identifier));
+        printf("  push %d\n", strintmap_get(enum_map, identifier));
         return;
     } 
 
     // local variable
     LocalVar* lv = get_localvar(identifier, len);
     if (lv != NULL) {
-        print_code("lea rax, [rbp-%d]", lv->offset);
+        printf("  lea rax, [rbp-%d]\n", lv->offset);
         if (lv->type->array_size == 0) { 
-            print_code("mov rax, [rax]");
+            printf("  mov rax, [rax]\n");
         } 
-        print_code("push rax");
+        printf("  push rax\n");
         intstack_push(size_stack, lv->type->size);
         stack_push(type_stack, lv->type);
 
@@ -174,11 +166,11 @@ static void process_identifier_right(const char* identifier, int len) {
 
     // global variable
     const GlobalVar* gv = get_globalvar(identifier, len);
-    print_code("lea rax, %s[rip]", gv->name);
+    printf("  lea rax, %s[rip]\n", gv->name);
     if (gv->type->array_size == 0) {
-        print_code("mov rax, [rax]");
+        printf("  mov rax, [rax]\n");
     }
-    print_code("push rax");
+    printf("  push rax\n");
     intstack_push(size_stack, gv->type->size);
     stack_push(type_stack, gv->type);
 }
@@ -186,12 +178,12 @@ static void process_identifier_right(const char* identifier, int len) {
 static void process_constant_node(const ConstantNode* node) {
     switch (node->const_type) {
     case CONST_BYTE: {
-        print_code("push %d", node->integer_constant);
+        printf("  push %d\n", node->integer_constant);
         intstack_push(size_stack, 1);
         break;
     }
     case CONST_INT: {
-        print_code("push %d", node->integer_constant);
+        printf("  push %d\n", node->integer_constant);
         intstack_push(size_stack, 8);
         break;
     }
@@ -199,10 +191,10 @@ static void process_constant_node(const ConstantNode* node) {
         const char* label = get_string_label();
         printf(".data\n");
         printf("%s:\n", label);
-        print_code(".string \"%s\"", node->character_constant);
-        print_code(".text\n");
-        print_code("lea rax, %s[rip]", label);
-        print_code("push rax");
+        printf("  .string \"%s\"\n", node->character_constant);
+        printf("  .text\n");
+        printf("  lea rax, %s[rip]\n", label);
+        printf("  push rax\n");
         // intstack_push(size_stack, 8);
         break;
     }
@@ -268,28 +260,28 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         process_expr(node->expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
 
         if (type->array_size) {
             if (type->ptr_count > 0) {
-                print_code("imul rdi, 8");
-                print_code("mov rax, [rax]");
+                printf("  imul rdi, 8\n");
+                printf("  mov rax, [rax]\n");
             } else {
-                print_code("imul rdi, %d", type->type_size);
+                printf("  imul rdi, %d\n", type->type_size);
             }
         } else {
             if (type->ptr_count > 1) {
-                print_code("imul rdi, 8");
-                print_code("mov rax, [rax]");
+                printf("  imul rdi, 8\n");
+                printf("  mov rax, [rax]\n");
             } else {
-                print_code("imul rdi, %d", type->type_size);
-                print_code("mov rax, [rax]");
+                printf("  imul rdi, %d\n", type->type_size);
+                printf("  mov rax, [rax]\n");
             }
         }
 
-        print_code("add rax, rdi");
-        print_code("push rax");
+        printf("  add rax, rdi\n");
+        printf("  push rax\n");
 
         stack_push(type_stack, type);
         // intstack_push(size_stack, 8);
@@ -305,10 +297,10 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         const StructInfo* struct_info = type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
-        print_code("pop rax");
-        print_code("add rax, %d", field_info->offset);
+        printf("  pop rax\n");
+        printf("  add rax, %d\n", field_info->offset);
 
-        print_code("push rax");
+        printf("  push rax\n");
         // intstack_push(size_stack, 8);
 
         break;        
@@ -324,33 +316,33 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
         stack_push(type_stack, field_info->type);
 
-        print_code("pop rax");
-        print_code("mov rax, [rax]");
-        print_code("add rax, %d", field_info->offset);
-        print_code("push rax");
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  add rax, %d\n", field_info->offset);
+        printf("  push rax\n");
 
         break;        
     }
     // postfix-expression ++
     case PS_INC: {
         process_postfix_expr_left(node->postfix_expr_node);
-        print_code("pop rax");
-        print_code("mov rdi, [rax]");
-        print_code("push rdi");
-        print_code("push 1");
-        print_code("pop rdi");
-        print_code("add [rax], rdi");
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  push rdi\n");
+        printf("  push 1\n");
+        printf("  pop rdi\n");
+        printf("  add [rax], rdi\n");
         break;                       
     }
     // postfix-expression --
     case PS_DEC: {
         process_postfix_expr_left(node->postfix_expr_node);
-        print_code("pop rax");
-        print_code("mov rdi, [rax]");
-        print_code("push rdi");
-        print_code("push 1");
-        print_code("pop rdi");
-        print_code("sub [rax], rdi");
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  push rdi\n");
+        printf("  push 1\n");
+        printf("  pop rdi\n");
+        printf("  sub [rax], rdi\n");
         break;                       
     }
     default: {
@@ -370,19 +362,19 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     // postfix-expression ( {assignment-expression}* )
     case PS_LPAREN: {
         for (int i = 0; i < node->assign_expr_nodes->size; ++i) {
-            const AssignExprNode* assign_expr_node = (const AssignExprNode*)(node->assign_expr_nodes->elements[i]);
+            const AssignExprNode* assign_expr_node = node->assign_expr_nodes->elements[i];
             process_conditional_expr(assign_expr_node->conditional_expr_node);
         }
 
         for (int i = node->assign_expr_nodes->size - 1; i >= 0; --i) {
-            print_code("pop rax");
-            print_code("mov %s, rax", arg_registers[i]);
+            printf("  pop rax\n");
+            printf("  mov %s, rax\n", arg_registers[i]);
         }
 
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
-        print_code("mov rax, 0");
-        print_code("call %s", identifier);
-        print_code("push rax");
+        printf("  mov rax, 0\n");
+        printf("  call %s\n", identifier);
+        printf("  push rax\n");
 
         break;
     }
@@ -395,71 +387,33 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
 
         process_expr(node->expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
 
         if (type->array_size) {
             if (type->ptr_count > 0) {
-                print_code("imul rdi, 8");
+                printf("  imul rdi, 8\n");
             } else {
-                print_code("imul rdi, %d", type->type_size);
+                printf("  imul rdi, %d\n", type->type_size);
             }
 
-            print_code("add rax, rdi");
-            print_code("mov rax, [rax]");
+            printf("  add rax, rdi\n");
+            printf("  mov rax, [rax]\n");
         }
         else {
             if (type->ptr_count > 1) {
-                print_code("imul rdi, 8");
+                printf("  imul rdi, 8\n");
             } else {
-                print_code("imul rdi, %d", type->type_size);
+                printf("  imul rdi, %d\n", type->type_size);
             }
-            print_code("add rax, rdi");
+            printf("  add rax, rdi\n");
             if (type->type_size == 1) {
-                print_code("movzx eax, BYTE PTR [rax]");
+                printf("  movzx eax, BYTE PTR [rax]\n");
             } else {
-                print_code("mov rax, [rax]");
+                printf("  mov rax, [rax]\n");
             } 
         }
-        print_code("push rax");
-
-
-#if 0
-        if (type->array_size == 0) {
-            if (type->ptr_count < 2) {
-                print_code("imul rdi, %d", type->type_size);
-            } else {
-                print_code("imul rdi, 8");
-            }
-
-            print_code("add rax, rdi");
-            if (type->type_size == 1) {
-                print_code("movzx eax, BYTE PTR [rax]");
-            } else {
-                print_code("mov rax, [rax]");
-            }
-        } else {
-            print_code("imul rdi, %d", type->size);
-            print_code("add rax, rdi");
-            print_code("mov rax, [rax]");
-        }
-        print_code("push rax");
-#endif
-#if 0
-        if (type->array_size == 0) {
-            print_code("imul rdi, %d", type->type_size);
-        } else {
-            print_code("imul rdi, %d", type->size);
-        }
-        print_code("add rax, rdi");
-
-        if (type->size == 1) {
-            print_code("movzx eax, BYTE PTR [rax]");
-        } else {
-            print_code("mov rax, [rax]");
-        }
-        print_code("push rax");
-#endif
+        printf("  push rax\n");
 
         break;
     }
@@ -473,9 +427,9 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         const StructInfo* struct_info = type->struct_info;
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
 
-        print_code("pop rax");
-        print_code("add rax, %d", field_info->offset);
-        print_code("push [rax]");
+        printf("  pop rax\n");
+        printf("  add rax, %d\n", field_info->offset);
+        printf("  push [rax]\n");
         break;        
     }
     // postfix-expression -> identifier
@@ -489,33 +443,33 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
         stack_push(type_stack, field_info->type);
 
-        print_code("pop rax");
-        print_code("mov rax, [rax]");
-        print_code("add rax, %d", field_info->offset);
-        print_code("push [rax]");
+        printf("  pop rax\n");
+        printf("  mov rax, [rax]\n");
+        printf("  add rax, %d\n", field_info->offset);
+        printf("  push [rax]\n");
 
         break;        
     }
     // postfix-expression ++
     case PS_INC: {
         process_postfix_expr_left(node->postfix_expr_node);
-        print_code("pop rax");
-        print_code("mov rdi, [rax]");
-        print_code("push rdi");
-        print_code("push 1");
-        print_code("pop rdi");
-        print_code("add [rax], rdi");
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  push rdi\n");
+        printf("  push 1\n");
+        printf("  pop rdi\n");
+        printf("  add [rax], rdi\n");
         break;                       
     }
     // postfix-expression --
     case PS_DEC: {
         process_postfix_expr_left(node->postfix_expr_node);
-        print_code("pop rax");
-        print_code("mov rdi, [rax]");
-        print_code("push rdi");
-        print_code("push 1");
-        print_code("pop rdi");
-        print_code("sub [rax], rdi");
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  push rdi\n");
+        printf("  push 1\n");
+        printf("  pop rdi\n");
+        printf("  sub [rax], rdi\n");
         break;                       
     }
     default: {
@@ -586,10 +540,10 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
     case UN_INC: {
         process_unary_expr_left(node->unary_expr_node);
 
-        print_code("pop rax");
-        print_code("mov rdi, [rax]");
-        print_code("add rdi, 1");
-        print_code("mov [rax], rdi");
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  add rdi, 1\n");
+        printf("  mov [rax], rdi\n");
 
         break;
     }
@@ -597,10 +551,10 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
     case UN_DEC: {
         process_unary_expr_left(node->unary_expr_node);
 
-        print_code("pop rax");
-        print_code("mov rdi, [rax]");
-        print_code("sub rdi, 1");
-        print_code("mov [rax], rdi");
+        printf("  pop rax\n");
+        printf("  mov rdi, [rax]\n");
+        printf("  sub rdi, 1\n");
+        printf("  mov [rax], rdi\n");
 
         break;
     }
@@ -614,9 +568,9 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
         }
         case OP_MUL: {
             process_cast_expr(node->cast_expr_node);
-            print_code("pop rax");
-            print_code("mov rax, [rax]");
-            print_code("push rax");
+            printf("  pop rax\n");
+            printf("  mov rax, [rax]\n");
+            printf("  push rax\n");
 
             break;
         }
@@ -625,10 +579,10 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
         }
         case OP_SUB: {
             process_cast_expr(node->cast_expr_node);
-            print_code("pop rdi");
-            print_code("mov rax, 0");
-            print_code("sub rax, rdi");
-            print_code("push rax");
+            printf("  pop rdi\n");
+            printf("  mov rax, 0\n");
+            printf("  sub rax, rdi\n");
+            printf("  push rax\n");
 
             break;
         }
@@ -656,7 +610,7 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
             size = gv->type->type_size;
         }
 
-        print_code("push %d", size);
+        printf("  push %d\n", size);
 
         break;
     }
@@ -690,7 +644,7 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
             }
         }
 
-        print_code("push %d", size);
+        printf("  push %d\n", size);
 
         break;
     }
@@ -723,30 +677,30 @@ static void process_multiplicative_expr(const MultiPlicativeExprNode* node) {
         process_multiplicative_expr(node->multiplicative_expr_node);
         process_cast_expr(node->cast_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("imul rax, rdi");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  imul rax, rdi\n");
+        printf("  push rax\n");
     }
     else if (node->operator_type == OP_DIV) {
         process_multiplicative_expr(node->multiplicative_expr_node);
         process_cast_expr(node->cast_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cqo");
-        print_code("idiv rdi");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cqo\n");
+        printf("  idiv rdi\n");
+        printf("  push rax\n");
     }
     else if (node->operator_type == OP_MOD) {
         process_multiplicative_expr(node->multiplicative_expr_node);
         process_cast_expr(node->cast_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cqo");
-        print_code("idiv rdi");
-        print_code("push rdx");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cqo\n");
+        printf("  idiv rdi\n");
+        printf("  push rdx\n");
     }
 }
 
@@ -760,20 +714,20 @@ static void process_additive_expr(const AdditiveExprNode* node) {
         process_additive_expr(node->additive_expr_node);
         process_multiplicative_expr(node->multiplicative_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("add rax, rdi");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  add rax, rdi\n");
+        printf("  push rax\n");
     }
     // <additive-expression> - <multiplicative-expression>
     else if (node->operator_type == OP_SUB) {
         process_additive_expr(node->additive_expr_node);
         process_multiplicative_expr(node->multiplicative_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("sub rax, rdi");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  sub rax, rdi\n");
+        printf("  push rax\n");
     }
 }
 
@@ -801,12 +755,12 @@ static void process_relational_expr(const RelationalExprNode* node) {
         process_relational_expr(node->relational_expr_node);
         process_shift_expr(node->shift_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cmp rax, rdi");
-        print_code("setl al");
-        print_code("movzb rax, al");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cmp rax, rdi\n");
+        printf("  setl al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
 
         break;
     }
@@ -815,12 +769,12 @@ static void process_relational_expr(const RelationalExprNode* node) {
         process_relational_expr(node->relational_expr_node);
         process_shift_expr(node->shift_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cmp rax, rdi");
-        print_code("setg al");
-        print_code("movzb rax, al");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cmp rax, rdi\n");
+        printf("  setg al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
 
         break;
     }
@@ -829,12 +783,12 @@ static void process_relational_expr(const RelationalExprNode* node) {
         process_relational_expr(node->relational_expr_node);
         process_shift_expr(node->shift_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cmp rax, rdi");
-        print_code("setle al");
-        print_code("movzb rax, al");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cmp rax, rdi\n");
+        printf("  setle al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
 
         break;
     }
@@ -843,12 +797,12 @@ static void process_relational_expr(const RelationalExprNode* node) {
         process_relational_expr(node->relational_expr_node);
         process_shift_expr(node->shift_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cmp rax, rdi");
-        print_code("setge al");
-        print_code("movzb rax, al");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cmp rax, rdi\n");
+        printf("  setge al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
 
         break;
     }
@@ -870,12 +824,12 @@ static void process_equality_expr(const EqualityExprNode* node) {
         process_equality_expr(node->equality_expr_node);
         process_relational_expr(node->relational_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cmp rax, rdi");
-        print_code("sete al");
-        print_code("movzb rax, al");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cmp rax, rdi\n");
+        printf("  sete al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
 
         break;
     }
@@ -884,12 +838,12 @@ static void process_equality_expr(const EqualityExprNode* node) {
         process_equality_expr(node->equality_expr_node);
         process_relational_expr(node->relational_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("cmp rax, rdi");
-        print_code("setne al");
-        print_code("movzb rax, al");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  cmp rax, rdi\n");
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
 
         break;
     }
@@ -942,10 +896,10 @@ static void process_logical_and_expr(const LogicalAndExprNode* node) {
         process_logical_and_expr(node->logical_and_expr_node);
         process_inclusive_or_expr(node->inclusive_or_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("and rax, rdi");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  and rax, rdi\n");
+        printf("  push rax\n");
     }
 }
 
@@ -959,10 +913,10 @@ static void process_logical_or_expr(const LogicalOrExprNode* node) {
         process_logical_or_expr(node->logical_or_expr_node);
         process_logical_and_expr(node->logical_and_expr_node);
 
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("or rax, rdi");
-        print_code("push rax");
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  or rax, rdi\n");
+        printf("  push rax\n");
     }
 }
 
@@ -977,11 +931,11 @@ static void process_conditional_expr(const ConditionalExprNode* node) {
         const char* label2 = get_label();
  
         process_logical_or_expr(node->logical_or_expr_node);
-        print_code("pop rax");
-        print_code("cmp rax, 0");
-        print_code("je %s", label1);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label1);
         process_expr(node->expr_node);
-        print_code("jmp %s", label2);
+        printf("  jmp %s\n", label2);
         printf("%s:\n", label1);
         process_conditional_expr(node->conditional_expr_node);
         printf("%s:\n", label2);
@@ -1000,55 +954,55 @@ static void process_assign_expr(const AssignExprNode* node) {
 
         switch (node->assign_operator) {
         case OP_ASSIGN: {
-            print_code("pop rdi");
-            print_code("pop rax");
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
 
             const int size = intstack_top(size_stack); 
             intstack_pop(size_stack);
-            print_code("mov [rax], %s", get_reg("di", size));
+            printf("  mov [rax], %s\n", get_reg("di", size));
 
             break;
         }
         case OP_MUL_EQ: {
-            print_code("pop rdi");
-            print_code("pop rax");
-            print_code("mov rsi, [rax]");
-            print_code("imul rdi, rsi");
-            print_code("mov [rax], rdi");
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+            printf("  mov rsi, [rax]\n");
+            printf("  imul rdi, rsi\n");
+            printf("  mov [rax], rdi\n");
 
             break;
         }
         case OP_DIV_EQ: {
-            print_code("pop rdi");
-            print_code("pop rsi");
-            print_code("mov rax, [rsi]");
-            print_code("cqo");
-            print_code("idiv rdi");
-            print_code("mov [rsi], rax");
+            printf("  pop rdi\n");
+            printf("  pop rsi\n");
+            printf("  mov rax, [rsi]\n");
+            printf("  cqo\n");
+            printf("  idiv rdi\n");
+            printf("  mov [rsi], rax\n");
 
             break;
         }
         case OP_MOD_EQ: {
-            print_code("pop rdi");
-            print_code("pop rsi");
-            print_code("mov rax, [rsi]");
-            print_code("cqo");
-            print_code("idiv rdi");
-            print_code("mov [rsi], rdx");
+            printf("  pop rdi\n");
+            printf("  pop rsi\n");
+            printf("  mov rax, [rsi]\n");
+            printf("  cqo\n");
+            printf("  idiv rdi\n");
+            printf("  mov [rsi], rdx\n");
 
             break;
         }
         case OP_ADD_EQ: {
-            print_code("pop rdi");
-            print_code("pop rax");
-            print_code("add [rax], rdi");
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+            printf("  add [rax], rdi\n");
 
             break;
         }
         case OP_SUB_EQ: {
-            print_code("pop rdi");
-            print_code("pop rax");
-            print_code("sub [rax], rdi");
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+            printf("  sub [rax], rdi\n");
 
             break;
         }
@@ -1110,13 +1064,13 @@ static void process_jump_stmt(const JumpStmtNode* node) {
     switch (node->jump_type) {
     case JMP_CONTINUE: {
         const char* label = stack_top(continue_label_stack);
-        print_code("jmp %s", label);
+        printf("  jmp %s\n", label);
 
         break;
     }
     case JMP_BREAK: {
         const char* label = stack_top(break_label_stack);
-        print_code("jmp %s", label);
+        printf("  jmp %s\n", label);
 
         break;
     }
@@ -1124,11 +1078,11 @@ static void process_jump_stmt(const JumpStmtNode* node) {
         if (node->expr_node != NULL) {
             process_expr(node->expr_node);
         }
-        print_code("pop rax");
+        printf("  pop rax\n");
         if (ret_label == NULL) {
-            ret_label = (char*)(get_label());
+            ret_label = get_label();
         }
-        print_code("jmp %s", ret_label);
+        printf("  jmp %s\n", ret_label);
 
         break;
     }
@@ -1144,9 +1098,9 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         const char* label = get_label();
 
         process_expr(node->expr_node);
-        print_code("pop rax");
-        print_code("cmp rax, 0");
-        print_code("je %s", label);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label);
         process_stmt(node->stmt_node_0);
         printf("%s:\n", label);
 
@@ -1157,11 +1111,11 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         const char* label2 = get_label();
 
         process_expr(node->expr_node);
-        print_code("pop rax");
-        print_code("cmp rax, 0");
-        print_code("je %s", label1);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label1);
         process_stmt(node->stmt_node_0);
-        print_code("jmp %s", label2);
+        printf("  jmp %s\n", label2);
         printf("%s:\n", label1);
         process_stmt(node->stmt_node_1);
         printf("%s:\n", label2);
@@ -1195,11 +1149,11 @@ static void process_itr_stmt(const ItrStmtNode* node) {
 
         printf("%s:\n", label1);
         process_expr(node->expr_node_0);
-        print_code("pop rax");
-        print_code("cmp rax, 0");
-        print_code("je %s", label2);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label2);
         process_stmt(node->stmt_node);
-        print_code("jmp %s", label1);
+        printf("  jmp %s\n", label1);
         printf("%s:\n", label2);
 
         stack_pop(continue_label_stack);
@@ -1226,9 +1180,9 @@ static void process_itr_stmt(const ItrStmtNode* node) {
             process_expr(node->expr_node_1);
         }
 
-        print_code("pop rax");
-        print_code("cmp rax, 0");
-        print_code("je %s", label3);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label3);
 
         process_stmt(node->stmt_node);
 
@@ -1237,7 +1191,7 @@ static void process_itr_stmt(const ItrStmtNode* node) {
             process_expr(node->expr_node_2);
         }
 
-        print_code("jmp %s", label1);
+        printf("  jmp %s\n", label1);
         printf("%s:\n", label3);
 
         stack_pop(continue_label_stack);
@@ -1256,11 +1210,11 @@ static void process_labeled_stmt(const LabeledStmtNode* node) {
         process_conditional_expr(node->conditional_expr_node);
 
         const char* label = get_label();
-        print_code("pop rdi");
-        print_code("pop rax");
-        print_code("push rax");
-        print_code("cmp rax, rdi");
-        print_code("jne %s", label);
+        printf("  pop rdi\n");
+        printf("  pop rax\n");
+        printf("  push rax\n");
+        printf("  cmp rax, rdi\n");
+        printf("  jne %s\n", label);
         process_stmt(node->stmt_node);
         printf("%s:\n", label); 
 
@@ -1357,17 +1311,17 @@ static void process_declaration(const DeclarationNode* node) {
 
         if (init_declarator_node->initializer_node != NULL) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
-            print_code("lea rax, [rbp-%d]", lv->offset);
-            print_code("push rax");
+            printf("  lea rax, [rbp-%d]\n", lv->offset);
+            printf("  push rax\n");
             // intstack_push(size_stack, 8);
 
             if (initializer_node->assign_expr_node != NULL) {
                 process_assign_expr(initializer_node->assign_expr_node);
             }
 
-            print_code("pop rdi");
-            print_code("pop rax");
-            print_code("mov [rax], rdi");
+            printf("  pop rdi\n");
+            printf("  pop rax\n");
+            printf("  mov [rax], rdi\n");
         }
     }
 }
@@ -1651,7 +1605,7 @@ static void process_param_list_node(const ParamListNode* node, int arg_index) {
         lv->type->size = lv->type->type_size;
     }
 
-    print_code("mov [rbp-%d], %s", lv->offset, arg_registers[arg_index]);
+    printf("  mov [rbp-%d], %s\n", lv->offset, arg_registers[arg_index]);
 }
 
 static void process_args(const ParamListNode* node) {
@@ -1690,9 +1644,9 @@ static void process_func_def(const FuncDefNode* node) {
     const int arg_size      = calc_arg_size(node);
 
     // prologue
-    print_code("push rbp");
-    print_code("mov rbp, rsp");
-    print_code("sub rsp, %d", (localvar_size + arg_size));
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", (localvar_size + arg_size));
 
     process_func_declarator(declarator_node);
     process_compound_stmt(node->compound_stmt_node);
@@ -1701,9 +1655,9 @@ static void process_func_def(const FuncDefNode* node) {
     if (ret_label != NULL) {
         printf("%s:\n", ret_label);
     }
-    print_code("mov rsp, rbp");
-    print_code("pop rbp");
-    print_code("ret");
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
 
     free(localvar_list);
     free(ret_label);
@@ -1939,16 +1893,16 @@ static void process_global_declaration(const DeclarationNode* node) {
                     const int int_constant = get_int_constant(initializer_node->assign_expr_node);
                     printf(".data\n");
                     printf("%s:\n", gv->name);
-                    print_code(".quad %d", int_constant); 
+                    printf("  .quad %d\n", int_constant); 
                 } 
                 else {
                     const char* label = get_string_label();
                     printf(".data\n");
                     printf("%s:\n", label);
-                    print_code(".string \"%s\"", get_character_constant(initializer_node->assign_expr_node));
-                    print_code(".text\n");
+                    printf("  .string \"%s\"\n", get_character_constant(initializer_node->assign_expr_node));
+                    printf("  .text\n");
                     printf("%s:\n", gv->name);
-                    print_code(".quad %s", label); 
+                    printf("  .quad %s\n", label); 
                 }
             } 
             else {
@@ -1961,7 +1915,7 @@ static void process_global_declaration(const DeclarationNode* node) {
                     for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
                         const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
                         const int int_constant = get_int_constant(init->assign_expr_node);
-                        print_code(".quad %d", int_constant); 
+                        printf("  .quad %d\n", int_constant); 
                     }
                 } else {
                     Vector* label_list = create_vector();
@@ -1970,8 +1924,8 @@ static void process_global_declaration(const DeclarationNode* node) {
                         char* label = get_string_label();
                         printf(".data\n");
                         printf("%s:\n", label);
-                        print_code(".string \"%s\"", get_character_constant(init->assign_expr_node));
-                        print_code(".text\n");
+                        printf("  .string \"%s\"\n", get_character_constant(init->assign_expr_node));
+                        printf("  .text\n");
 
                         vector_push_back(label_list, label);
                    }
@@ -1979,7 +1933,7 @@ static void process_global_declaration(const DeclarationNode* node) {
                    printf("%s:\n", gv->name);
                    for (int j = 0; j < label_list->size; ++j) {
                        char* l = label_list->elements[j];
-                       print_code(".quad %s", l);
+                       printf("  .quad %s\n", l);
                    }
                 }
             }

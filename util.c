@@ -40,6 +40,7 @@ void _error(const char *fmt, ...) {
 #else
 
 void error(const char* fmt, ...) {
+    printf("%s", fmt);
 }
 
 #endif

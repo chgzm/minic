@@ -68,7 +68,6 @@ static void dump_decl_specifier_node(const DeclSpecifierNode* node, int indent);
 static void dump_type_specifier_node(const TypeSpecifierNode* node, int indent);
 static void dump_struct_specifier_node(const StructSpecifierNode* node, int indent);
 static void dump_struct_declaration_node(const StructDeclarationNode* node, int indent);
-static void dump_struct_declarator_list_node(const StructDeclaratorListNode* node, int indent);
 static void dump_declarator_node(const DeclaratorNode* node, int indent);
 static void dump_pointer_node(const PointerNode* node, int indent);
 static void dump_specifier_qualifier_node(const SpecifierQualifierNode* node, int indent);
@@ -193,18 +192,6 @@ static void dump_struct_declaration_node(const StructDeclarationNode* node, int 
     printf_indent(indent, "StructDeclarationNode\n");
     for (int i = 0; i < node->specifier_qualifier_nodes->size; ++i) {
         dump_specifier_qualifier_node(node->specifier_qualifier_nodes->elements[i], indent + 2);
-    }
-
-    if (node->struct_declarator_list_node != NULL) {
-        dump_struct_declarator_list_node(node->struct_declarator_list_node, indent + 2);
-    }
-}
-
-static void dump_struct_declarator_list_node(const StructDeclaratorListNode* node, int indent) {
-    printf_indent(indent, "StructDeclaratorListNode\n");
-
-    for (int i = 0; i < node->declarator_nodes->size; ++i) {
-        dump_declarator_node(node->declarator_nodes->elements[i], indent + 2);
     }
 }
 

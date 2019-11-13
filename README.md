@@ -52,14 +52,11 @@ struct-specifier:
     "struct" identifier
 
 struct-declaration:
-    {specifier-qualifier}* struct-declarator-list ';'
+    {specifier-qualifier}* {pointer}? identifier ';'
 
 specifier-qualifier:
     type-specifier
     "const"
-
-struct-declarator-list:
-    declarator {',' declarator}*
 
 declarator:
     {pointer}? direct-declarator

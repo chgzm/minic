@@ -1731,28 +1731,21 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
                     break;
                 }
 
-                const StructDeclaratorListNode* struct_declarator_list_node = struct_declaration_node->struct_declarator_list_node;
-                for (int j = 0; j < struct_declarator_list_node->declarator_nodes->size; ++j) {
-                    const DeclaratorNode* node = struct_declarator_list_node->declarator_nodes->elements[j];
-
-                    const PointerNode* pointer_node = node->pointer_node;
-                    if (pointer_node != NULL) {
-                        field_type->ptr_count = pointer_node->count;
-                        field_type->size      = 8; 
-                    } else {
-                        field_type->size = field_type->type_size;
-                    }
-
-                    const char* field_name = node->direct_declarator_node->identifier;
- 
-                    FieldInfo* field_info = malloc(sizeof(FieldInfo));
-                    field_info->type      = field_type;
-
-                    field_info->offset = offset;
-                    offset += field_info->type->size;
-
-                    strptrmap_put(type->struct_info->field_info_map, field_name, field_info);
+                const PointerNode* pointer_node = struct_declaration_node->pointer_node;
+                if (pointer_node != NULL) {
+                    field_type->ptr_count = pointer_node->count;
+                    field_type->size      = 8; 
+                } else {
+                    field_type->size = field_type->type_size;
                 }
+
+                FieldInfo* field_info = malloc(sizeof(FieldInfo));
+                field_info->type      = field_type;
+
+                field_info->offset = offset;
+                offset += field_info->type->size;
+
+                strptrmap_put(type->struct_info->field_info_map, struct_declaration_node->identifier, field_info);
             }
             type->struct_info->size = type->struct_info->field_info_map->size * 8;
             // strptrmap_put(struct_map, struct_name, type->struct_info);

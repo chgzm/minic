@@ -1543,34 +1543,8 @@ static SpecifierQualifierNode* create_specifier_qualifier_node(const Vector* vec
     return specifier_qualifier_node;
 }
 
-static StructDeclaratorListNode* create_struct_declarator_list_node(const Vector* vec, int* index) {
-    StructDeclaratorListNode* struct_declarator_list_node = malloc(sizeof(StructDeclaratorListNode));
-
-    struct_declarator_list_node->declarator_nodes = create_vector();
-    DeclaratorNode* declarator_node = create_declarator_node(vec, index);
-    if (declarator_node == NULL) {
-        error("Failed to create declarator node.\n");
-        return NULL;
-    }
-    vector_push_back(struct_declarator_list_node->declarator_nodes, declarator_node);
-
-    const Token* token = vec->elements[*index];
-    while (token->type == TK_COMMA) {
-        DeclaratorNode* node = create_declarator_node(vec, index);
-        if (node == NULL) {
-            error("Failed to create declarator node.\n");
-            return NULL;
-        }
-
-        token = vec->elements[*index];
-        vector_push_back(struct_declarator_list_node->declarator_nodes, node);
-    }
-
-    return struct_declarator_list_node;
-}
-
 static StructDeclarationNode* create_struct_declaration_node(const Vector* vec, int* index) {
-    StructDeclarationNode* struct_declaration_node = malloc(sizeof(StructDeclarationNode));  
+    StructDeclarationNode* struct_declaration_node = calloc(1, sizeof(StructDeclarationNode));  
     struct_declaration_node->specifier_qualifier_nodes = create_vector();
     
     const Token* token = vec->elements[*index];
@@ -1587,12 +1561,25 @@ static StructDeclarationNode* create_struct_declaration_node(const Vector* vec, 
             token = vec->elements[*index];
         }
     } 
-    
-    struct_declaration_node->struct_declarator_list_node = create_struct_declarator_list_node(vec, index);
-    if (struct_declaration_node->struct_declarator_list_node == NULL) {
-        error("Failed to create struct-declarator-list node.\n");
+
+    token = vec->elements[*index];
+    if (token->type == TK_ASTER) {
+        struct_declaration_node->pointer_node = create_pointer_node(vec, index);
+        if (struct_declaration_node->pointer_node == NULL) {
+            error("Failed to create pointer node.\n");
+            return NULL;
+        }
+    } 
+
+    token = vec->elements[*index];
+    if (token->type != TK_IDENT) {
+        error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
+    struct_declaration_node->identifier = malloc(sizeof(char) * token->strlen);
+    struct_declaration_node->identifier_len = token->strlen;
+    strncpy(struct_declaration_node->identifier, token->str, token->strlen);
+    ++(*index);
 
     token = vec->elements[*index];
     if (token->type != TK_SEMICOL) {

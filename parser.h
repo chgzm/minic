@@ -108,7 +108,6 @@ typedef struct DeclSpecifierNode DeclSpecifierNode;
 typedef struct TypeSpecifierNode TypeSpecifierNode;
 typedef struct StructSpecifierNode StructSpecifierNode;
 typedef struct StructDeclarationNode StructDeclarationNode;
-typedef struct StructDeclaratorListNode StructDeclaratorListNode;
 typedef struct SpecifierQualifierNode SpecifierQualifierNode;
 typedef struct DeclaratorNode DeclaratorNode;
 typedef struct PointerNode PointerNode;
@@ -187,17 +186,15 @@ struct StructSpecifierNode {
 };
 
 struct StructDeclarationNode {
-    Vector*                   specifier_qualifier_nodes;
-    StructDeclaratorListNode* struct_declarator_list_node;    
+    Vector*      specifier_qualifier_nodes;
+    PointerNode* pointer_node;
+    int          identifier_len;
+    char*        identifier;
 };
 
 struct SpecifierQualifierNode {
     TypeSpecifierNode* type_specifier_node;
     bool               is_const;
-};
-
-struct StructDeclaratorListNode {
-    Vector* declarator_nodes;
 };
 
 struct DeclaratorNode {

@@ -115,14 +115,6 @@ static PostfixExprNode* create_postfix_expr_node(const Vector* vec, int* index) 
     postfix_expr_node->assign_expr_nodes = create_vector();
     postfix_expr_node->postfix_expr_type = PS_PRIMARY;
 
-    // postfix_expr_node->primary_expr_node = NULL;
-    // postfix_expr_node->postfix_expr_node = NULL;
-    // postfix_expr_node->expr_node         = NULL;
-    // postfix_expr_node->assign_expr_nodes = create_vector();
-    // postfix_expr_node->identifier        = NULL;
-    // postfix_expr_node->identifier_len    = 0;
-    // postfix_expr_node->postfix_expr_type = PS_PRIMARY;
-    
     postfix_expr_node->primary_expr_node = create_primary_expr_node(vec, index);
     if (postfix_expr_node->primary_expr_node == NULL) {
         error("Failed to create primary-expression node.\n");
@@ -231,11 +223,19 @@ static PostfixExprNode* create_postfix_expr_node(const Vector* vec, int* index) 
             break;
         }
         case TK_INC: {
-            current->postfix_expr_type = PS_INC;
+            ++(*index);
+            p_postfix_expr_node                    = calloc(1, sizeof(PostfixExprNode));
+            p_postfix_expr_node->assign_expr_nodes = create_vector();
+            p_postfix_expr_node->postfix_expr_node = current;
+            p_postfix_expr_node->postfix_expr_type = PS_INC;
             break;
         }
         case TK_DEC: {
-            current->postfix_expr_type = PS_DEC;
+            ++(*index);
+            p_postfix_expr_node                    = calloc(1, sizeof(PostfixExprNode));
+            p_postfix_expr_node->assign_expr_nodes = create_vector();
+            p_postfix_expr_node->postfix_expr_node = current;
+            p_postfix_expr_node->postfix_expr_type = PS_DEC;
             break;
         }
         default: {

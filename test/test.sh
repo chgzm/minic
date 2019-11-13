@@ -183,6 +183,9 @@ assert_return test_char_6.c 195
 
 assert_return test_conditional_op.c 9
 
+assert_return test_post_inc_dec.c 1
+assert_return test_post_inc_dec_2.c 8
+
 assert_return test_vector.c 30
 
 assert_return test_stack.c 6

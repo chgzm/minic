@@ -331,6 +331,28 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         break;        
     }
+    // postfix-expression ++
+    case PS_INC: {
+        process_postfix_expr_left(node->postfix_expr_node);
+        print_code("pop rax");
+        print_code("mov rdi, [rax]");
+        print_code("push rdi");
+        print_code("push 1");
+        print_code("pop rdi");
+        print_code("add [rax], rdi");
+        break;                       
+    }
+    // postfix-expression --
+    case PS_DEC: {
+        process_postfix_expr_left(node->postfix_expr_node);
+        print_code("pop rax");
+        print_code("mov rdi, [rax]");
+        print_code("push rdi");
+        print_code("push 1");
+        print_code("pop rdi");
+        print_code("sub [rax], rdi");
+        break;                       
+    }
     default: {
         // @todo
         break;
@@ -473,6 +495,28 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         print_code("push [rax]");
 
         break;        
+    }
+    // postfix-expression ++
+    case PS_INC: {
+        process_postfix_expr_left(node->postfix_expr_node);
+        print_code("pop rax");
+        print_code("mov rdi, [rax]");
+        print_code("push rdi");
+        print_code("push 1");
+        print_code("pop rdi");
+        print_code("add [rax], rdi");
+        break;                       
+    }
+    // postfix-expression --
+    case PS_DEC: {
+        process_postfix_expr_left(node->postfix_expr_node);
+        print_code("pop rax");
+        print_code("mov rdi, [rax]");
+        print_code("push rdi");
+        print_code("push 1");
+        print_code("pop rdi");
+        print_code("sub [rax], rdi");
+        break;                       
     }
     default: {
         // @todo

@@ -413,13 +413,16 @@ struct ExprStmtNode {
 struct SelectionStmtNode {
     int       selection_type;
     ExprNode* expr_node;
-    StmtNode* stmt_node[2];
+    StmtNode* stmt_node_0;
+    StmtNode* stmt_node_1;
 };
 
 struct ItrStmtNode {
     int        itr_type;
     StmtNode*  stmt_node;
-    ExprNode*  expr_node[3];
+    ExprNode*  expr_node_0;
+    ExprNode*  expr_node_1;
+    ExprNode*  expr_node_2;
     Vector*    declaration_nodes;
 };
 

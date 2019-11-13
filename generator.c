@@ -1103,7 +1103,7 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         print_code("pop rax");
         print_code("cmp rax, 0");
         print_code("je %s", label);
-        process_stmt(node->stmt_node[0]);
+        process_stmt(node->stmt_node_0);
         printf("%s:\n", label);
 
         break;
@@ -1116,10 +1116,10 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         print_code("pop rax");
         print_code("cmp rax, 0");
         print_code("je %s", label1);
-        process_stmt(node->stmt_node[0]);
+        process_stmt(node->stmt_node_0);
         print_code("jmp %s", label2);
         printf("%s:\n", label1);
-        process_stmt(node->stmt_node[1]);
+        process_stmt(node->stmt_node_1);
         printf("%s:\n", label2);
 
         break;
@@ -1129,7 +1129,7 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         stack_push(break_label_stack, label);
 
         process_expr(node->expr_node);
-        process_stmt(node->stmt_node[0]);
+        process_stmt(node->stmt_node_0);
 
         printf("%s:\n", label);
 
@@ -1150,7 +1150,7 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         stack_push(break_label_stack, label2);
 
         printf("%s:\n", label1);
-        process_expr(node->expr_node[0]);
+        process_expr(node->expr_node_0);
         print_code("pop rax");
         print_code("cmp rax, 0");
         print_code("je %s", label2);
@@ -1174,12 +1174,12 @@ static void process_itr_stmt(const ItrStmtNode* node) {
                 process_declaration(node->declaration_nodes->elements[i]);
             }
         }
-        else if (node->expr_node[0] != NULL) {
-            process_expr(node->expr_node[0]);
+        else if (node->expr_node_0 != NULL) {
+            process_expr(node->expr_node_0);
         }
         printf("%s:\n", label1);
-        if (node->expr_node[1] != NULL) {
-            process_expr(node->expr_node[1]);
+        if (node->expr_node_1 != NULL) {
+            process_expr(node->expr_node_1);
         }
 
         print_code("pop rax");
@@ -1189,8 +1189,8 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         process_stmt(node->stmt_node);
 
         printf("%s:\n", label2);
-        if (node->expr_node[2] != NULL) {
-            process_expr(node->expr_node[2]);
+        if (node->expr_node_2 != NULL) {
+            process_expr(node->expr_node_2);
         }
 
         print_code("jmp %s", label1);
@@ -1389,10 +1389,10 @@ static int calc_localvar_size_in_labeled_stmt(const LabeledStmtNode* node) {
 
 static int calc_localvar_size_in_selection_stmt(const SelectionStmtNode* node) {
     int size = 0;
-    size += calc_localvar_size_in_stmt(node->stmt_node[0]);
+    size += calc_localvar_size_in_stmt(node->stmt_node_0);
 
-    if (node->stmt_node[1] != NULL) {
-        size += calc_localvar_size_in_stmt(node->stmt_node[1]);
+    if (node->stmt_node_1 != NULL) {
+        size += calc_localvar_size_in_stmt(node->stmt_node_1);
     }
 
     return size;
@@ -1703,11 +1703,16 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
         //  "struct" identifier { {struct-declaration}+ }
         //  
         if (struct_declaration_nodes->size != 0) {
-            type->struct_info                 = malloc(sizeof(StructInfo));
-            type->struct_info->field_info_map = create_strptrmap(1024);
-            type->struct_info->size           = struct_declaration_nodes->size * 8; // @todo
-
-            strptrmap_put(struct_map, struct_name, type->struct_info);
+            type->struct_info = strptrmap_get(struct_map, struct_name);
+            if (type->struct_info == NULL) { 
+                type->struct_info = malloc(sizeof(StructInfo));
+                type->struct_info->field_info_map = create_strptrmap(1024);
+                type->struct_info->size           = struct_declaration_nodes->size * 8; // @todo
+                strptrmap_put(struct_map, struct_name, type->struct_info);
+            } else {
+                type->struct_info->field_info_map = create_strptrmap(1024);
+                type->struct_info->size           = struct_declaration_nodes->size * 8; // @todo
+            }
 
             int offset = 0;
             for (int i = 0; i < struct_declaration_nodes->size; ++i) {
@@ -1765,8 +1770,8 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
         type->base_type = VAR_STRUCT;   
         StructInfo* struct_info = strptrmap_get(struct_map, node->struct_name);
         if (struct_info == NULL) {
-            error("Invalid sturct name=\"%s\"\n", node->struct_name);
-            return NULL;
+            struct_info = calloc(1, sizeof(StructInfo));
+            strptrmap_put(struct_map, node->struct_name, struct_info);
         }
         type->struct_info = struct_info;
         type->type_size   = struct_info->size;

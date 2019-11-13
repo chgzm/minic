@@ -866,8 +866,8 @@ static SelectionStmtNode* create_selection_stmt_node(const Vector* vec, int* ind
         }
         ++(*index);
 
-        selection_stmt_node->stmt_node[0] = create_stmt_node(vec, index);
-        if (selection_stmt_node->stmt_node[0] == NULL) {
+        selection_stmt_node->stmt_node_0 = create_stmt_node(vec, index);
+        if (selection_stmt_node->stmt_node_0 == NULL) {
             error("Failed to create statement node.\n");
             return NULL;
         }
@@ -877,8 +877,8 @@ static SelectionStmtNode* create_selection_stmt_node(const Vector* vec, int* ind
             ++(*index);
             selection_stmt_node->selection_type = SELECT_IF_ELSE;
 
-            selection_stmt_node->stmt_node[1] = create_stmt_node(vec, index);
-            if (selection_stmt_node->stmt_node[1] == NULL) {
+            selection_stmt_node->stmt_node_1 = create_stmt_node(vec, index);
+            if (selection_stmt_node->stmt_node_1 == NULL) {
                 error("Failed to create statement node.\n");
                 return NULL;
             }
@@ -913,8 +913,8 @@ static SelectionStmtNode* create_selection_stmt_node(const Vector* vec, int* ind
         }
         ++(*index);
 
-        selection_stmt_node->stmt_node[0] = create_stmt_node(vec, index);
-        if (selection_stmt_node->stmt_node[0] == NULL) {
+        selection_stmt_node->stmt_node_0 = create_stmt_node(vec, index);
+        if (selection_stmt_node->stmt_node_0 == NULL) {
             error("Failed to create statement node.\n");
             return NULL;
         }
@@ -950,8 +950,8 @@ static ItrStmtNode* create_itr_stmt_node(const Vector* vec, int* index) {
         ++(*index);
 
         // expression
-        itr_stmt_node->expr_node[0] = create_expr_node(vec, index);
-        if (itr_stmt_node->expr_node == NULL) {
+        itr_stmt_node->expr_node_0 = create_expr_node(vec, index);
+        if (itr_stmt_node->expr_node_0 == NULL) {
             error("Failed to create expression-node.\n");
             return NULL;
         }
@@ -1009,8 +1009,8 @@ static ItrStmtNode* create_itr_stmt_node(const Vector* vec, int* index) {
         } 
         // {expression}? ;
         else {
-            itr_stmt_node->expr_node[0] = create_expr_node(vec, index);
-            if (itr_stmt_node->expr_node == NULL) {
+            itr_stmt_node->expr_node_0 = create_expr_node(vec, index);
+            if (itr_stmt_node->expr_node_0 == NULL) {
                 error("Failed to create expression-node.\n");
                 return NULL;
             }
@@ -1029,8 +1029,8 @@ static ItrStmtNode* create_itr_stmt_node(const Vector* vec, int* index) {
         if (token->type == TK_SEMICOL) {
             ++(*index);
         } else {
-            itr_stmt_node->expr_node[1] = create_expr_node(vec, index);
-            if (itr_stmt_node->expr_node == NULL) {
+            itr_stmt_node->expr_node_1 = create_expr_node(vec, index);
+            if (itr_stmt_node->expr_node_1 == NULL) {
                 error("Failed to create expression-node.\n");
                 return NULL;
             }
@@ -1049,8 +1049,8 @@ static ItrStmtNode* create_itr_stmt_node(const Vector* vec, int* index) {
         if (token->type == TK_RPAREN) {
             ++(*index);
         } else {
-            itr_stmt_node->expr_node[2] = create_expr_node(vec, index);
-            if (itr_stmt_node->expr_node == NULL) {
+            itr_stmt_node->expr_node_2 = create_expr_node(vec, index);
+            if (itr_stmt_node->expr_node_2 == NULL) {
                 error("Failed to create expression-node.\n");
                 return NULL;
             }

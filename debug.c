@@ -718,12 +718,12 @@ static void dump_selection_stmt_node(const SelectionStmtNode* node, int indent) 
         dump_expr_node(node->expr_node, indent + 2);
     }
 
-    if (node->stmt_node[0] != NULL) {
-        dump_stmt_node(node->stmt_node[0], indent + 2);
+    if (node->stmt_node_0 != NULL) {
+        dump_stmt_node(node->stmt_node_0, indent + 2);
     }
 
-    if (node->stmt_node[1] != NULL) {
-        dump_stmt_node(node->stmt_node[1], indent + 2);
+    if (node->stmt_node_1 != NULL) {
+        dump_stmt_node(node->stmt_node_1, indent + 2);
     }
 }
 
@@ -738,16 +738,16 @@ static void dump_itr_stmt_node(const ItrStmtNode* node, int indent) {
         dump_declaration_node(node->declaration_nodes->elements[i], indent + 2);
     }
 
-    if (node->expr_node[0] != NULL) {
-        dump_expr_node(node->expr_node[0], indent + 2);
+    if (node->expr_node_0 != NULL) {
+        dump_expr_node(node->expr_node_0, indent + 2);
     }
 
-    if (node->expr_node[1] != NULL) {
-        dump_expr_node(node->expr_node[0], indent + 2);
+    if (node->expr_node_1 != NULL) {
+        dump_expr_node(node->expr_node_1, indent + 2);
     }
 
-    if (node->expr_node[2] != NULL) {
-        dump_expr_node(node->expr_node[0], indent + 2);
+    if (node->expr_node_2 != NULL) {
+        dump_expr_node(node->expr_node_2, indent + 2);
     }
 
     if (node->stmt_node != NULL) {

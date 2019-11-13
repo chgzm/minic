@@ -12,6 +12,6 @@ self: minic
 	./self/self-compile.sh
 
 clean:
-	rm -f minic *.o *~ ./test/tmp* ./self/self.s ./self/all.c
+	rm -f minic *.o *~ ./test/tmp* ./test/selfminic ./self/self.s ./self/all.c
 
 .PHONY: self test clean

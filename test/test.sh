@@ -194,4 +194,6 @@ assert_return test_strptrmap.c 10
 
 assert_output test_printf.c "Hello, World."
 
+assert_output test_arg.c "./test/tmp"
+
 echo -e "\e[36mPassed all tests.\e[0m"

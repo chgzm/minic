@@ -390,7 +390,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         printf("  pop rdi\n");
         printf("  pop rax\n");
 
-        if (type->array_size) {
+        if (type->array_size > 0) {
             if (type->ptr_count > 0) {
                 printf("  imul rdi, 8\n");
             } else {
@@ -407,7 +407,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
                 printf("  imul rdi, %d\n", type->type_size);
             }
             printf("  add rax, rdi\n");
-            if (type->type_size == 1) {
+            if (type->type_size == 1 && type->ptr_count < 2) {
                 printf("  movzx eax, BYTE PTR [rax]\n");
             } else {
                 printf("  mov rax, [rax]\n");

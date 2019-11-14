@@ -1,31 +1,23 @@
-// int is_symbol(char p) {
-//     switch (p) {
-//     case '+': case '-':
-//     //case '*': case '/': 
-//     //case '%': case '=': 
-//     //case ';': case ':':
-//     //case '(': case ')':
-//     //case '{': case '}':
-//     //case '[': case ']':
-//     //case '<': case '>':
-//     //case '!': case '?': 
-//     //case '&': case '^': 
-//     //case '|': case '#': 
-//     //case ',': case '.': 
-//     case '\\': {
-//         return 1;
-//     }
-//     default: {
-//         return 0;
-//     }
-//     }
-// }
-
 int is_symbol(char p) {
-    if (p == '+' || p == '-') {
+    switch (p) {
+    case '+': case '-':
+    case '*': case '/': 
+    case '%': case '=': 
+    case ';': case ':':
+    case '(': case ')':
+    case '{': case '}':
+    case '[': case ']':
+    case '<': case '>':
+    case '!': case '?': 
+    case '&': case '^': 
+    case '|': case '#': 
+    case ',': case '.': 
+    case '\\': {
         return 1;
-    } else {
+    }
+    default: {
         return 0;
+    }
     }
 }
 

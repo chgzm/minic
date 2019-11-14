@@ -24,6 +24,7 @@ static StrPtrMap* struct_map;
 static StrIntMap* enum_map;
 static Stack* break_label_stack;
 static Stack* continue_label_stack;
+static char* current_stmt_label;
 static Stack* type_stack;
 static IntStack* size_stack;
 
@@ -1219,14 +1220,29 @@ static void process_labeled_stmt(const LabeledStmtNode* node) {
     case LABELED_CASE: {
         process_conditional_expr(node->conditional_expr_node);
 
-        const char* label = get_label();
         printf("  pop rdi\n");
         printf("  pop rax\n");
         printf("  push rax\n");
         printf("  cmp rax, rdi\n");
-        printf("  jne %s\n", label);
-        process_stmt(node->stmt_node);
-        printf("%s:\n", label); 
+        if (node->stmt_node->labeled_stmt_node == NULL) {
+            if (current_stmt_label == NULL) {
+                current_stmt_label = get_label();
+            }
+            const char* label = get_label();
+            printf("  jne %s\n", label);
+            printf("%s:\n", current_stmt_label);
+            process_stmt(node->stmt_node);
+            printf("%s:\n", label); 
+           
+            free(current_stmt_label);
+            current_stmt_label = NULL; 
+        } else {
+            if (current_stmt_label == NULL) {
+                current_stmt_label = get_label();
+            }
+            printf("  je %s\n", current_stmt_label);
+            process_labeled_stmt(node->stmt_node->labeled_stmt_node);
+        }
 
         break;
     }

@@ -155,7 +155,13 @@ static void process_identifier_right(const char* identifier, int len) {
     if (lv != NULL) {
         printf("  lea rax, [rbp-%d]\n", lv->offset);
         if (lv->type->array_size == 0) { 
-            printf("  mov rax, [rax]\n");
+            if (lv->type->type_size == 1 && lv->type->ptr_count == 0) {
+                printf("  movzx eax, BYTE PTR [rax]\n");
+                // printf("  movzx eax, BYTE PTR [rbp-%d]\n", lv->offset);
+            } else { 
+                printf("  mov rax, [rax]\n");
+                // printf("  mov rax, [rbp-%d]\n", lv->offset);
+            }
         } 
         printf("  push rax\n");
         intstack_push(size_stack, lv->type->size);
@@ -168,7 +174,11 @@ static void process_identifier_right(const char* identifier, int len) {
     const GlobalVar* gv = get_globalvar(identifier, len);
     printf("  lea rax, %s[rip]\n", gv->name);
     if (gv->type->array_size == 0) {
-        printf("  mov rax, [rax]\n");
+        if (gv->type->type_size == 1 && gv->type->ptr_count == 0) {
+            printf("  movzx eax, BYTE PTR [rax]\n");
+        } else { 
+            printf("  mov rax, [rax]\n");
+        }
     }
     printf("  push rax\n");
     intstack_push(size_stack, gv->type->size);
@@ -1321,7 +1331,11 @@ static void process_declaration(const DeclarationNode* node) {
 
             printf("  pop rdi\n");
             printf("  pop rax\n");
-            printf("  mov [rax], rdi\n");
+            if (lv->type->size == 1) {
+                printf("  mov [rax], dil\n");
+            } else {
+                printf("  mov [rax], rdi\n");
+            }
         }
     }
 }

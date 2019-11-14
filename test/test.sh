@@ -153,6 +153,7 @@ assert_return test_comment_2.c 42
 assert_return test_switch.c 3
 assert_return test_switch_2.c 14
 assert_return test_switch_3.c 70
+assert_return test_switch_4.c 6
 
 assert_return test_sizeof.c 17
 assert_return test_sizeof_2.c 32
@@ -196,5 +197,7 @@ assert_return test_strptrmap.c 10
 assert_output test_printf.c "Hello, World."
 
 assert_output test_arg.c "./test/tmp"
+
+#assert_return test_tokenizer.c 127
 
 echo -e "\e[36mPassed all tests.\e[0m"

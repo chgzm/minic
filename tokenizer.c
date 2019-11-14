@@ -128,7 +128,6 @@ static Token* read_string(const char* p, int* pos) {
 
     *pos += (len + 1);
 
-
     return token;
 }
 

@@ -1498,7 +1498,10 @@ static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
         const DeclaratorNode* declarator_node = init_declarator_node->declarator_node;
         const DirectDeclaratorNode* direct_declarator_node = declarator_node->direct_declarator_node;
 
-        if (direct_declarator_node->conditional_expr_node == NULL) {
+        if (declarator_node->pointer_node != NULL) {
+            size += 8;
+        }
+        else if (direct_declarator_node->conditional_expr_node == NULL) {
             size += var_size;
         } else {
             const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
@@ -1974,7 +1977,7 @@ static void process_enum_specifier(const EnumSpecifierNode* node) {
     const Vector* identifiers = enumerator_list_node->identifiers;
 
     for (int i = 0; i < identifiers->size; ++i) {
-        strintmap_put(enum_map, identifiers->elements[i], i + 1);
+        strintmap_put(enum_map, identifiers->elements[i], i);
     }
 }
 

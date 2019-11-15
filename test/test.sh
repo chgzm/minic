@@ -168,7 +168,7 @@ assert_return test_preprocess_3.c 1
 assert_return test_preprocess_4.c 9
 assert_return test_preprocess_5.c 6
 
-assert_return test_enum.c 9
+assert_return test_enum.c 4
 
 assert_return test_arrow.c 7
 assert_return test_arrow_2.c 7
@@ -202,5 +202,6 @@ assert_output test_arg.c "./test/tmp"
 assert_return test_tokenizer.c 127
 assert_return test_tokenizer_2.c 20
 assert_return test_tokenizer_3.c 51
+assert_return test_tokenizer_4.c 202
 
 echo -e "\e[36mPassed all tests.\e[0m"

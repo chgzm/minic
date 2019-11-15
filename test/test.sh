@@ -134,6 +134,7 @@ assert_return test_ptr_2.c 100
 assert_return test_ptr_3.c 100
 assert_return test_ptr_4.c 10
 assert_return test_ptr_5.c 17
+assert_return test_ptr_6.c 1
 
 assert_return test_global.c 9
 assert_return test_global_2.c 10
@@ -199,5 +200,7 @@ assert_output test_printf.c "Hello, World."
 assert_output test_arg.c "./test/tmp"
 
 assert_return test_tokenizer.c 127
+assert_return test_tokenizer_2.c 20
+assert_return test_tokenizer_3.c 51
 
 echo -e "\e[36mPassed all tests.\e[0m"

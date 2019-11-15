@@ -24,7 +24,7 @@ static StrPtrMap* struct_map;
 static StrIntMap* enum_map;
 static Stack* break_label_stack;
 static Stack* continue_label_stack;
-static char* current_stmt_label;
+static Stack* current_stmt_label_stack;
 static Stack* type_stack;
 static IntStack* size_stack;
 
@@ -1136,12 +1136,13 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
     case SELECT_SWITCH: {
         char* label = get_label();
         stack_push(break_label_stack, label);
+        stack_push(current_stmt_label_stack, get_label()); 
 
         process_expr(node->expr_node);
         process_stmt(node->stmt_node_0);
 
         printf("%s:\n", label);
-
+        stack_pop(current_stmt_label_stack); 
         break;
     }
     default: {
@@ -1224,22 +1225,17 @@ static void process_labeled_stmt(const LabeledStmtNode* node) {
         printf("  pop rax\n");
         printf("  push rax\n");
         printf("  cmp rax, rdi\n");
+        char* current_stmt_label = stack_top(current_stmt_label_stack);
         if (node->stmt_node->labeled_stmt_node == NULL) {
-            if (current_stmt_label == NULL) {
-                current_stmt_label = get_label();
-            }
             const char* label = get_label();
             printf("  jne %s\n", label);
             printf("%s:\n", current_stmt_label);
             process_stmt(node->stmt_node);
             printf("%s:\n", label); 
            
-            free(current_stmt_label);
-            current_stmt_label = NULL; 
+            stack_pop(current_stmt_label_stack);
+            stack_push(current_stmt_label_stack, get_label()); 
         } else {
-            if (current_stmt_label == NULL) {
-                current_stmt_label = get_label();
-            }
             printf("  je %s\n", current_stmt_label);
             process_labeled_stmt(node->stmt_node->labeled_stmt_node);
         }
@@ -2000,14 +1996,15 @@ void gen(const TransUnitNode* node) {
     printf(".intel_syntax noprefix\n");
 
     // init
-    label_index          = 2;
-    break_label_stack    = create_stack();
-    continue_label_stack = create_stack();
-    type_stack           = create_stack();
-    size_stack           = create_intstack();
-    globalvar_list       = create_vector();
-    struct_map           = create_strptrmap(1024);
-    enum_map             = create_strintmap(1024);
+    label_index              = 2;
+    break_label_stack        = create_stack();
+    continue_label_stack     = create_stack();
+    type_stack               = create_stack();
+    current_stmt_label_stack = create_stack();
+    size_stack               = create_intstack();
+    globalvar_list           = create_vector();
+    struct_map               = create_strptrmap(1024);
+    enum_map                 = create_strintmap(1024);
 
     // gen
     for (int i = 0; i < node->external_decl_nodes->size; ++i) {

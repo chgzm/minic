@@ -198,6 +198,6 @@ assert_output test_printf.c "Hello, World."
 
 assert_output test_arg.c "./test/tmp"
 
-#assert_return test_tokenizer.c 127
+assert_return test_tokenizer.c 127
 
 echo -e "\e[36mPassed all tests.\e[0m"

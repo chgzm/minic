@@ -136,9 +136,9 @@ static Token* read_symbol(const char* p, int* pos) {
 
     const char f = p[*pos];
     ++(*pos);
+    const char s = p[*pos];
     switch (f) {
     case '+': {
-        const char s = p[*pos];
         switch (s) {
         case '+': {
             token->type = TK_INC;
@@ -157,7 +157,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '-': {
-        const char s = p[*pos];
         switch (s) {
         case '-': {
             token->type = TK_DEC;
@@ -181,7 +180,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '*': {
-        const char s = p[*pos];
         switch (s) {
         case '=': {
             token->type = TK_MUL_EQ;
@@ -195,7 +193,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '/': {
-        const char s = p[*pos];
         switch (s) {
         case '=': {
             token->type = TK_DIV_EQ;
@@ -209,7 +206,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '%': {
-        const char s = p[*pos];
         switch (s) {
         case '=': {
             token->type = TK_MOD_EQ;
@@ -223,7 +219,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '=': {
-        const char s = p[*pos];
         switch (s) {
         case '=': {
             token->type = TK_EQ;
@@ -269,7 +264,6 @@ static Token* read_symbol(const char* p, int* pos) {
         return token;
     }
     case '<': {
-        const char s = p[*pos];
         switch (s) {
         case '<': {
             token->type = TK_LSH;
@@ -288,7 +282,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '>': {
-        const char s = p[*pos];;
         switch (s) {
         case '>': {
             token->type = TK_RSH;
@@ -307,7 +300,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '!': {
-        const char s = p[*pos];
         switch (s) {
         case '=': {
             token->type = TK_NE;
@@ -325,7 +317,6 @@ static Token* read_symbol(const char* p, int* pos) {
         return token;
     }
     case '&': {
-        const char s = p[*pos];
         switch (s) {
         case '&': {
             token->type = TK_LOGAND;
@@ -344,7 +335,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '^': {
-        const char s = p[*pos];
         switch (s) {
         case '=': {
             token->type = TK_XOR_EQ;
@@ -358,7 +348,6 @@ static Token* read_symbol(const char* p, int* pos) {
         }
     }
     case '|': {
-        const char s = p[*pos];
         switch (s) {
         case '=': {
             token->type = TK_OR_EQ;
@@ -381,7 +370,6 @@ static Token* read_symbol(const char* p, int* pos) {
         return token;
     }
     case '.': {
-        const char s = p[*pos];
         const char t = p[*pos + 1];
         if (s == '.' && t == '.') {
             token->type = TK_ELLIPSIS;
@@ -562,8 +550,8 @@ static Token* read_number(const char* p, int* pos) {
         ++len;
     }
 
-    char buf[len + 1];
-    strncpy(buf, &p[*pos], len);
+    char buf[32];
+    strncpy(buf, &p[*pos], 32);
     buf[len] = '\0';
 
     token->num = atoi(buf);
@@ -589,6 +577,7 @@ Vector* tokenize(char* addr) {
 
     int pos = 0;
     const char* p = addr;
+    Token* token = NULL;
     while (p[pos]) {
         if (isspace(p[pos])) {
             ++pos;
@@ -605,7 +594,7 @@ Vector* tokenize(char* addr) {
             pos += 2;
         }
         else if (p[pos] == '#') {
-            Token* token = read_directive(p, &pos);
+            token = read_directive(p, &pos);
             if (token == NULL) {
                 error("Failed to read directive.\n");
                 return NULL;
@@ -613,7 +602,7 @@ Vector* tokenize(char* addr) {
             vector_push_back(vec, token);
         }
         else if (p[pos] == '\'') {
-            Token* token = read_character(p, &pos);
+            token = read_character(p, &pos);
             if (token == NULL) {
                 error("Failed to read character.\n");
                 return NULL;
@@ -621,7 +610,7 @@ Vector* tokenize(char* addr) {
             vector_push_back(vec, token);
         }
         else if (p[pos] == '"') {
-            Token* token = read_string(p, &pos);
+            token = read_string(p, &pos);
             if (token == NULL) {
                 error("Failed to read string.\n");
                 return NULL;
@@ -629,7 +618,7 @@ Vector* tokenize(char* addr) {
             vector_push_back(vec, token);
         }
         else if (is_symbol(p[pos])) {
-            Token* token = read_symbol(p, &pos);
+            token = read_symbol(p, &pos);
             if (token == NULL) {
                 error("Failed to read symbol.\n");
                 return NULL;
@@ -637,7 +626,7 @@ Vector* tokenize(char* addr) {
             vector_push_back(vec, token);
         }
         else if (isalpha(p[pos]) || p[pos] == '_') {
-            Token* token = read_identifier(p, &pos);
+            token = read_identifier(p, &pos);
             if (token == NULL) {
                 error("Failed to read identifier.\n");
                 return NULL;
@@ -645,7 +634,7 @@ Vector* tokenize(char* addr) {
             vector_push_back(vec, token);
         }
         else if (isdigit(p[pos])) {
-            Token* token = read_number(p, &pos);
+            token = read_number(p, &pos);
             if (token == NULL) {
                 error("Failed to read number.\n");
                 return NULL;

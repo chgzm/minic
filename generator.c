@@ -129,7 +129,7 @@ static GlobalVar* get_globalvar(const char* str) {
 }
 
 static void process_identifier_left(const char* identifier) {
-    LocalVar* lv = get_localvar(identifier);
+    const LocalVar* lv = get_localvar(identifier);
     if (lv != NULL) {
         printf("  lea rax, [rbp-%d]\n", lv->offset);
         printf("  push rax\n");
@@ -152,7 +152,7 @@ static void process_identifier_right(const char* identifier) {
     } 
 
     // local variable
-    LocalVar* lv = get_localvar(identifier);
+    const LocalVar* lv = get_localvar(identifier);
     if (lv != NULL) {
         printf("  lea rax, [rbp-%d]\n", lv->offset);
         if (lv->type->array_size == 0) { 
@@ -273,7 +273,6 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         printf("  pop rdi\n");
         printf("  pop rax\n");
-
         if (type->array_size) {
             if (type->ptr_count > 0) {
                 printf("  imul rdi, 8\n");
@@ -1185,11 +1184,11 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         break;
     }
     case ITR_FOR: {
-        char* label1 = get_label();
-        char* label2 = get_label();
         char* label3 = get_label();
-        stack_push(continue_label_stack, label2);
-        stack_push(break_label_stack, label3);
+        char* label4 = get_label();
+        char* label5 = get_label();
+        stack_push(continue_label_stack, label4);
+        stack_push(break_label_stack, label5);
 
         if (node->declaration_nodes->size != 0) {
             for (int i = 0; i < node->declaration_nodes->size; ++i) {
@@ -1199,24 +1198,24 @@ static void process_itr_stmt(const ItrStmtNode* node) {
         else if (node->expr_node_0 != NULL) {
             process_expr(node->expr_node_0);
         }
-        printf("%s:\n", label1);
+        printf("%s:\n", label3);
         if (node->expr_node_1 != NULL) {
             process_expr(node->expr_node_1);
         }
 
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  je %s\n", label3);
+        printf("  je %s\n", label5);
 
         process_stmt(node->stmt_node);
 
-        printf("%s:\n", label2);
+        printf("%s:\n", label4);
         if (node->expr_node_2 != NULL) {
             process_expr(node->expr_node_2);
         }
 
-        printf("  jmp %s\n", label1);
-        printf("%s:\n", label3);
+        printf("  jmp %s\n", label3);
+        printf("%s:\n", label5);
 
         stack_pop(continue_label_stack);
         stack_pop(break_label_stack);
@@ -1256,7 +1255,6 @@ static void process_labeled_stmt(const LabeledStmtNode* node) {
     }
     case LABELED_DEFAULT: {
         process_stmt(node->stmt_node);
-
         break;
     }
     default: {
@@ -1312,7 +1310,6 @@ static void process_declaration(const DeclarationNode* node) {
     for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
         LocalVar* lv = malloc(sizeof(LocalVar));
         lv->type     = type;
-
 
         const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
@@ -1474,11 +1471,9 @@ static int calc_localvar_size_in_stmt(const StmtNode* node) {
     return 0;
 }
 
-static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
-    int var_size = 0;
-    const Vector* decl_specifier_nodes = node->decl_specifier_nodes;
-    for (int i = 0; i < decl_specifier_nodes->size; ++i) {
-        const DeclSpecifierNode* decl_specifier_node = decl_specifier_nodes->elements[i];
+static int get_varsize_from_decl_specifier_nodes(const Vector* nodes) {
+    for (int i = 0; i < nodes->size; ++i) {
+        const DeclSpecifierNode* decl_specifier_node = nodes->elements[i];
         if (decl_specifier_node->type_specifier_node == NULL) {
             continue;
         }
@@ -1488,19 +1483,48 @@ static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
             const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
             const char* ident = struct_specifier_node->identifier;
             const StructInfo* struct_info = strptrmap_get(struct_map, ident);
-            var_size = struct_info->field_info_map->size * 8;
+            return (struct_info->field_info_map->size * 8);
         } 
         else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
             const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-            var_size = struct_info->field_info_map->size * 8;
+            return (struct_info->field_info_map->size * 8);
         } 
         else {
-            var_size = 8; // @todo
+            return 8; // @todo
         }
-
-        break;
     }
 
+    return 0;
+}
+
+static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
+    // int var_size = 0;
+    // const Vector* decl_specifier_nodes = node->decl_specifier_nodes;
+    // for (int i = 0; i < decl_specifier_nodes->size; ++i) {
+    //     const DeclSpecifierNode* decl_specifier_node = decl_specifier_nodes->elements[i];
+    //     if (decl_specifier_node->type_specifier_node == NULL) {
+    //         continue;
+    //     }
+
+    //     const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
+    //     if (type_specifier_node->type_specifier == TYPE_STRUCT) {
+    //         const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
+    //         const char* ident = struct_specifier_node->identifier;
+    //         const StructInfo* struct_info = strptrmap_get(struct_map, ident);
+    //         var_size = struct_info->field_info_map->size * 8;
+    //     } 
+    //     else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
+    //         const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
+    //         var_size = struct_info->field_info_map->size * 8;
+    //     } 
+    //     else {
+    //         var_size = 8; // @todo
+    //     }
+
+    //     break;
+    // }
+
+    const int var_size = get_varsize_from_decl_specifier_nodes(node->decl_specifier_nodes);
     int size = 0;
     const Vector* init_declarator_nodes = node->init_declarator_nodes;
     for (int i = 0; i < init_declarator_nodes->size; ++i) {

@@ -984,13 +984,6 @@ static ItrStmtNode* create_itr_stmt_node(const Vector* vec, int* index) {
                 }
                 vector_push_back(itr_stmt_node->declaration_nodes, declaration_node);
             }
-
-            // token = vec->elements[*index];
-            // if (token->type != TK_SEMICOL) {
-            //     error("Invalid token type=\"%s\"\n", decode_token_type(token->type));
-            //     return NULL;
-            // }
-            // ++(*index);
         } 
         // {expression}? ;
         else {
@@ -1296,7 +1289,6 @@ static ParamListNode* create_param_list_node(const Vector* vec, int* index) {
         if (tk->type == TK_ELLIPSIS) {
             break;
         }
-
         ++(*index);
 
         ParamListNode* p_param_list_node = calloc(1, sizeof(ParamListNode));
@@ -1654,9 +1646,6 @@ static EnumSpecifierNode* create_enum_specifier_node(const Vector* vec, int* ind
     token = vec->elements[*index];
     if (token->type == TK_IDENT) {
         enum_specifier_node->identifier = strdup(token->str);
-
-        // enum_specifier_node->identifier = malloc(sizeof(char) * token->strlen);
-        // strncpy(enum_specifier_node->identifier, token->str, token->strlen);
         ++(*index);
     }
 
@@ -1690,10 +1679,10 @@ static TypeSpecifierNode* create_type_specifier_node(const Vector* vec, int* ind
 
     const Token* token = vec->elements[*index];
     switch (token->type) {
-    case TK_VOID:     { type_specifier_node->type_specifier = TYPE_VOID;   ++(*index); break; }
-    case TK_CHAR:     { type_specifier_node->type_specifier = TYPE_CHAR;   ++(*index); break; }
-    case TK_INT:      { type_specifier_node->type_specifier = TYPE_INT;    ++(*index); break; }
-    case TK_DOUBLE:   { type_specifier_node->type_specifier = TYPE_DOUBLE; ++(*index); break; }
+    case TK_VOID:   { type_specifier_node->type_specifier = TYPE_VOID;   ++(*index); break; }
+    case TK_CHAR:   { type_specifier_node->type_specifier = TYPE_CHAR;   ++(*index); break; }
+    case TK_INT:    { type_specifier_node->type_specifier = TYPE_INT;    ++(*index); break; }
+    case TK_DOUBLE: { type_specifier_node->type_specifier = TYPE_DOUBLE; ++(*index); break; }
     case TK_STRUCT: {
         type_specifier_node->type_specifier = TYPE_STRUCT;
         type_specifier_node->struct_specifier_node = create_struct_specifier_node(vec, index);

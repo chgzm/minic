@@ -64,9 +64,6 @@ declarator:
 pointer:
     {'*'}+
 
-type-qualifier:
-    const
-
 direct-declarator:
     identifier
     '(' declarator ')'

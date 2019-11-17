@@ -1512,7 +1512,8 @@ static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
         }
         else if (direct_declarator_node->conditional_expr_node == NULL) {
             size += var_size;
-        } else {
+        } 
+        else {
             const int array_size = get_array_size_from_constant_expr(direct_declarator_node->conditional_expr_node);
             size += (array_size * var_size);
         }
@@ -1569,7 +1570,7 @@ static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
         type->struct_info = strptrmap_get(struct_map, node->struct_specifier_node->identifier); 
         if (type->struct_info == NULL) {
             error("Invalid sturct name=\"%s\"\n", node->struct_specifier_node->identifier);
-            exit(-1);
+            return NULL;
         }
 
         type->type_size = type->struct_info->size;
@@ -1581,7 +1582,7 @@ static Type* process_type_specifier_in_local(const TypeSpecifierNode* node) {
         type->struct_info = strptrmap_get(struct_map, node->struct_name);
         if (type->struct_info == NULL) {
             error("Invalid sturct name=\"%s\"\n", node->struct_name);
-            exit(-1);
+            return NULL;
         }
 
         type->type_size = type->struct_info->size;
@@ -1782,7 +1783,6 @@ static Type* process_type_specifier_in_global(const TypeSpecifierNode* node) {
                 strptrmap_put(type->struct_info->field_info_map, struct_declaration_node->identifier, field_info);
             }
             type->struct_info->size = type->struct_info->field_info_map->size * 8;
-            // strptrmap_put(struct_map, struct_name, type->struct_info);
         }
         //
         // "struct" identifier

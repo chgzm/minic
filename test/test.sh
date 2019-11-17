@@ -176,6 +176,7 @@ assert_return test_arrow_2.c 7
 assert_return test_or.c 28
 
 assert_return test_and.c 16
+assert_return test_and_2.c 100
 
 assert_return test_char.c 99
 assert_return test_char_2.c 195
@@ -203,5 +204,7 @@ assert_return test_tokenizer.c 127
 assert_return test_tokenizer_2.c 20
 assert_return test_tokenizer_3.c 51
 assert_return test_tokenizer_4.c 202
+
+assert_return test_preprocessor.c 202
 
 echo -e "\e[36mPassed all tests.\e[0m"

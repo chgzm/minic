@@ -1,7 +1,13 @@
-#define bool int
-#define true 1
+#define NULL  0
+#define bool  int
 #define false 0
-#define NULL 0
+#define true  1
+#define O_RDONLY 0
+#define FILE void
+#define stdout 1
+#define stderr 2
+#define SEEK_SET 0
+#define SEEK_END 2
 
 typedef struct Vector Vector;
 struct Vector {
@@ -31,6 +37,119 @@ void vector_push_back(Vector* vec, void* e) {
 
 void error(const char* fmt, ...) {
     printf("%s", fmt);
+}
+
+typedef struct StrPtrMapEntry StrPtrMapEntry;
+struct StrPtrMapEntry {
+    char*            key;
+    void*            val;
+    StrPtrMapEntry* next;
+};
+
+typedef struct StrPtrMap StrPtrMap;
+struct StrPtrMap {
+    StrPtrMapEntry** entries;
+    int               size;
+    int               capacity;
+};
+
+StrPtrMap* create_strptrmap(int capacity) {
+    StrPtrMap* map = malloc(sizeof(StrPtrMap));
+    map->size      = 0;
+    map->capacity  = capacity;
+    map->entries   = calloc(capacity, sizeof(StrPtrMapEntry*));
+
+    return map;
+}
+
+int calc_hash(const char* str) {
+    int h = 0, pos = 0;
+    while (str[pos] != '\0') {
+        h += str[pos];
+        ++pos;
+    }
+
+    return h;
+}
+
+void strptrmap_put(StrPtrMap* map, const char* key, void* val) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    if (map->entries[index] == NULL) {
+        map->entries[index]       = calloc(1, sizeof(StrPtrMapEntry));
+        map->entries[index]->key  = strdup(key);
+        map->entries[index]->val  = val;
+        map->entries[index]->next = NULL;
+    }
+    else {
+        StrPtrMapEntry* current = map->entries[index];
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next       = calloc(1, sizeof(StrPtrMapEntry));
+        current->next->key  = strdup(key);
+        current->next->val  = val;
+        current->next->next = NULL;
+    }
+
+    ++(map->size);
+}
+
+bool strptrmap_contains(StrPtrMap* map, const char* key) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+
+    if (map->entries[index] == NULL) {
+        return false;
+    }
+    else {
+        StrPtrMapEntry* current = map->entries[index];
+        while (current != NULL) {
+            if (strcmp(current->key, key) == 0) {
+                return true;
+            }
+            current = current->next;
+        }
+
+        return false;
+    }
+}
+
+void* strptrmap_get(StrPtrMap* map, const char* key) {
+    const int hash  = calc_hash(key);
+    const int index = hash % map->capacity;
+    if (map->entries[index] == NULL) {
+        return NULL;
+    }
+    else {
+        StrPtrMapEntry* current = map->entries[index];
+        while (current != NULL) {
+            if (strcmp(current->key, key) == 0) {
+                return current->val;
+            }
+
+            current = current->next;
+        }
+
+        return NULL;
+    }
+}
+
+char* read_file(const char* file_path) {
+    FILE* fp = fopen(file_path, "r");
+    if (fp == NULL) {
+        return NULL;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    int fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    char* addr = calloc(fsize, sizeof(char) + 1);
+    fread(addr, sizeof(char), fsize, fp);
+    fclose(fp);
+
+    return addr;
 }
 
 enum TokenType {
@@ -752,16 +871,226 @@ Vector* tokenize(char* addr) {
     return vec;
 }
 
+enum State {
+    STATE_ENABLED,
+    STATE_DISABLED,
+    STATE_INVALID,
+};
+
+StrPtrMap* define_map;
+Vector* preprocess(const Vector* in_vec);
+
+int enabled_read(const Vector* in_vec, int* index, Vector* out_vec) {
+    Token* token = in_vec->elements[*index];
+    if (token->type != TK_HASH) {
+        if (token->type == TK_IDENT && strptrmap_contains(define_map, token->str)) {
+            Token* value = strptrmap_get(define_map, token->str);
+
+            if (value != NULL) {
+                vector_push_back(out_vec, value);
+            }
+
+            ++(*index);
+            return STATE_ENABLED;
+        }
+        else {
+            vector_push_back(out_vec, token);
+            ++(*index);
+            return STATE_ENABLED;
+        }
+    }
+    else {
+        //
+        // #define
+        //
+        if (strncmp("define", token->str, 6) == 0) {
+            ++(*index);
+            const Token* name = in_vec->elements[*index];
+            ++(*index);
+
+            if (token->has_value) {
+                Token* value = in_vec->elements[*index];
+                strptrmap_put(define_map, name->str, value);
+                ++(*index);
+
+                return STATE_ENABLED;
+            }
+            else  {
+                strptrmap_put(define_map, name->str, NULL);
+                return STATE_ENABLED;
+            }
+        }
+        //
+        // #include
+        //
+        else if (strncmp("include", token->str, 7) == 0) { 
+            ++(*index);
+
+            token = in_vec->elements[*index];
+            // FIXME: skip include <...> 
+            if (token->type == TK_LANGLE) {
+                while (token->type != TK_RANGLE) {
+                    ++(*index);
+                    token = in_vec->elements[*index];
+                }
+
+                ++(*index);
+                return STATE_ENABLED; 
+            } 
+            else if (token->type == TK_STR) {
+                char* addr = read_file(token->str);
+                if (addr == NULL) {
+                    error("Failed to load file:\"%s\".\n", token->str); 
+                    return STATE_INVALID;
+                }
+
+                const Vector* include_vec = tokenize(addr);
+                if (include_vec == NULL) {
+                    error("Failed to tokenize.\n");
+                    return STATE_INVALID;
+                }
+
+                const Vector* include_processed_vec = preprocess(include_vec);
+                if (include_processed_vec == NULL) {
+                    error("Failed to preprocess.\n");
+                    return STATE_INVALID;
+                }
+
+                for (int i = 0; i < include_processed_vec->size; ++i) {
+                    vector_push_back(out_vec, include_processed_vec->elements[i]);
+                }
+
+                ++(*index);
+            }
+            else {
+                return STATE_INVALID;
+            }
+
+            return STATE_ENABLED;
+        } 
+        //
+        // #ifdef
+        //
+        else if (strncmp("ifdef", token->str, 5) == 0) {
+            ++(*index);
+
+            token = in_vec->elements[*index];
+            if (token->type != TK_IDENT) {
+                return STATE_INVALID;
+            }
+            ++(*index);
+
+            if (strptrmap_contains(define_map, token->str)) {
+                return STATE_ENABLED;
+            } else {
+                return STATE_DISABLED;
+            }
+        }
+        //
+        // #ifndef
+        //
+        else if (strncmp("ifndef", token->str, 6) == 0) {
+            ++(*index);
+
+            token = in_vec->elements[*index];
+            if (token->type != TK_IDENT) {
+                return STATE_INVALID;
+            }
+            ++(*index);
+
+            if (strptrmap_contains(define_map, token->str)) {
+                return STATE_DISABLED;
+            } else {
+                return STATE_ENABLED;
+            }
+        }
+        //
+        // #else
+        //
+        else if (strncmp("else", token->str, 4) == 0) {
+            ++(*index);
+            return STATE_DISABLED; 
+        }
+        //
+        // #endif
+        //
+        else if (strncmp("endif", token->str, 5) == 0) {
+            ++(*index);
+            return STATE_ENABLED;
+        }
+        else {
+            // @todo
+            ++(*index);
+            return STATE_ENABLED;
+        }
+    }
+}
+
+int disabled_read(const Vector* in_vec, int* index, Vector* out_vec) {
+    const Token* token = in_vec->elements[*index];
+
+    ++(*index);
+    if (token->type != TK_HASH) {
+        return STATE_DISABLED;
+    }
+    else if (strncmp("else", token->str, 4) == 0) {
+        return STATE_ENABLED; 
+    }
+    else if (strncmp("endif", token->str, 5) == 0) {
+        return STATE_ENABLED;
+    } else {
+        return STATE_DISABLED;
+    }
+}
+
+Vector* preprocess(const Vector* in_vec) {
+    Vector* out_vec = create_vector();
+    if (define_map == NULL) {
+        define_map = create_strptrmap(32);
+    }
+
+    int state = STATE_ENABLED;
+    int index = 0;
+    while (index < in_vec->size) {   
+        Token* token = in_vec->elements[index];
+        switch (state) {
+        case STATE_ENABLED: {
+            state = enabled_read(in_vec, &index, out_vec);
+            if (state == STATE_INVALID) {
+                return NULL;
+            }
+            break;
+        }
+        case STATE_DISABLED: {
+            state = disabled_read(in_vec, &index, out_vec);
+            if (state == STATE_INVALID) {
+                return NULL;
+            }
+            break;
+        }
+        default: {
+            error("Invalid state=%d\n", state);
+            return NULL;
+        }
+        }
+    }
+
+    return out_vec;
+}
+
 int main() {
     char* str = malloc(sizeof(char) * 256);
     strncpy(str, "int main() { return 0; }\0", 256);
 
-    Vector* tokens = tokenize(str);
+    Vector* tokens    = tokenize(str);
+    Vector* processed = preprocess(tokens);
+
     int ret = 0;
-    for (int i = 0; i < tokens->size; ++i) {
-        Token* token = tokens->elements[i];
+    for (int i = 0; i < processed->size; ++i) {
+        Token* token = processed->elements[i];
         ret += token->type;
     }
 
     return ret;
 }
+

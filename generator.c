@@ -904,13 +904,21 @@ static void process_logical_and_expr(const LogicalAndExprNode* node) {
     }
     // <logical-and-expression> && <inclusive-or-expression>
     else {
+        char* label1 = get_label();
+        char* label2 = get_label();
         process_logical_and_expr(node->logical_and_expr_node);
-        process_inclusive_or_expr(node->inclusive_or_expr_node);
-
-        printf("  pop rdi\n");
         printf("  pop rax\n");
-        printf("  and rax, rdi\n");
-        printf("  push rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label1);
+        process_inclusive_or_expr(node->inclusive_or_expr_node);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label1);
+        printf("  push 1\n");
+        printf("  jmp %s\n", label2);
+        printf("%s:\n", label1);
+        printf("  push 0\n");
+        printf("%s:\n", label2);
     }
 }
 

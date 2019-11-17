@@ -574,7 +574,6 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
         switch (node->op_type) {
         case OP_AND: {
             process_cast_expr_left(node->cast_expr_node);
-
             break;
         }
         case OP_MUL: {
@@ -582,7 +581,6 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
             printf("  pop rax\n");
             printf("  mov rax, [rax]\n");
             printf("  push rax\n");
-
             break;
         }
         case OP_ADD: {
@@ -594,13 +592,18 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
             printf("  mov rax, 0\n");
             printf("  sub rax, rdi\n");
             printf("  push rax\n");
-
             break;
         }
         case OP_TILDE: {
             break;
         }
         case OP_EXCLA: {
+            process_cast_expr(node->cast_expr_node);
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  setl al\n");
+            printf("  movzb rax, al\n");
+            printf("  push rax\n");
             break;
         }
         default: {

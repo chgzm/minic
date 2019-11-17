@@ -1084,15 +1084,13 @@ static void process_expr_stmt(const ExprStmtNode* node) {
 static void process_jump_stmt(const JumpStmtNode* node) {
     switch (node->jump_type) {
     case JMP_CONTINUE: {
-        const char* label = stack_top(continue_label_stack);
-        printf("  jmp %s\n", label);
-
+        const char* label1 = stack_top(continue_label_stack);
+        printf("  jmp %s\n", label1);
         break;
     }
     case JMP_BREAK: {
-        const char* label = stack_top(break_label_stack);
-        printf("  jmp %s\n", label);
-
+        const char* label2 = stack_top(break_label_stack);
+        printf("  jmp %s\n", label2);
         break;
     }
     case JMP_RETURN: {
@@ -1104,7 +1102,6 @@ static void process_jump_stmt(const JumpStmtNode* node) {
             ret_label = get_label();
         }
         printf("  jmp %s\n", ret_label);
-
         break;
     }
     default: {
@@ -1116,42 +1113,42 @@ static void process_jump_stmt(const JumpStmtNode* node) {
 static void process_selection_stmt(const SelectionStmtNode* node) {
     switch (node->selection_type) {
     case SELECT_IF: {
-        const char* label = get_label();
-
-        process_expr(node->expr_node);
-        printf("  pop rax\n");
-        printf("  cmp rax, 0\n");
-        printf("  je %s\n", label);
-        process_stmt(node->stmt_node_0);
-        printf("%s:\n", label);
-
-        break;
-    }
-    case SELECT_IF_ELSE: {
         const char* label1 = get_label();
-        const char* label2 = get_label();
 
         process_expr(node->expr_node);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je %s\n", label1);
         process_stmt(node->stmt_node_0);
-        printf("  jmp %s\n", label2);
         printf("%s:\n", label1);
-        process_stmt(node->stmt_node_1);
+
+        break;
+    }
+    case SELECT_IF_ELSE: {
+        const char* label2 = get_label();
+        const char* label3 = get_label();
+
+        process_expr(node->expr_node);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je %s\n", label2);
+        process_stmt(node->stmt_node_0);
+        printf("  jmp %s\n", label3);
         printf("%s:\n", label2);
+        process_stmt(node->stmt_node_1);
+        printf("%s:\n", label3);
 
         break;
     }
     case SELECT_SWITCH: {
-        char* label = get_label();
-        stack_push(break_label_stack, label);
+        char* label4 = get_label();
+        stack_push(break_label_stack, label4);
         stack_push(current_stmt_label_stack, get_label()); 
 
         process_expr(node->expr_node);
         process_stmt(node->stmt_node_0);
 
-        printf("%s:\n", label);
+        printf("%s:\n", label4);
         stack_pop(break_label_stack);
         stack_pop(current_stmt_label_stack); 
         break;

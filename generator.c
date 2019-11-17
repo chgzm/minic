@@ -723,7 +723,7 @@ static void process_additive_expr(const AdditiveExprNode* node) {
     if (node->additive_expr_node == NULL) {
         process_multiplicative_expr(node->multiplicative_expr_node);
     }
-    //   <additive-expression> + <multiplicative-expression>
+    //  <additive-expression> + <multiplicative-expression>
     else if (node->operator_type == OP_ADD) {
         process_additive_expr(node->additive_expr_node);
         process_multiplicative_expr(node->multiplicative_expr_node);
@@ -1153,6 +1153,7 @@ static void process_selection_stmt(const SelectionStmtNode* node) {
         process_stmt(node->stmt_node_0);
 
         printf("%s:\n", label);
+        stack_pop(break_label_stack);
         stack_pop(current_stmt_label_stack); 
         break;
     }

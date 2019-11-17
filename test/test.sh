@@ -155,6 +155,7 @@ assert_return test_switch.c 3
 assert_return test_switch_2.c 14
 assert_return test_switch_3.c 70
 assert_return test_switch_4.c 6
+assert_return test_switch_5.c 2
 
 assert_return test_sizeof.c 17
 assert_return test_sizeof_2.c 32

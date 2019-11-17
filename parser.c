@@ -44,9 +44,8 @@ static ConstantNode* create_constant_node(const Vector* vec, int* index) {
         break;
     }
     case TK_STR: {
-        constant_node->const_type = CONST_STR;
-        constant_node->character_constant = malloc(sizeof(char) * token->strlen);
-        strncpy(constant_node->character_constant, token->str, token->strlen);
+        constant_node->const_type         = CONST_STR;
+        constant_node->character_constant = strdup(token->str);
         break;
     }
     default: {
@@ -54,7 +53,6 @@ static ConstantNode* create_constant_node(const Vector* vec, int* index) {
         return NULL;
     }
     }
-
     ++(*index);
 
     return constant_node;
@@ -66,9 +64,7 @@ static PrimaryExprNode* create_primary_expr_node(const Vector* vec, int* index) 
     const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_IDENT: {
-        primary_expr_node->identifier     = malloc(sizeof(char) * token->strlen);
-        primary_expr_node->identifier_len = token->strlen;
-        strncpy(primary_expr_node->identifier, token->str, token->strlen);
+        primary_expr_node->identifier = strdup(token->str);
         ++(*index);
         break;
     }
@@ -80,7 +76,6 @@ static PrimaryExprNode* create_primary_expr_node(const Vector* vec, int* index) 
             error("Failed to create constant node.\n");
             return NULL;
         }
-
         break;
     }
     case TK_LPAREN: {
@@ -191,10 +186,7 @@ static PostfixExprNode* create_postfix_expr_node(const Vector* vec, int* index) 
                 error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;    
             }
-            
-            p_postfix_expr_node->identifier_len = token->strlen;
-            p_postfix_expr_node->identifier     = malloc(sizeof(char) * token->strlen);
-            strncpy(p_postfix_expr_node->identifier, token->str, token->strlen);
+            p_postfix_expr_node->identifier = strdup(token->str);
 
             ++(*index);
 
@@ -213,10 +205,7 @@ static PostfixExprNode* create_postfix_expr_node(const Vector* vec, int* index) 
                 error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
                 return NULL;    
             }
-            
-            p_postfix_expr_node->identifier_len = token->strlen;
-            p_postfix_expr_node->identifier     = malloc(sizeof(char) * token->strlen);
-            strncpy(p_postfix_expr_node->identifier, token->str, token->strlen);
+            p_postfix_expr_node->identifier = strdup(token->str);
 
             ++(*index);
 
@@ -315,12 +304,8 @@ static UnaryExprNode* create_unary_expr_node(const Vector* vec, int* index) {
         // sizeof ( identifier )
         //
         if (token->type == TK_IDENT &&  !strptrmap_contains(typedef_map, token->str)) {
-            unary_expr_node->type = UN_SIZEOF_IDENT;
-
-            unary_expr_node->sizeof_name_len = token->strlen;
-            unary_expr_node->sizeof_name     = malloc(sizeof(char) * token->strlen);
-            strncpy(unary_expr_node->sizeof_name, token->str, token->strlen);
-
+            unary_expr_node->type        = UN_SIZEOF_IDENT;
+            unary_expr_node->sizeof_name = strdup(token->str);
             ++(*index);
         }
         //
@@ -1363,9 +1348,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const Vector* vec, in
     const Token* token = vec->elements[*index];
     switch (token->type) {
     case TK_IDENT: {
-        direct_declarator_node->identifier     = malloc(sizeof(char) * token->strlen);
-        direct_declarator_node->identifier_len = token->strlen;
-        strncpy(direct_declarator_node->identifier, token->str, token->strlen);
+        direct_declarator_node->identifier = strdup(token->str);
         ++(*index);
         break;
     }
@@ -1430,8 +1413,7 @@ static DirectDeclaratorNode* create_direct_declarator_node(const Vector* vec, in
             else {
                 token = vec->elements[*index];
                 while (token->type == TK_IDENT) {
-                    char* identifier = malloc(sizeof(char) * token->strlen);
-                    strncpy(identifier, token->str, token->strlen);
+                    char* identifier = strdup(token->str);
                     vector_push_back(p_direct_declarator_node->identifier_list, identifier);
 
                     ++(*index);
@@ -1576,9 +1558,7 @@ static StructDeclarationNode* create_struct_declaration_node(const Vector* vec, 
         error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
         return NULL;
     }
-    struct_declaration_node->identifier = malloc(sizeof(char) * token->strlen);
-    struct_declaration_node->identifier_len = token->strlen;
-    strncpy(struct_declaration_node->identifier, token->str, token->strlen);
+    struct_declaration_node->identifier = strdup(token->str);
     ++(*index);
 
     token = vec->elements[*index];
@@ -1609,9 +1589,7 @@ static StructSpecifierNode* create_struct_specifier_node(const Vector* vec, int*
     }
     ++(*index);
 
-    struct_specifier_node->identifier_len = token->strlen;
-    struct_specifier_node->identifier     = malloc(sizeof(char) * token->strlen);
-    strncpy(struct_specifier_node->identifier, token->str, token->strlen);
+    struct_specifier_node->identifier = strdup(token->str);
 
     token = vec->elements[*index];
     if (token->type == TK_LBRCKT) {
@@ -1675,8 +1653,10 @@ static EnumSpecifierNode* create_enum_specifier_node(const Vector* vec, int* ind
 
     token = vec->elements[*index];
     if (token->type == TK_IDENT) {
-        enum_specifier_node->identifier = malloc(sizeof(char) * token->strlen);
-        strncpy(enum_specifier_node->identifier, token->str, token->strlen);
+        enum_specifier_node->identifier = strdup(token->str);
+
+        // enum_specifier_node->identifier = malloc(sizeof(char) * token->strlen);
+        // strncpy(enum_specifier_node->identifier, token->str, token->strlen);
         ++(*index);
     }
 
@@ -1730,7 +1710,6 @@ static TypeSpecifierNode* create_type_specifier_node(const Vector* vec, int* ind
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
-
         ++(*index);
 
         break;
@@ -1973,8 +1952,7 @@ static ExternalDeclNode* create_external_decl_node(const Vector* vec, int* index
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
-        char* struct_name = malloc(sizeof(char) * token->strlen);
-        strncpy(struct_name, token->str, token->strlen);
+        char* struct_name = strdup(token->str);
         ++(*index);
 
         token = vec->elements[*index];
@@ -1982,8 +1960,7 @@ static ExternalDeclNode* create_external_decl_node(const Vector* vec, int* index
             error("Invalid token[%d]=\"%s\".\n", *index, decode_token_type(token->type));
             return NULL;
         }
-        char* typedef_name = malloc(sizeof(char) * token->strlen);
-        strncpy(typedef_name, token->str, token->strlen);
+        char* typedef_name = strdup(token->str);
         ++(*index);
     
         strptrmap_put(typedef_map, typedef_name, struct_name); 

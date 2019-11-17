@@ -106,10 +106,10 @@ static const char* get_reg(const char* base, int size) {
     }
 }
 
-static LocalVar* get_localvar(const char* str, int len) {
+static LocalVar* get_localvar(const char* str) {
     for (int i = 0; i < localvar_list->size; ++i) {
         LocalVar* localvar = localvar_list->elements[i];
-        if (strncmp(localvar->name, str, len) == 0) {
+        if (strcmp(localvar->name, str) == 0) {
             return localvar;
         }
     }
@@ -117,10 +117,10 @@ static LocalVar* get_localvar(const char* str, int len) {
     return NULL;
 }
 
-static GlobalVar* get_globalvar(const char* str, int len) {
+static GlobalVar* get_globalvar(const char* str) {
     for (int i = 0; i < globalvar_list->size; ++i) {
         GlobalVar* gv = globalvar_list->elements[i];
-        if (strncmp(gv->name, str, len) == 0) {
+        if (strcmp(gv->name, str) == 0) {
             return gv;
         }
     }
@@ -128,15 +128,15 @@ static GlobalVar* get_globalvar(const char* str, int len) {
     return NULL;
 }
 
-static void process_identifier_left(const char* identifier, int len) {
-    LocalVar* lv = get_localvar(identifier, len);
+static void process_identifier_left(const char* identifier) {
+    LocalVar* lv = get_localvar(identifier);
     if (lv != NULL) {
         printf("  lea rax, [rbp-%d]\n", lv->offset);
         printf("  push rax\n");
         stack_push(type_stack, lv->type);
     } 
     else {
-        const GlobalVar* gv = get_globalvar(identifier, len);    
+        const GlobalVar* gv = get_globalvar(identifier);    
         printf("  lea rax, %s[rip]\n", gv->name);
         printf("  push rax\n");
         stack_push(type_stack, gv->type);
@@ -144,7 +144,7 @@ static void process_identifier_left(const char* identifier, int len) {
     intstack_push(size_stack, 8);
 }
 
-static void process_identifier_right(const char* identifier, int len) {
+static void process_identifier_right(const char* identifier) {
     // enum 
     if (strintmap_contains(enum_map, identifier)) {
         printf("  push %d\n", strintmap_get(enum_map, identifier));
@@ -152,7 +152,7 @@ static void process_identifier_right(const char* identifier, int len) {
     } 
 
     // local variable
-    LocalVar* lv = get_localvar(identifier, len);
+    LocalVar* lv = get_localvar(identifier);
     if (lv != NULL) {
         printf("  lea rax, [rbp-%d]\n", lv->offset);
         if (lv->type->array_size == 0) { 
@@ -172,7 +172,7 @@ static void process_identifier_right(const char* identifier, int len) {
     } 
 
     // global variable
-    const GlobalVar* gv = get_globalvar(identifier, len);
+    const GlobalVar* gv = get_globalvar(identifier);
     printf("  lea rax, %s[rip]\n", gv->name);
     if (gv->type->array_size == 0) {
         if (gv->type->type_size == 1 && gv->type->ptr_count == 0) {
@@ -230,7 +230,7 @@ static void process_primary_expr_left(const PrimaryExprNode* node) {
     }
     // identifier
     else if (node->identifier != NULL) {
-        process_identifier_left(node->identifier, node->identifier_len);
+        process_identifier_left(node->identifier);
     }
     else {
         // @todo
@@ -248,7 +248,7 @@ static void process_primary_expr_right(const PrimaryExprNode* node) {
     }
     // identifier
     else if (node->identifier != NULL) {
-        process_identifier_right(node->identifier, node->identifier_len);
+        process_identifier_right(node->identifier);
     }
     else {
         // @todo
@@ -615,12 +615,12 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
     }
     case UN_SIZEOF_IDENT: {
         int size = 0;
-        const LocalVar* lv = get_localvar(node->sizeof_name, node->sizeof_name_len);
+        const LocalVar* lv = get_localvar(node->sizeof_name);
         if (lv != NULL) {
             size = lv->type->type_size;
         } 
         else {
-            const GlobalVar* gv = get_globalvar(node->sizeof_name, node->sizeof_name_len);
+            const GlobalVar* gv = get_globalvar(node->sizeof_name);
             size = gv->type->type_size;
         }
 
@@ -1337,9 +1337,7 @@ static void process_declaration(const DeclarationNode* node) {
         lv->offset = align_offset(current_offset, lv->type->size);
 
         const DirectDeclaratorNode* ident_node = get_identifier_direct_declarator(direct_declarator_node);
-        lv->name_len = ident_node->identifier_len;
-        lv->name     = malloc(sizeof(char) * lv->name_len);
-        strncpy(lv->name, ident_node->identifier, lv->name_len);
+        lv->name = strdup(ident_node->identifier);
         vector_push_back(localvar_list, lv);
 
         if (init_declarator_node->initializer_node != NULL) {
@@ -1632,9 +1630,7 @@ static void process_param_list_node(const ParamListNode* node, int arg_index) {
     LocalVar* lv = malloc(sizeof(LocalVar));
     lv->type     = type;
     lv->offset   = current_offset;
-    lv->name_len = direct_declarator_node->identifier_len;
-    lv->name     = malloc(sizeof(char) * lv->name_len);
-    strncpy(lv->name, direct_declarator_node->identifier, lv->name_len);
+    lv->name     = strdup(direct_declarator_node->identifier);
     vector_push_back(localvar_list, lv);
 
     const PointerNode* pointer_node = declarator_node->pointer_node;
@@ -1920,9 +1916,7 @@ static void process_global_declaration(const DeclarationNode* node) {
             printf(".comm %s,8,8\n", ident_node->identifier);
         }
 
-        gv->name_len = ident_node->identifier_len;
-        gv->name     = malloc(sizeof(char) * gv->name_len);
-        strncpy(gv->name, ident_node->identifier, gv->name_len);
+        gv->name = strdup(ident_node->identifier);
         vector_push_back(globalvar_list, gv);
 
         if (init_declarator_node->initializer_node != NULL) {

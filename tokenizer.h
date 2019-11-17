@@ -81,11 +81,11 @@ enum TokenType {
 
 typedef struct Token Token;
 struct Token {
-    int    type;
-    int    num;
-    char*  str;
-    int    strlen;
-    bool   has_value; // true if token is "#define" and has value (#define key value)
+    int   type;
+    int   num;
+    char* str;
+    int   strlen;
+    bool  has_value; // true if token is "#define" and has value (#define key value)
 };
 
 Vector* tokenize(char* addr);

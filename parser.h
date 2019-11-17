@@ -180,7 +180,6 @@ struct TypeSpecifierNode {
 };
 
 struct StructSpecifierNode {
-    int        identifier_len;
     char*      identifier;
     Vector*    struct_declaration_nodes; 
 };
@@ -188,7 +187,6 @@ struct StructSpecifierNode {
 struct StructDeclarationNode {
     Vector*      specifier_qualifier_nodes;
     PointerNode* pointer_node;
-    int          identifier_len;
     char*        identifier;
 };
 
@@ -208,7 +206,6 @@ struct PointerNode {
 
 struct DirectDeclaratorNode {
     char*                 identifier;
-    int                   identifier_len;
     DeclaratorNode*       declarator_node;
     DirectDeclaratorNode* direct_declarator_node;  
     ConditionalExprNode*  conditional_expr_node;
@@ -289,7 +286,6 @@ struct UnaryExprNode {
     TypeNameNode*    type_name_node;
     int              type;
     int              op_type;
-    int              sizeof_name_len;
     char*            sizeof_name;
 }; 
 
@@ -299,7 +295,6 @@ struct PostfixExprNode {
     ExprNode*        expr_node;
     Vector*          assign_expr_nodes;
     char*            identifier;
-    int              identifier_len;
     int              postfix_expr_type; 
 };
 
@@ -308,7 +303,6 @@ struct PrimaryExprNode {
     ExprNode*     expr_node;
     char*         string;
     char*         identifier;
-    int           identifier_len;
     int           value_type;
 };
 

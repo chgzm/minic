@@ -66,45 +66,15 @@ char* read_file(const char* file_path) {
     return addr;
 }
 
-/*
-void* mmap_readonly(const char* file_path) {
-    const int fd = open(file_path, O_RDONLY);
-    if (fd < 0) {
-        error("open failed.\n");
-        return NULL;
-    }
-
-    struct stat sb;
-    if (fstat(fd, &sb) == -1) {
-        error("fstat failed.\n");
-        return NULL;
-    }
-    int fsize = sb.st_size;
-
-    void* addr = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (addr == MAP_FAILED) {
-        error("mmap failed\n");
-        return NULL;
-    }
-
-    if (close(fd) == -1) {
-        error("close failed.\n");
-        return NULL;
-    }
-
-    return addr;
-}
-*/
-
 //
 // Vector for Pointers
 //
 
 Vector* create_vector() {
-    Vector* vec = malloc(sizeof(Vector));
-    vec->elements  = malloc(sizeof(void*) * 16);
-    vec->capacity  = 16;
-    vec->size      = 0;
+    Vector* vec   = malloc(sizeof(Vector));
+    vec->elements = calloc(16, sizeof(void*));
+    vec->capacity = 16;
+    vec->size     = 0;
 
     return vec;
 }
@@ -125,7 +95,7 @@ void vector_push_back(Vector* vec, void* e) {
 
 Stack* create_stack() {
     Stack* stack    = malloc(sizeof(Stack));
-    stack->elements = malloc(sizeof(void*) * 16);
+    stack->elements = calloc(16, sizeof(void*));
     stack->capacity = 16;
     stack->top      = -1;
 

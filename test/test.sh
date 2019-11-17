@@ -191,6 +191,7 @@ assert_return test_post_inc_dec.c 1
 assert_return test_post_inc_dec_2.c 8
 
 assert_return test_not.c 1
+assert_return test_not_2.c 0
 
 assert_return test_vector.c 30
 

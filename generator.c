@@ -601,7 +601,7 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
             process_cast_expr(node->cast_expr_node);
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  setl al\n");
+            printf("  sete al\n");
             printf("  movzb rax, al\n");
             printf("  push rax\n");
             break;

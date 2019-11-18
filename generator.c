@@ -1921,19 +1921,19 @@ static void process_global_declaration(const DeclarationNode* node) {
 
             if (initializer_node->assign_expr_node != NULL) {
                 if (is_int_constant(initializer_node->assign_expr_node)) {
-                    const int int_constant = get_int_constant(initializer_node->assign_expr_node);
+                    const int int_constant1 = get_int_constant(initializer_node->assign_expr_node);
                     printf(".data\n");
                     printf("%s:\n", gv->name);
-                    printf("  .quad %d\n", int_constant); 
+                    printf("  .quad %d\n", int_constant1); 
                     printf(".text\n");
                 } 
                 else {
-                    const char* label = get_string_label();
+                    const char* label1 = get_string_label();
                     printf(".data\n");
-                    printf("%s:\n", label);
+                    printf("%s:\n", label1);
                     printf("  .string \"%s\"\n", get_character_constant(initializer_node->assign_expr_node));
                     printf("%s:\n", gv->name);
-                    printf("  .quad %s\n", label); 
+                    printf("  .quad %s\n", label1); 
                     printf(".text\n");
                 }
             } 
@@ -1946,8 +1946,8 @@ static void process_global_declaration(const DeclarationNode* node) {
 
                     for (int k = 0; k < initializer_list_node->initializer_nodes->size; ++k) {
                         const InitializerNode* init = initializer_list_node->initializer_nodes->elements[k];
-                        const int int_constant = get_int_constant(init->assign_expr_node);
-                        printf("  .quad %d\n", int_constant); 
+                        const int int_constant2 = get_int_constant(init->assign_expr_node);
+                        printf("  .quad %d\n", int_constant2); 
                     }
                     printf(".text\n");
                 } else {
@@ -1955,11 +1955,11 @@ static void process_global_declaration(const DeclarationNode* node) {
                     printf(".data\n");
                     for (int l = 0; l < initializer_list_node->initializer_nodes->size; ++l) {
                         const InitializerNode* init = initializer_list_node->initializer_nodes->elements[l];
-                        char* label = get_string_label();
-                        printf("%s:\n", label);
+                        char* label2 = get_string_label();
+                        printf("%s:\n", label2);
                         printf("  .string \"%s\"\n", get_character_constant(init->assign_expr_node));
 
-                        vector_push_back(label_list, label);
+                        vector_push_back(label_list, label2);
                    }
 
                    printf("%s:\n", gv->name);

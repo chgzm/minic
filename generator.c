@@ -376,9 +376,9 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
             process_conditional_expr(assign_expr_node->conditional_expr_node);
         }
 
-        for (int i = node->assign_expr_nodes->size - 1; i >= 0; --i) {
+        for (int j = node->assign_expr_nodes->size - 1; j >= 0; --j) {
             printf("  pop rax\n");
-            printf("  mov %s, rax\n", arg_registers[i]);
+            printf("  mov %s, rax\n", arg_registers[j]);
         }
 
         const char* identifier = node->postfix_expr_node->primary_expr_node->identifier;
@@ -1304,11 +1304,11 @@ static void process_declaration(const DeclarationNode* node) {
     }
 
     // add local-variable to list
-    for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
+    for (int j = 0; j < node->init_declarator_nodes->size; ++j) {
         LocalVar* lv = malloc(sizeof(LocalVar));
         lv->type     = type;
 
-        const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
+        const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[j];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
 
         const PointerNode* pointer_node = declarator_node->pointer_node;
@@ -1495,33 +1495,8 @@ static int get_varsize_from_decl_specifier_nodes(const Vector* nodes) {
 }
 
 static int calc_localvar_size_in_declaration(const DeclarationNode* node) {
-    // int var_size = 0;
-    // const Vector* decl_specifier_nodes = node->decl_specifier_nodes;
-    // for (int i = 0; i < decl_specifier_nodes->size; ++i) {
-    //     const DeclSpecifierNode* decl_specifier_node = decl_specifier_nodes->elements[i];
-    //     if (decl_specifier_node->type_specifier_node == NULL) {
-    //         continue;
-    //     }
-
-    //     const TypeSpecifierNode* type_specifier_node = decl_specifier_node->type_specifier_node;
-    //     if (type_specifier_node->type_specifier == TYPE_STRUCT) {
-    //         const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
-    //         const char* ident = struct_specifier_node->identifier;
-    //         const StructInfo* struct_info = strptrmap_get(struct_map, ident);
-    //         var_size = struct_info->field_info_map->size * 8;
-    //     } 
-    //     else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
-    //         const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-    //         var_size = struct_info->field_info_map->size * 8;
-    //     } 
-    //     else {
-    //         var_size = 8; // @todo
-    //     }
-
-    //     break;
-    // }
-
     const int var_size = get_varsize_from_decl_specifier_nodes(node->decl_specifier_nodes);
+
     int size = 0;
     const Vector* init_declarator_nodes = node->init_declarator_nodes;
     for (int i = 0; i < init_declarator_nodes->size; ++i) {
@@ -1907,12 +1882,12 @@ static void process_global_declaration(const DeclarationNode* node) {
         break;
     }
 
-    for (int i = 0; i < node->init_declarator_nodes->size; ++i) {
+    for (int j = 0; j < node->init_declarator_nodes->size; ++j) {
         GlobalVar* gv       = malloc(sizeof(GlobalVar));
         gv->type            = type;
         gv->type->ptr_count = 0;
 
-        const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[i];
+        const InitDeclaratorNode* init_declarator_node = node->init_declarator_nodes->elements[j];
         const DeclaratorNode* declarator_node  = init_declarator_node->declarator_node;
 
         const PointerNode* pointer_node = declarator_node->pointer_node;
@@ -1969,8 +1944,8 @@ static void process_global_declaration(const DeclarationNode* node) {
                     printf(".data\n");
                     printf("%s:\n", gv->name);
 
-                    for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
-                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
+                    for (int k = 0; k < initializer_list_node->initializer_nodes->size; ++k) {
+                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[k];
                         const int int_constant = get_int_constant(init->assign_expr_node);
                         printf("  .quad %d\n", int_constant); 
                     }
@@ -1978,8 +1953,8 @@ static void process_global_declaration(const DeclarationNode* node) {
                 } else {
                     Vector* label_list = create_vector();
                     printf(".data\n");
-                    for (int j = 0; j < initializer_list_node->initializer_nodes->size; ++j) {
-                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[j];
+                    for (int l = 0; l < initializer_list_node->initializer_nodes->size; ++l) {
+                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[l];
                         char* label = get_string_label();
                         printf("%s:\n", label);
                         printf("  .string \"%s\"\n", get_character_constant(init->assign_expr_node));
@@ -1988,8 +1963,8 @@ static void process_global_declaration(const DeclarationNode* node) {
                    }
 
                    printf("%s:\n", gv->name);
-                   for (int j = 0; j < label_list->size; ++j) {
-                       char* l = label_list->elements[j];
+                   for (int m = 0; m < label_list->size; ++m) {
+                       char* l = label_list->elements[m];
                        printf("  .quad %s\n", l);
                    }
                    printf(".text\n");

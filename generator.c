@@ -1945,8 +1945,8 @@ static void process_global_declaration(const DeclarationNode* node) {
                     printf("%s:\n", gv->name);
 
                     for (int k = 0; k < initializer_list_node->initializer_nodes->size; ++k) {
-                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[k];
-                        const int int_constant2 = get_int_constant(init->assign_expr_node);
+                        const InitializerNode* init1 = initializer_list_node->initializer_nodes->elements[k];
+                        const int int_constant2 = get_int_constant(init1->assign_expr_node);
                         printf("  .quad %d\n", int_constant2); 
                     }
                     printf(".text\n");
@@ -1954,18 +1954,18 @@ static void process_global_declaration(const DeclarationNode* node) {
                     Vector* label_list = create_vector();
                     printf(".data\n");
                     for (int l = 0; l < initializer_list_node->initializer_nodes->size; ++l) {
-                        const InitializerNode* init = initializer_list_node->initializer_nodes->elements[l];
+                        const InitializerNode* init2 = initializer_list_node->initializer_nodes->elements[l];
                         char* label2 = get_string_label();
                         printf("%s:\n", label2);
-                        printf("  .string \"%s\"\n", get_character_constant(init->assign_expr_node));
+                        printf("  .string \"%s\"\n", get_character_constant(init2->assign_expr_node));
 
                         vector_push_back(label_list, label2);
                    }
 
                    printf("%s:\n", gv->name);
                    for (int m = 0; m < label_list->size; ++m) {
-                       char* l = label_list->elements[m];
-                       printf("  .quad %s\n", l);
+                       char* label3 = label_list->elements[m];
+                       printf("  .quad %s\n", label3);
                    }
                    printf(".text\n");
                 }

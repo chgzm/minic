@@ -10,10 +10,9 @@ static int enabled_read(const Vector* in_vec, int* index, Vector* out_vec) {
     Token* token = in_vec->elements[*index];
     if (token->type != TK_HASH) {
         if (token->type == TK_IDENT && strptrmap_contains(define_map, token->str)) {
-            Token* value = strptrmap_get(define_map, token->str);
-
-            if (value != NULL) {
-                vector_push_back(out_vec, value);
+            Token* value1 = strptrmap_get(define_map, token->str);
+            if (value1 != NULL) {
+                vector_push_back(out_vec, value1);
             }
 
             ++(*index);
@@ -35,8 +34,8 @@ static int enabled_read(const Vector* in_vec, int* index, Vector* out_vec) {
             ++(*index);
 
             if (token->has_value) {
-                Token* value = in_vec->elements[*index];
-                strptrmap_put(define_map, name->str, value);
+                Token* value2 = in_vec->elements[*index];
+                strptrmap_put(define_map, name->str, value2);
                 ++(*index);
 
                 return STATE_ENABLED;

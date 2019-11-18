@@ -108,6 +108,7 @@ assert_return test_dec_2.c 1
 assert_return test_for.c 10
 assert_return test_for_2.c 10
 assert_return test_for_3.c 10
+assert_return test_for_4.c 0
 
 assert_return test_break.c 6
 assert_return test_break_2.c 6
@@ -208,6 +209,7 @@ assert_return test_tokenizer.c 127
 assert_return test_tokenizer_2.c 20
 assert_return test_tokenizer_3.c 51
 assert_return test_tokenizer_4.c 202
+assert_return test_tokenizer_5.c 45
 
 assert_return test_preprocessor.c 202
 

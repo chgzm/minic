@@ -81,6 +81,10 @@ static Token* read_character(const char* p, int* pos) {
             c = '\0';
             break; 
         }
+        case 'n': {
+            c = '\n';
+            break;
+        }
         default: {
             break;
         }

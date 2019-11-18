@@ -158,10 +158,8 @@ static void process_identifier_right(const char* identifier) {
         if (lv->type->array_size == 0) { 
             if (lv->type->type_size == 1 && lv->type->ptr_count == 0) {
                 printf("  movzx eax, BYTE PTR [rax]\n");
-                // printf("  movzx eax, BYTE PTR [rbp-%d]\n", lv->offset);
             } else { 
                 printf("  mov rax, [rax]\n");
-                // printf("  mov rax, [rbp-%d]\n", lv->offset);
             }
         } 
         printf("  push rax\n");
@@ -266,26 +264,26 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_LSQUARE: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        Type* type = stack_top(type_stack);
+        Type* type1 = stack_top(type_stack);
         stack_pop(type_stack);
 
         process_expr(node->expr_node);
 
         printf("  pop rdi\n");
         printf("  pop rax\n");
-        if (type->array_size) {
-            if (type->ptr_count > 0) {
+        if (type1->array_size) {
+            if (type1->ptr_count > 0) {
                 printf("  imul rdi, 8\n");
                 printf("  mov rax, [rax]\n");
             } else {
-                printf("  imul rdi, %d\n", type->type_size);
+                printf("  imul rdi, %d\n", type1->type_size);
             }
         } else {
-            if (type->ptr_count > 1) {
+            if (type1->ptr_count > 1) {
                 printf("  imul rdi, 8\n");
                 printf("  mov rax, [rax]\n");
             } else {
-                printf("  imul rdi, %d\n", type->type_size);
+                printf("  imul rdi, %d\n", type1->type_size);
                 printf("  mov rax, [rax]\n");
             }
         }
@@ -293,7 +291,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         printf("  add rax, rdi\n");
         printf("  push rax\n");
 
-        stack_push(type_stack, type);
+        stack_push(type_stack, type1);
         // intstack_push(size_stack, 8);
         break;
     }
@@ -301,14 +299,13 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_DOT: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        Type* type = stack_top(type_stack);
+        Type* type2 = stack_top(type_stack);
         stack_pop(type_stack);
 
-        const StructInfo* struct_info = type->struct_info;
-        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+        const FieldInfo* field_info1 = strptrmap_get(type2->struct_info->field_info_map, node->identifier);
 
         printf("  pop rax\n");
-        printf("  add rax, %d\n", field_info->offset);
+        printf("  add rax, %d\n", field_info1->offset);
 
         printf("  push rax\n");
         // intstack_push(size_stack, 8);
@@ -319,16 +316,15 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
     case PS_ARROW: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        Type* type = stack_top(type_stack);
+        Type* type3 = stack_top(type_stack);
         stack_pop(type_stack);
 
-        const StructInfo* struct_info = type->struct_info;
-        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
-        stack_push(type_stack, field_info->type);
+        const FieldInfo* field_info2 = strptrmap_get(type3->struct_info->field_info_map, node->identifier);
+        stack_push(type_stack, field_info2->type);
 
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
-        printf("  add rax, %d\n", field_info->offset);
+        printf("  add rax, %d\n", field_info2->offset);
         printf("  push rax\n");
 
         break;        
@@ -392,7 +388,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     case PS_LSQUARE: {
         process_postfix_expr_right(node->postfix_expr_node);
 
-        Type* type = stack_top(type_stack);
+        Type* type1 = stack_top(type_stack);
         stack_pop(type_stack);
 
         process_expr(node->expr_node);
@@ -400,24 +396,24 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         printf("  pop rdi\n");
         printf("  pop rax\n");
 
-        if (type->array_size > 0) {
-            if (type->ptr_count > 0) {
+        if (type1->array_size > 0) {
+            if (type1->ptr_count > 0) {
                 printf("  imul rdi, 8\n");
             } else {
-                printf("  imul rdi, %d\n", type->type_size);
+                printf("  imul rdi, %d\n", type1->type_size);
             }
 
             printf("  add rax, rdi\n");
             printf("  mov rax, [rax]\n");
         }
         else {
-            if (type->ptr_count > 1) {
+            if (type1->ptr_count > 1) {
                 printf("  imul rdi, 8\n");
             } else {
-                printf("  imul rdi, %d\n", type->type_size);
+                printf("  imul rdi, %d\n", type1->type_size);
             }
             printf("  add rax, rdi\n");
-            if (type->type_size == 1 && type->ptr_count < 2) {
+            if (type1->type_size == 1 && type1->ptr_count < 2) {
                 printf("  movzx eax, BYTE PTR [rax]\n");
             } else {
                 printf("  mov rax, [rax]\n");
@@ -431,14 +427,13 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     case PS_DOT: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        Type* type = stack_top(type_stack);
+        Type* type2 = stack_top(type_stack);
         stack_pop(type_stack);
 
-        const StructInfo* struct_info = type->struct_info;
-        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
+        const FieldInfo* field_info1 = strptrmap_get(type2->struct_info->field_info_map, node->identifier);
 
         printf("  pop rax\n");
-        printf("  add rax, %d\n", field_info->offset);
+        printf("  add rax, %d\n", field_info1->offset);
         printf("  push [rax]\n");
         break;        
     }
@@ -446,16 +441,15 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
     case PS_ARROW: {
         process_postfix_expr_left(node->postfix_expr_node);
 
-        Type* type = stack_top(type_stack);
+        Type* type3 = stack_top(type_stack);
         stack_pop(type_stack);
 
-        const StructInfo* struct_info = type->struct_info;
-        const FieldInfo* field_info = strptrmap_get(struct_info->field_info_map, node->identifier);
-        stack_push(type_stack, field_info->type);
+        const FieldInfo* field_info2 = strptrmap_get(type3->struct_info->field_info_map, node->identifier);
+        stack_push(type_stack, field_info2->type);
 
         printf("  pop rax\n");
         printf("  mov rax, [rax]\n");
-        printf("  add rax, %d\n", field_info->offset);
+        printf("  add rax, %d\n", field_info2->offset);
         printf("  push [rax]\n");
 
         break;        
@@ -613,18 +607,14 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
         break;
     }
     case UN_SIZEOF_IDENT: {
-        int size = 0;
         const LocalVar* lv = get_localvar(node->sizeof_name);
         if (lv != NULL) {
-            size = lv->type->type_size;
+            printf("  push %d\n", lv->type->type_size);
         } 
         else {
             const GlobalVar* gv = get_globalvar(node->sizeof_name);
-            size = gv->type->type_size;
+            printf("  push %d\n", gv->type->type_size);
         }
-
-        printf("  push %d\n", size);
-
         break;
     }
     case UN_SIZEOF_TYPE: {
@@ -642,13 +632,13 @@ static void process_unary_expr_right(const UnaryExprNode* node) {
             case TYPE_STRUCT: { 
                 const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
                 const char* ident = struct_specifier_node->identifier;
-                const StructInfo* struct_info = strptrmap_get(struct_map, ident);
-                size = struct_info->size;
+                const StructInfo* struct_info1 = strptrmap_get(struct_map, ident);
+                size = struct_info1->size;
                 break;                                   
             }
             case TYPE_TYPEDEFNAME: {
-                const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-                size = struct_info->size;
+                const StructInfo* struct_info2 = strptrmap_get(struct_map, type_specifier_node->struct_name);
+                size = struct_info2->size;
                 break;
             }
             default: {
@@ -1479,12 +1469,12 @@ static int get_varsize_from_decl_specifier_nodes(const Vector* nodes) {
         if (type_specifier_node->type_specifier == TYPE_STRUCT) {
             const StructSpecifierNode* struct_specifier_node = type_specifier_node->struct_specifier_node;
             const char* ident = struct_specifier_node->identifier;
-            const StructInfo* struct_info = strptrmap_get(struct_map, ident);
-            return (struct_info->field_info_map->size * 8);
+            const StructInfo* struct_info1 = strptrmap_get(struct_map, ident);
+            return (struct_info1->field_info_map->size * 8);
         } 
         else if (type_specifier_node->type_specifier == TYPE_TYPEDEFNAME) {
-            const StructInfo* struct_info = strptrmap_get(struct_map, type_specifier_node->struct_name);
-            return (struct_info->field_info_map->size * 8);
+            const StructInfo* struct_info2 = strptrmap_get(struct_map, type_specifier_node->struct_name);
+            return (struct_info2->field_info_map->size * 8);
         } 
         else {
             return 8; // @todo

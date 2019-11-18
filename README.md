@@ -1,6 +1,8 @@
 # minic
-- Mini C compiler written in C.
-- The purpose of this project is to learn C language and compiler, so far from complete implementation.
+- Mini C compiler written in C. 
+- minic can compile source code of minic itself.
+- The purpose of this project is to learn C language and compiler, so far from complete implementation (for now).
+- For simplicity, minic does not call free().  
 
 # Build
 ```
@@ -18,6 +20,17 @@ OPTION:
 # Test
 ```
 make test
+```
+
+# Self-compiling
+Compile minic source code by using minic itself.
+```
+make self
+```
+
+# Test of self-compiling
+```
+make selftest
 ```
 
 # Syntax

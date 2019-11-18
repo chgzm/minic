@@ -4,9 +4,9 @@ function assert_return() {
     file="$1"
     expected="$2"
 
-    ./minic "./test/${file}" > ./test/tmp.s
-    gcc -no-pie -o ./test/tmp ./test/tmp.s
-    ./test/tmp
+    ./self/selfminic "./test/${file}" > ./self/tmp.s
+    gcc -no-pie -o ./self/tmp ./self/tmp.s
+    ./self/tmp
     actual="$?"
 
     printf "\e[1m${file}:\n  \e[0m"
@@ -23,9 +23,9 @@ function assert_output() {
     expected="$(printf "$2"; printf 'x')" # to reserve last newline, add 'x' to the tail
     expected="${expected%?}"
 
-    ./minic "./test/${file}" > ./test/tmp.s
-    gcc -static -o ./test/tmp ./test/tmp.s
-    actual="$(./test/tmp; printf 'x')" # to reserve last newline, add 'x' to the tail
+    ./self/selfminic "./test/${file}" > ./self/tmp.s
+    gcc -static -o ./self/tmp ./self/tmp.s
+    actual="$(./self/tmp; printf 'x')" # to reserve last newline, add 'x' to the tail
     actual="${actual%?}"
 
     printf "\e[1m${file}:\n  \e[0m"
@@ -36,6 +36,10 @@ function assert_output() {
         exit 1
     fi
 }
+
+if [[ ! -e ./self/selfminic ]]; then
+    ./self/self-compile.sh
+fi
 
 assert_return test_return.c 42
 assert_return test_return_add.c 7
@@ -155,7 +159,6 @@ assert_return test_switch.c 3
 assert_return test_switch_2.c 14
 assert_return test_switch_3.c 70
 assert_return test_switch_4.c 6
-assert_return test_switch_5.c 2
 
 assert_return test_sizeof.c 17
 assert_return test_sizeof_2.c 32
@@ -202,7 +205,7 @@ assert_return test_strptrmap.c 10
 
 assert_output test_printf.c "Hello, World."
 
-assert_output test_arg.c "./test/tmp"
+assert_output test_arg.c "./self/tmp"
 
 assert_return test_tokenizer.c 127
 assert_return test_tokenizer_2.c 20
@@ -212,4 +215,4 @@ assert_return test_tokenizer_5.c 45
 
 assert_return test_preprocessor.c 202
 
-echo -e "\e[36mPassed all tests.\e[0m"
+echo -e "\e[36mPassed all tests by using self-compiled binary\e[0m"

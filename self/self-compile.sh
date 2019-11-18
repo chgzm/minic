@@ -50,6 +50,3 @@ done
 gcc -no-pie -o ./self/selfminic ./self/self.s
 
 echo -e "\e[36mCompile completed.\e[0m"
-
-assert_return test_return.c 42
-

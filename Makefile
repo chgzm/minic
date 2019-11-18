@@ -11,6 +11,9 @@ test: minic
 self: minic
 	./self/self-compile.sh
 
+selftest: minic
+	./self/self-test.sh
+
 clean:
 	rm -f minic *.o *~ ./test/tmp* ./self/selfminic ./self/self.s ./self/all.c ./self/tmp*
 

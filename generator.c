@@ -204,7 +204,6 @@ static void process_constant_node(const ConstantNode* node) {
         printf(".text\n");
         printf("  lea rax, %s[rip]\n", label);
         printf("  push rax\n");
-        // intstack_push(size_stack, 8);
         break;
     }
     case CONST_FLOAT: {
@@ -292,7 +291,6 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
         printf("  push rax\n");
 
         stack_push(type_stack, type1);
-        // intstack_push(size_stack, 8);
         break;
     }
     // postfix-expression . identifier
@@ -306,9 +304,7 @@ static void process_postfix_expr_left(const PostfixExprNode* node) {
 
         printf("  pop rax\n");
         printf("  add rax, %d\n", field_info1->offset);
-
         printf("  push rax\n");
-        // intstack_push(size_stack, 8);
 
         break;        
     }
@@ -381,6 +377,7 @@ static void process_postfix_expr_right(const PostfixExprNode* node) {
         printf("  mov rax, 0\n");
         printf("  call %s\n", identifier);
         printf("  push rax\n");
+        intstack_push(size_stack, 8);
 
         break;
     }
@@ -1329,7 +1326,6 @@ static void process_declaration(const DeclarationNode* node) {
             const InitializerNode* initializer_node = init_declarator_node->initializer_node;
             printf("  lea rax, [rbp-%d]\n", lv->offset);
             printf("  push rax\n");
-            // intstack_push(size_stack, 8);
 
             if (initializer_node->assign_expr_node != NULL) {
                 process_assign_expr(initializer_node->assign_expr_node);

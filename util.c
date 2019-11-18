@@ -292,7 +292,6 @@ bool strintmap_contains(StrIntMap* map, const char* key) {
     else {
         StrIntMapEntry* current = map->entries[index];
         while (current != NULL) {
-            fflush(stdout);
             if (strcmp(current->key, key) == 0) {
                 return true;
             }

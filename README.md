@@ -3,6 +3,7 @@
 - minic can compile source code of minic itself.
 - The purpose of this project is to learn C language and compiler, so far from complete implementation (for now).
 - For simplicity, minic does not call free().  
+- Supports x86-64 Linux only.
 
 # Build
 ```
